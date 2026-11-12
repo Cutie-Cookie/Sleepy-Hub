@@ -393,10 +393,10 @@ class MainActivity : LoadingActivity() {
             setPadding(dp(22), dp(10), dp(22), dp(24))
             background = GradientDrawable().apply {
                 setColor(ContextCompat.getColor(this@MainActivity, R.color.dashboard_background))
-                cornerRadii = floatArrayOf(
+                setCornerRadii(floatArrayOf(
                     dp(26).toFloat(), dp(26).toFloat(), dp(26).toFloat(), dp(26).toFloat(),
                     0f, 0f, 0f, 0f
-                )
+                ))
             }
         }
         root.addView(View(this).apply {
