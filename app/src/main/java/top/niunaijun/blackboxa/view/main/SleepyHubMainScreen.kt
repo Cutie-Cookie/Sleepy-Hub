@@ -68,6 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -93,6 +94,7 @@ data class ProfileItem(
 fun SleepyHubMainScreen(
     profiles: List<ProfileItem>,
     activeUserId: Int,
+    isWorkspaceScrolled: Boolean,
     viewPager: ViewPager2,
     onSelectProfile: (Int) -> Unit,
     onAddProfile: () -> Unit,
@@ -281,6 +283,7 @@ fun SleepyHubMainScreen(
                             ),
                             navigationIcon = {
                                 TopBarCapsule(
+                                    showBackground = isWorkspaceScrolled,
                                     modifier = Modifier.padding(start = 8.dp, end = 4.dp),
                                 ) {
                                     IconButton(
@@ -320,6 +323,7 @@ fun SleepyHubMainScreen(
                             actions = {
                                 var menuExpanded by remember { mutableStateOf(false) }
                                 TopBarCapsule(
+                                    showBackground = isWorkspaceScrolled,
                                     modifier = Modifier.padding(start = 4.dp, end = 8.dp),
                                 ) {
                                     IconButton(onClick = onInstallApps) {
@@ -408,18 +412,29 @@ fun SleepyHubMainScreen(
 
 @Composable
 private fun TopBarCapsule(
+    showBackground: Boolean,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        ),
-    ) {
+    val backgroundAlpha by animateFloatAsState(
+        targetValue = if (showBackground) 1f else 0f,
+        label = "SleepyHubTopBarCapsuleBackground",
+    )
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (backgroundAlpha > 0f) {
+            Surface(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer { alpha = backgroundAlpha },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                ),
+                content = {},
+            )
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             content = content,
