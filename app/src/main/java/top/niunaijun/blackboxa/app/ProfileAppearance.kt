@@ -57,6 +57,19 @@ object ProfileAppearance {
         }
     }
 
+    fun profileFolder(userId: Int): String {
+        return preferences.getString("profile_folder_$userId", "General")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: "General"
+    }
+
+    fun setProfileFolder(userId: Int, folder: String) {
+        preferences.edit {
+            putString("profile_folder_$userId", folder.trim().ifBlank { "General" })
+        }
+    }
+
     fun profileAccent(userId: Int): Int {
         return preferences.getInt("profile_accent_$userId", accentPalette.first())
     }
@@ -138,6 +151,7 @@ object ProfileAppearance {
     fun clearProfile(userId: Int) {
         preferences.edit {
             remove("profile_accent_$userId")
+            remove("profile_folder_$userId")
             remove("profile_background_$userId")
             remove("profile_background_opacity_$userId")
         }
