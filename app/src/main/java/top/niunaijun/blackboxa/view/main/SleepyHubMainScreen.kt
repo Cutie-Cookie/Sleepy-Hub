@@ -116,6 +116,8 @@ fun SleepyHubMainScreen(
     var page by rememberSaveable { mutableStateOf("workspace") }
     var editingProfileId by rememberSaveable { mutableStateOf(-1) }
     var showProfilePicker by rememberSaveable { mutableStateOf(false) }
+    var drawerFolder by rememberSaveable { mutableStateOf("All") }
+    val profileFolders = remember(profiles) { profiles.map { it.folder }.distinct().filter { it != "All" }.sorted() }
     val activeProfile = profiles.firstOrNull { it.userId == activeUserId } ?: profiles.firstOrNull()
 
     when (page) {
@@ -175,8 +177,11 @@ fun SleepyHubMainScreen(
 
                             DrawerEntry(
                                 icon = { Icon(Icons.Outlined.Apps, contentDescription = null) },
-                                label = "Installed apps",
-                                onClick = { scope.launch { drawerState.close() } },
+                                label = "Manage profiles",
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    page = "profiles"
+                                },
                             )
                             DrawerEntry(
                                 icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
@@ -194,6 +199,36 @@ fun SleepyHubMainScreen(
                                     onOpenFakeLocation()
                                 },
                             )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LazyRow(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    items(listOf("All") + profileFolders) { folder ->
+                                        FilterChip(
+                                            selected = drawerFolder == folder,
+                                            onClick = {
+                                                drawerFolder = folder
+                                                showProfilePicker = true
+                                                scope.launch { drawerState.close() }
+                                            },
+                                            label = { Text(folder) },
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        showProfilePicker = true
+                                        scope.launch { drawerState.close() }
+                                    },
+                                ) {
+                                    Icon(Icons.Outlined.Sort, contentDescription = "Browse and sort profiles")
+                                }
+                            }
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -247,14 +282,6 @@ fun SleepyHubMainScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 DrawerShortcut(
-                                    icon = { Icon(Icons.Outlined.Apps, contentDescription = null) },
-                                    label = "Profiles",
-                                    onClick = {
-                                        scope.launch { drawerState.close() }
-                                        page = "profiles"
-                                    },
-                                )
-                                DrawerShortcut(
                                     icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
                                     label = "Settings",
                                     onClick = {
@@ -268,6 +295,14 @@ fun SleepyHubMainScreen(
                                     onClick = {
                                         scope.launch { drawerState.close() }
                                         onOpenFakeLocation()
+                                    },
+                                )
+                                DrawerShortcut(
+                                    icon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
+                                    label = "Refresh",
+                                    onClick = {
+                                        scope.launch { drawerState.close() }
+                                        onRefreshApps()
                                     },
                                 )
                             }
@@ -391,6 +426,7 @@ fun SleepyHubMainScreen(
                 ProfilePickerSheet(
                     profiles = profiles,
                     activeUserId = activeUserId,
+                    initialFolder = drawerFolder,
                     onDismiss = { showProfilePicker = false },
                     onSelect = {
                         showProfilePicker = false
@@ -619,12 +655,13 @@ fun ProfileAvatar(name: String, accent: Int, size: androidx.compose.ui.unit.Dp) 
 private fun ProfilePickerSheet(
     profiles: List<ProfileItem>,
     activeUserId: Int,
+    initialFolder: String,
     onDismiss: () -> Unit,
     onSelect: (Int) -> Unit,
     onEdit: (Int) -> Unit,
     onAdd: () -> Unit,
 ) {
-    var selectedFolder by rememberSaveable { mutableStateOf("All") }
+    var selectedFolder by rememberSaveable(initialFolder) { mutableStateOf(initialFolder) }
     var sortAlphabetically by rememberSaveable { mutableStateOf(false) }
     val folders = remember(profiles) { profiles.map { it.folder }.distinct().filter { it != "All" }.sorted() }
     val filteredProfiles = remember(profiles, selectedFolder, sortAlphabetically) {
