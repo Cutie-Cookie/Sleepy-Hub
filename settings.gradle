@@ -23,7 +23,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NewBlackbox"
+rootProject.name = "Sleepy Hub"
 
 include ':app'
 include(":black-reflection")

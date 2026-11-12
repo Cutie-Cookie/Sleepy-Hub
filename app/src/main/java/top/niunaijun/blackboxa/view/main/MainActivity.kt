@@ -3,12 +3,10 @@ package top.niunaijun.blackboxa.view.main
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.net.VpnService
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.edit
 import androidx.viewpager2.widget.ViewPager2
 import com.afollestad.materialdialogs.MaterialDialog
@@ -39,7 +37,6 @@ class MainActivity : LoadingActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val STORAGE_PERMISSION_REQUEST_CODE = 1001
-        private const val VPN_PERMISSION_REQUEST_CODE = 1002
 
         fun start(context: Context) {
             val intent = Intent(context, MainActivity::class.java)
@@ -65,10 +62,6 @@ class MainActivity : LoadingActivity() {
 
             
             checkStoragePermission()
-
-            
-            checkVpnPermission()
-
             try {
                 BlackBoxCore.get().onAfterMainActivityOnCreate(this)
             } catch (e: Exception) {
@@ -203,36 +196,6 @@ class MainActivity : LoadingActivity() {
             }
 
     
-    private fun checkVpnPermission() {
-        try {
-            val vpnIntent = VpnService.prepare(this)
-            if (vpnIntent != null) {
-                
-                Log.d(TAG, "VPN permission not granted, requesting...")
-                vpnPermissionResult.launch(vpnIntent)
-            } else {
-                
-                Log.d(TAG, "VPN permission already granted")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking VPN permission: ${e.message}")
-        }
-    }
-
-    private val vpnPermissionResult =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                try {
-                    if (result.resultCode == RESULT_OK) {
-                        Log.d(TAG, "VPN permission granted!")
-                        
-                    } else {
-                        Log.w(TAG, "VPN permission denied by user")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error handling VPN permission result: ${e.message}")
-                }
-            }
-
     private fun showErrorDialog(message: String) {
         try {
             MaterialDialog(this).show {

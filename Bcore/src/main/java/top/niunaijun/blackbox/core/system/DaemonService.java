@@ -13,15 +13,16 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
 import top.niunaijun.blackbox.BlackBoxCore;
+import top.niunaijun.blackbox.R;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 
 
 public class DaemonService extends Service {
     public static final String TAG = "DaemonService";
     private static final int NOTIFY_ID = BlackBoxCore.getHostPkg().hashCode();
-    private static final String CHANNEL_ID = "blackbox_daemon_channel";
-    private static final String CHANNEL_NAME = "BlackBox Daemon Service";
-    private static final String CHANNEL_DESCRIPTION = "Keeps BlackBox core services running";
+    private static final String CHANNEL_ID = "sleepyhub_daemon_channel";
+    private static final String CHANNEL_NAME = "Sleepy Hub";
+    private static final String CHANNEL_DESCRIPTION = "Keeps Sleepy Hub core services running";
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -119,9 +120,9 @@ public class DaemonService extends Service {
     private Notification createNotification() {
         try {
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("BlackBox Core")
+                .setContentTitle("Sleepy Hub")
                 .setContentText("Core services are running")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
                 .setAutoCancel(false);

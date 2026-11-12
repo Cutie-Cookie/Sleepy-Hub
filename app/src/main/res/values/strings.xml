@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BlackBox</string>
+    <string name="app_name">Sleepy Hub</string>
     <string name="choose">Choose</string>
     <string name="choose_app">Choose App</string>
     <string name="installed_app">Installed App</string>
@@ -37,7 +37,7 @@
     <string name="app_shortcut">Create Shortcut</string>
     <string name="shortcut_name">Shortcut Name</string>
     <string name="try_add_shortcut">Try Added To Desktop</string>
-    <string name="add_shortcut_fail_msg">If the addition fails, please go to system settings and open the permission of "create desktop shortcut" for BlackBox</string>
+    <string name="add_shortcut_fail_msg">If the addition fails, please go to system settings and open the permission of "create desktop shortcut" for Sleepy Hub</string>
     <string name="install_success">Installed Successfully</string>
     <string name="install_fail">Installed Failed: %s</string>
     <string name="install_fail_no_msg">Installed Failed</string>
@@ -56,8 +56,6 @@
     <string name="uninstall_module_toast">Please uninstall the xposed module in the Module Manager</string>
     <string name="other">Others</string>
     <string name="daemon_enable">Daemon</string>
-    <string name="use_vpn_network">Use VPN Network</string>
-    <string name="use_vpn_network_summary">Route traffic through VPN for sandboxed apps (may improve network access)</string>
     <string name="disable_flag_secure">Disable Flag Secure</string>
     <string name="disable_flag_secure_summary">Allow screenshots and screen recording in apps</string>
     <string name="gms_manager">GMS Manager</string>

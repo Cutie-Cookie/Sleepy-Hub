@@ -9,7 +9,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     ndkVersion = "29.0.13846066"
     defaultConfig {
-        applicationId "top.niunaijun.blackbox"
+        applicationId "com.cutiecookie.sleepyhub"
         minSdk rootProject.ext.minSdk
         targetSdk rootProject.ext.targetSdkVersion
         versionCode rootProject.ext.versionCode
@@ -17,12 +17,17 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        splits {
-            abi {
-                enable true
-                reset()
-                
-                include 'armeabi-v7a', "arm64-v8a"
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            if (project.findProperty('sleepyHubArm64Only') == 'true') {
+                include 'arm64-v8a'
+                universalApk false
+            } else {
+                include 'armeabi-v7a', 'arm64-v8a'
                 universalApk true
             }
         }
@@ -55,7 +60,7 @@ android {
     }
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
-            output.outputFileName = "BlackBox_${variant.versionName}_${output.baseName}.apk"
+            output.outputFileName = "SleepyHub_${variant.versionName}_${output.baseName}.apk"
         }
     }
 }
