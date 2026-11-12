@@ -151,3 +151,20 @@ Next gate: user installs the debug APK and completes the device acceptance check
 The user clarified that the upstream RikkaHub source is the design specification and screenshots are context only. The first visual prototype was rejected. A clean branch, `sleepyhub/rikkahub-source-rebuild`, was created from the app baseline. See [RikkaHub source research](RIKKAHUB_RESEARCH.md) and [revised implementation plan](UI_IMPLEMENTATION_PLAN.md).
 
 The new direction is a Compose-based port of RikkaHub's actual modal drawer, top bar, assistant picker sheet, compact management list, grouped detail settings, optional workspace background/opacity, and global theme patterns—adapted to Sleepy Hub profiles and app management. No AI chat or background-running feature is added.
+
+
+## Implementation work started — 2026-11-13
+
+Clean rebuild branch `sleepyhub/rikkahub-source-rebuild` is now being implemented from the app baseline. Latest recorded source commit at this checkpoint: `2eed812937ffd8d86d454e554c5e8f089f757a8c`.
+
+Files added/rewritten so far:
+- Compose-enabled `activity_main.xml` and Compose dependencies compatible with Kotlin 1.9.23.
+- `SleepyHubTheme.kt`: global System/Light/Dark, dynamic color, accent, and AMOLED theme.
+- `SleepyHubMainScreen.kt`: modal navigation drawer, RikkaHub-structured top bar, profile picker sheet, profile workspace background.
+- `ProfileScreens.kt`: profile manager, profile detail/appearance, global settings.
+- `ProfileAppearance.kt`: persistent global and per-profile appearance preferences.
+- `AppGridScreen.kt` and Compose-based `AppsFragment.kt`: app grid and Material 3 action sheet/confirmations.
+- `AppsRepository.kt` and `AppsViewModel.kt`: actual internal/external virtual cache clearing; removed forced-GC and heap-threshold icon suppression; stopped auto-deleting intentionally empty profiles.
+- `MainActivity.kt` and `ViewPagerAdapter.kt`: virtual-user profile lifecycle and stable profile IDs.
+
+**Validation state:** implementation is in progress. The ARM64 debug workflow has been triggered, but no successful build or device acceptance is claimed at this checkpoint. Resolve compiler/runtime issues before adding more UI features.
