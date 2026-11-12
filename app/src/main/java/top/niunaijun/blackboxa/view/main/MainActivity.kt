@@ -284,6 +284,7 @@ class MainActivity : LoadingActivity() {
     }
 
     fun refreshCurrentApps() {
+        fragmentList.forEach { it.refreshGridColumns() }
         fragmentList.firstOrNull { it.userID == activeUserId }?.refreshApps()
     }
 
