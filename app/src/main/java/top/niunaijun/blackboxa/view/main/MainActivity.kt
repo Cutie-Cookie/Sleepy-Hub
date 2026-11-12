@@ -206,7 +206,7 @@ class MainActivity : LoadingActivity() {
         }
     }
 
-    private fun refreshDashboard() {
+    fun refreshDashboard() {
         if (!::mViewPagerAdapter.isInitialized) return
         val profiles = try {
             BlackBoxCore.get().users.sortedBy { it.id }
@@ -283,7 +283,9 @@ class MainActivity : LoadingActivity() {
                 setTypeface(typeface, Typeface.BOLD)
             }
             val subtitle = TextView(this).apply {
-                text = if (selected) getString(R.string.profile_current) else getString(R.string.profile_open_hint)
+                val appCount = ProfileAppearance.installedAppCount(userId)
+                text = if (appCount == 0) getString(R.string.profile_no_apps)
+                    else getString(R.string.profile_apps_count, appCount)
                 textSize = 11f
                 maxLines = 1
                 setTextColor(Color.argb(220, 255, 255, 255))
