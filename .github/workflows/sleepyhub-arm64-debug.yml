@@ -4,8 +4,14 @@ name: Sleepy Hub ARM64 debug
 on:
   push:
     branches:
-      - 'sleepyhub/**'
+      - 'sleepyhub/ui-*'
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
+
+concurrency:
+  group: sleepyhub-debug-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
