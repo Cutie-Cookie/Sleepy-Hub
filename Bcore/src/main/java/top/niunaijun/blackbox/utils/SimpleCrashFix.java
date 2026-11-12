@@ -5,7 +5,6 @@ import android.content.ContextWrapper;
 import android.util.Log;
 import android.app.Application;
 
-import top.niunaijun.blackbox.BlackBoxCore;
 
 
 public class SimpleCrashFix {
@@ -47,45 +46,35 @@ public class SimpleCrashFix {
                     
                     if (isNullContextCrash(throwable)) {
                         Slog.w(TAG, "Caught null context crash, preventing crash: " + throwable.getMessage());
-                        BlackBoxCore.get().sendLogs("CRASH DETECTED (Caught/NullContext): " + throwable.getMessage(), true);
                         return; 
                     }
 
                     
                     if (isGooglePlayServicesCrash(throwable)) {
                         Slog.w(TAG, "Caught Google Play Services crash, preventing crash: " + throwable.getMessage());
-                        BlackBoxCore.get().sendLogs("CRASH DETECTED (Caught/GMS): " + throwable.getMessage(), true);
                         return; 
                     }
 
                     
                     if (isWebViewCrash(throwable)) {
                         Slog.w(TAG, "Caught WebView crash, preventing crash: " + throwable.getMessage());
-                        BlackBoxCore.get().sendLogs("CRASH DETECTED (Caught/WebView): " + throwable.getMessage(), true);
                         return; 
                     }
 
                     
                     if (isAttributionSourceCrash(throwable)) {
                         Slog.w(TAG, "Caught AttributionSource crash, preventing crash: " + throwable.getMessage());
-                        BlackBoxCore.get().sendLogs("CRASH DETECTED (Caught/Attribution): " + throwable.getMessage(), true);
                         return; 
                     }
 
                     
                     if (isSocialMediaAppCrash(throwable)) {
                         Slog.w(TAG, "Caught social media app crash, preventing crash: " + throwable.getMessage());
-                        BlackBoxCore.get().sendLogs("CRASH DETECTED (Caught/SocialMedia): " + throwable.getMessage(), true);
                         return; 
                     }
 
                     
-                    Slog.e(TAG, "Fatal crash detected, attempting to report before death...");
-                    try {
-                         BlackBoxCore.get().sendLogs("FATAL CRASH (Uncaught): " + throwable.getMessage(), false);
-                    } catch (Throwable e) {
-                         Slog.e(TAG, "Failed to report fatal crash: " + e.getMessage());
-                    }
+                    Slog.e(TAG, "Fatal crash detected.");
 
                     
                     if (currentHandler != null) {
