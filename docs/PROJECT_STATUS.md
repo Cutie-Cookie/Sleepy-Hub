@@ -119,3 +119,12 @@ Implemented in source so far (still awaiting a successful final CI build and phy
 - Debug-first acceptance checklist is in `UI_IMPLEMENTATION_PLAN.md`.
 
 Background-running apps are explicitly deferred. No release signing keys/secrets are being created or used in this milestone.
+
+
+## UI CI iteration
+
+The first UI build attempt ([run 43317494796](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43317494796)) failed during Kotlin compilation with:
+- a Float/Int mismatch for the profile-card stroke width;
+- one leftover `scanUser()` reference after removing empty-profile auto-deletion.
+
+Both source issues were corrected. The latest UI branch build is still pending; do not mark the UI milestone as build-verified until the current commit's workflow succeeds and uploads its artifact.
