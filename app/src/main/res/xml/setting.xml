@@ -13,7 +13,7 @@
             android:key="global_accent"
             android:title="@string/global_accent"
             android:summary="@string/global_accent_summary"
-            android:defaultValue="#9B8BC0"
+            android:defaultValue="#8D8D93"
             app:entries="@array/global_accent_entries"
             app:entryValues="@array/global_accent_values" />
         <ListPreference
