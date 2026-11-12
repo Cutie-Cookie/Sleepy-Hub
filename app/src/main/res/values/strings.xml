@@ -77,6 +77,8 @@
     <string name="add_profile">Add profile</string>
     <string name="profile_current">Currently open</string>
     <string name="profile_open_hint">Tap to open this space</string>
+    <string name="profile_no_apps">No apps installed yet</string>
+    <string name="profile_apps_count">%1$d installed apps</string>
     <string name="profile_subtitle">Your apps, kept together</string>
     <string name="profile_settings">Profile settings</string>
     <string name="profile_created">Profile created</string>
