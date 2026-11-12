@@ -4,12 +4,14 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +37,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -279,10 +280,8 @@ fun SleepyHubMainScreen(
                                 containerColor = Color.Transparent,
                             ),
                             navigationIcon = {
-                                Surface(
+                                TopBarCapsule(
                                     modifier = Modifier.padding(start = 8.dp, end = 4.dp),
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
                                 ) {
                                     IconButton(
                                         onClick = { scope.launch { drawerState.open() } },
@@ -292,72 +291,77 @@ fun SleepyHubMainScreen(
                                 }
                             },
                             title = {
-                                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                    Text(
-                                        text = activeProfile?.name ?: "Sleepy Hub",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 1,
-                                    )
-                                    Text(
-                                        text = when {
-                                            activeProfile == null -> "Your little app spaces"
-                                            activeProfile.appCount >= 0 -> "${activeProfile.appCount} installed apps"
-                                            else -> "Virtual profile"
-                                        },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                    )
+                                Surface(
+                                    onClick = {
+                                        editingProfileId = activeUserId
+                                        page = "profile-settings"
+                                    },
+                                    color = Color.Transparent,
+                                ) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                        Text(
+                                            text = activeProfile?.name ?: "Sleepy Hub",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                        )
+                                        Text(
+                                            text = when {
+                                                activeProfile == null -> "Your little app spaces"
+                                                activeProfile.appCount >= 0 -> "${activeProfile.appCount} installed apps"
+                                                else -> "Virtual profile"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                            maxLines = 1,
+                                        )
+                                    }
                                 }
                             },
                             actions = {
-                                IconButton(onClick = onInstallApps) {
-                                    Icon(Icons.Outlined.Add, contentDescription = "Install app")
-                                }
                                 var menuExpanded by remember { mutableStateOf(false) }
-                                Box {
-                                    IconButton(onClick = { menuExpanded = true }) {
-                                        Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+                                TopBarCapsule(
+                                    modifier = Modifier.padding(start = 4.dp, end = 8.dp),
+                                ) {
+                                    IconButton(onClick = onInstallApps) {
+                                        Icon(Icons.Outlined.Add, contentDescription = "Install app")
                                     }
-                                    DropdownMenu(
-                                        expanded = menuExpanded,
-                                        onDismissRequest = { menuExpanded = false },
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Profile settings") },
-                                            leadingIcon = { Icon(Icons.Outlined.Settings, null) },
-                                            onClick = {
-                                                menuExpanded = false
-                                                editingProfileId = activeUserId
-                                                page = "profile-settings"
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Manage profiles") },
-                                            leadingIcon = { Icon(Icons.Outlined.Apps, null) },
-                                            onClick = {
-                                                menuExpanded = false
-                                                page = "profiles"
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Refresh apps") },
-                                            leadingIcon = { Icon(Icons.Outlined.Refresh, null) },
-                                            onClick = {
-                                                menuExpanded = false
-                                                onRefreshApps()
-                                            },
-                                        )
+                                    Box {
+                                        IconButton(onClick = { menuExpanded = true }) {
+                                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
+                                        }
+                                        DropdownMenu(
+                                            expanded = menuExpanded,
+                                            onDismissRequest = { menuExpanded = false },
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Profile settings") },
+                                                leadingIcon = { Icon(Icons.Outlined.Settings, null) },
+                                                onClick = {
+                                                    menuExpanded = false
+                                                    editingProfileId = activeUserId
+                                                    page = "profile-settings"
+                                                },
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Manage profiles") },
+                                                leadingIcon = { Icon(Icons.Outlined.Apps, null) },
+                                                onClick = {
+                                                    menuExpanded = false
+                                                    page = "profiles"
+                                                },
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Refresh apps") },
+                                                leadingIcon = { Icon(Icons.Outlined.Refresh, null) },
+                                                onClick = {
+                                                    menuExpanded = false
+                                                    onRefreshApps()
+                                                },
+                                            )
+                                        }
                                     }
                                 }
                             },
-                        )
-                    },
-                    floatingActionButton = {
-                        ExtendedFloatingActionButton(
-                            onClick = onInstallApps,
-                            icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                            text = { Text("Install app") },
                         )
                     },
                 ) { innerPadding ->
@@ -399,6 +403,27 @@ fun SleepyHubMainScreen(
 
     BackHandler(enabled = page != "workspace") {
         page = if (page == "profile-settings") "profiles" else "workspace"
+    }
+}
+
+@Composable
+private fun TopBarCapsule(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        ),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
     }
 }
 
