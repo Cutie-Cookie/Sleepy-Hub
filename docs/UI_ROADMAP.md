@@ -145,3 +145,9 @@ See [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md) for the detailed acce
 The first polished ARM64 debug APK has now built successfully on `sleepyhub/ui-rikkahub-inspired` at commit `86bd5789e19a9a17a32a1def7aef933eb4eb0581`. See [workflow run 43320730246](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43320730246) and [UI implementation plan](UI_IMPLEMENTATION_PLAN.md).
 
 Next gate: user installs the debug APK and completes the device acceptance checklist. Fix any reported issues on the feature branch, rebuild, and only discuss signing/release after explicit approval.
+
+## 2026-11-13 — RikkaHub source-first rebuild
+
+The user clarified that the upstream RikkaHub source is the design specification and screenshots are context only. The first visual prototype was rejected. A clean branch, `sleepyhub/rikkahub-source-rebuild`, was created from the app baseline. See [RikkaHub source research](RIKKAHUB_RESEARCH.md) and [revised implementation plan](UI_IMPLEMENTATION_PLAN.md).
+
+The new direction is a Compose-based port of RikkaHub's actual modal drawer, top bar, assistant picker sheet, compact management list, grouped detail settings, optional workspace background/opacity, and global theme patterns—adapted to Sleepy Hub profiles and app management. No AI chat or background-running feature is added.
