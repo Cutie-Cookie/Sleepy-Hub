@@ -14,10 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
-import com.afollestad.materialdialogs.MaterialDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.niunaijun.blackbox.BlackBoxCore
-import top.niunaijun.blackboxa.R
-import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityMainBinding
 import top.niunaijun.blackboxa.util.inflate
@@ -323,15 +321,12 @@ class MainActivity : LoadingActivity() {
     }
 
     private fun showStoragePermissionDialog() {
-        MaterialDialog(this).show {
-            title(text = "Storage Permission Required")
-            message(
-                text = "Sleepy Hub needs All Files Access to run sandboxed apps correctly. You can grant it in the next screen."
-            )
-            positiveButton(text = "Grant permission") { openAllFilesAccessSettings() }
-            negativeButton(text = "Later")
-            cancelable(true)
-        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Storage permission required")
+            .setMessage("Sleepy Hub needs All Files Access to run sandboxed apps correctly. You can grant it in the next screen.")
+            .setPositiveButton("Grant permission") { _, _ -> openAllFilesAccessSettings() }
+            .setNegativeButton("Later", null)
+            .show()
     }
 
     private fun openAllFilesAccessSettings() {
