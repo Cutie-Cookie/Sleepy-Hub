@@ -138,3 +138,10 @@ The app remains a BlackBox virtual app manager. Profiles are virtual Android use
 - Background-running apps are deferred to a later update.
 
 See [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md) for the detailed acceptance checklist and release boundary.
+
+
+## Build checkpoint
+
+The first polished ARM64 debug APK has now built successfully on `sleepyhub/ui-rikkahub-inspired` at commit `86bd5789e19a9a17a32a1def7aef933eb4eb0581`. See [workflow run 43320730246](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43320730246) and [UI implementation plan](UI_IMPLEMENTATION_PLAN.md).
+
+Next gate: user installs the debug APK and completes the device acceptance checklist. Fix any reported issues on the feature branch, rebuild, and only discuss signing/release after explicit approval.
