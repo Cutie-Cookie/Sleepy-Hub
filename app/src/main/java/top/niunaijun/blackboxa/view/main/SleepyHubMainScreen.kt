@@ -2,6 +2,7 @@ package top.niunaijun.blackboxa.view.main
 
 import android.graphics.BitmapFactory
 import android.net.Uri
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
