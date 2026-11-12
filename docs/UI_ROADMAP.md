@@ -6,7 +6,7 @@ Give Sleepy Hub a cleaner, more intentional interface inspired by the design qua
 
 **Inspiration is not copying.** We can study general ideas such as hierarchy, navigation, spacing, settings organization, reusable surfaces, and interaction feedback. Do not copy RikkaHub source code, assets, branding, or distinctive screens. The kitty identity and Sleepy Hub's own visual language stay ours.
 
-No UI implementation is included in this documentation branch.
+The UI implementation is being developed on the separate branch `sleepyhub/ui-rikkahub-inspired`; this documentation branch remains a notebook.
 
 ## Design guardrails
 
@@ -52,7 +52,7 @@ Create a short design brief covering:
 - motion and feedback;
 - accessibility and small-screen behavior.
 
-Do not begin a broad rewrite until the user has reviewed the brief.
+The user reviewed the reference direction and confirmed the product scope on 2026-11-13. Keep the implementation incremental and test each screen/action.
 
 ## Phase 2 — Design system and wireframes
 
@@ -73,7 +73,7 @@ Produce a simple screen map and wireframes/mockups for the main shell and one re
 
 ## Phase 3 — Implementation, one screen at a time
 
-Proposed implementation branch: `sleepyhub/ui-rikkahub-inspired`, created from the agreed application baseline. This branch has **not** been created yet.
+Implementation branch: `sleepyhub/ui-rikkahub-inspired`, created from the documentation baseline and kept separate from `main`.
 
 Suggested order:
 
@@ -109,7 +109,7 @@ The redesign is ready for broader use only when:
 - [ ] Agree on the navigation structure.
 - [ ] Agree on design tokens and component style.
 - [ ] Create one main-screen wireframe.
-- [ ] Get user approval before starting the UI implementation branch.
+- [ ] User approval received; implementation is underway on the feature branch.
 
 
 ## RikkaHub source study (2026-11-13)
@@ -124,3 +124,17 @@ Important findings:
 - Sleepy Hub currently has no AI chat engine or assistant/conversation models. Its existing profiles are BlackBox virtual Android users.
 
 **Implementation gate:** before creating `sleepyhub/ui-rikkahub-inspired`, confirm whether Sleepy Hub remains an app container, becomes an AI chat app, or combines both. Do not silently add an AI subsystem as part of a visual redesign.
+
+
+## Confirmed implementation direction (2026-11-13)
+
+The app remains a BlackBox virtual app manager. Profiles are virtual Android users, not AI assistants. The approved UI scope includes:
+- A RikkaHub-inspired side dashboard with wide, short, inset glassy profile cards and a visible Add Profile button.
+- A normal installed-app manager workspace for the selected profile.
+- Per-profile wallpaper/background image, removable and opacity-adjustable, plus a per-profile accent.
+- Global light/dark/system theme, global accent, and app-grid column preference.
+- Profile settings for rename, wallpaper, opacity, accent, and delete.
+- App actions for launch, app info, clear cache, clear data, stop, uninstall, shortcut, and install.
+- Background-running apps are deferred to a later update.
+
+See [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md) for the detailed acceptance checklist and release boundary.
