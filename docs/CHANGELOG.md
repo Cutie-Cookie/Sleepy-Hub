@@ -79,3 +79,38 @@ The following workflow runs are part of the recorded iteration history:
 - For Android adaptive icons, keep the foreground asset separate from the adaptive mipmap to avoid resource recursion.
 - Preserve artwork masters. Do not aggressively downsample, palette-quantize, crop, or reuse a tiny image as every density output.
 - A green CI build is necessary but not a substitute for device testing.
+
+
+### 2026-11-13 — Begin RikkaHub-inspired Sleepy Hub UI redesign
+
+The user confirmed that Sleepy Hub remains a virtual Android app manager; RikkaHub is a visual/interaction reference only.
+
+On `sleepyhub/ui-rikkahub-inspired`:
+- Replaced the old profile-page shell with a left-side dashboard and wide, inset profile cards.
+- Added explicit Add Profile and profile switching. Empty profiles are retained.
+- Added per-profile wallpaper, opacity, accent, rename, and delete controls.
+- Added global theme/accent and app-grid preferences.
+- Redesigned the profile workspace header while keeping the installed-app manager as the main screen.
+- Added app info and cache-clear actions alongside existing app-management actions.
+- Added sampled background-image loading and a bounded app-icon cache; removed forced GC from list/scroll paths.
+- Added profile card/page transitions and a profile-settings bottom sheet.
+
+**Not yet a release:** the UI branch still needs a successful final CI build and physical-device smoke testing. Background-running apps remain a later-update feature. No signing secrets were created or used.
+
+
+### UI build iteration — compile errors found and corrected
+
+The first RikkaHub-inspired UI build attempt ([run 43317494796](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43317494796)) reached Kotlin compilation and reported two errors:
+
+1. `ProfileAppearance.glassBackground()` passed a floating-point dp value to `GradientDrawable.setStroke`, which requires an integer pixel width. The stroke width is now converted with the integer dp helper.
+2. `AppsRepository.unInstall()` retained one call to `scanUser()` after the old auto-delete helper was removed. The stale call was removed so empty virtual profiles remain persistent.
+
+The current UI branch build is being validated again. Record the successful run and artifact here only after both build and upload complete.
+
+
+### 2026-11-13 — First complete UI debug build passed
+
+- Workflow run [43319420454](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43319420454) completed successfully for UI commit `9775bdc1b81ffe61e199b5512bf57b3ae4806ba7`.
+- Gradle reported `BUILD SUCCESSFUL`; the ARM64 debug artifact uploaded successfully as artifact `sleepy-hub-arm64-debug` (artifact ID `13990365863`).
+- This build predates the final polish commits for 192 px app-icon handling, the app-actions hint, the profile-settings sheet finish, and the narrowed workflow trigger. A fresh build is required for the final candidate.
+- The earlier two compile errors are fixed. No runtime testing on a physical Android device has been performed yet.
