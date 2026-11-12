@@ -258,6 +258,8 @@ class AppsFragment : Fragment() {
                 try {
                     if (it != null) {
                         mAdapter.setItems(it)
+                        ProfileAppearance.setInstalledAppCount(userID, it.size)
+                        (requireActivity() as? MainActivity)?.refreshDashboard()
                         viewBinding.installedAppCount.text = it.size.toString() + " apps"
                         viewBinding.profileSubtitle.text = it.size.toString() + " installed apps"
                         if (it.isEmpty()) {
