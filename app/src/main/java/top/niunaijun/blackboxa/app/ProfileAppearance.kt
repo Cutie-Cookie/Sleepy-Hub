@@ -2,6 +2,9 @@ package top.niunaijun.blackboxa.app
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 
 /**
  * Sleepy Hub appearance preferences.
@@ -10,6 +13,13 @@ import androidx.core.content.edit
  * its own appearance when the user switches profiles or restarts the app.
  */
 object ProfileAppearance {
+    var themeRevision by mutableIntStateOf(0)
+        private set
+
+    fun notifyThemeChanged() {
+        themeRevision++
+    }
+
     private const val PREFS_NAME = "SleepyHubAppearance"
     private val preferences by lazy {
         App.getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
