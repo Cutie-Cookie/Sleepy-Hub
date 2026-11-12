@@ -4,7 +4,7 @@ _Reviewed: 2026-11-13. Reference repository: [rikkahub/rikkahub](https://github.
 
 ## Why this research exists
 
-The RikkaHub screenshots are a visual and interaction reference. This note records what the upstream app actually does, what can inspire Sleepy Hub, and the architectural mismatch we must resolve before implementing the requested assistant/chat concepts.
+The RikkaHub screenshots are a visual and interaction reference. This note records what the upstream app actually does, what can inspire Sleepy Hub, and how to translate those ideas into Sleepy Hub's existing virtual-app-manager purpose.
 
 ## Reference implementation
 
@@ -50,7 +50,7 @@ The reference uses a modal drawer sheet around 300 dp wide. Its structure can in
 
 A folder contains an `assistantId`. The drawer view model observes the active assistant and loads only that assistant's folders. Conversation paging is filtered by assistant and selected folder. Switching assistants resets the folder filter so an old assistant's folder is not left selected.
 
-This is a useful ownership pattern if Sleepy Hub later has real independent workspaces/profiles. It should not be added to the current app until we know what the user's "profiles" represent.
+This is a useful ownership pattern to study, but it is not being copied as a conversation-folder feature. The user has confirmed that Sleepy Hub profiles remain BlackBox virtual Android users.
 
 ### Themes
 
@@ -67,7 +67,7 @@ RikkaHub's repository states AGPL-3.0. This project is using it as a visual/inte
 - Re-check license compatibility before ever considering code reuse or a dependency on RikkaHub code.
 - Preserve Sleepy Hub's kitty identity and its own visual language.
 
-## Critical product-scope mismatch
+## Confirmed product scope (2026-11-13)
 
 The current Sleepy Hub source is a **BlackBox-based Android app container**, not an AI chat client.
 
@@ -88,17 +88,9 @@ Relevant current Sleepy Hub sources:
 - [AppsRepository.kt](https://github.com/Cutie-Cookie/Sleepy-Hub/blob/sleepyhub/identity-icons-no-vpn/app/src/main/java/top/niunaijun/blackboxa/data/AppsRepository.kt)
 - [SettingFragment.kt](https://github.com/Cutie-Cookie/Sleepy-Hub/blob/sleepyhub/identity-icons-no-vpn/app/src/main/java/top/niunaijun/blackboxa/view/setting/SettingFragment.kt)
 
-This means a true AI assistant picker + chat screen is not a navigation-only redesign. It would require a new product subsystem: provider configuration, API-key storage, model selection, conversation persistence, message streaming, error handling, chat UI, and privacy/security decisions.
+The user explicitly confirmed **direction A: keep Sleepy Hub as an app container**. "Profiles" are BlackBox virtual Android users, not AI assistants. The redesign changes navigation and appearance only; it does not add an LLM provider, chat database, message-generation engine, or AI conversation UI.
 
-### Scope decision required before implementation
-
-Choose one product direction:
-
-- **A — Keep Sleepy Hub as an app container.** "Profiles" means its existing virtual Android users (or named spaces built around them). The RikkaHub-inspired drawer, horizontal glassy profile cards, folders, and global/per-profile themes organize virtual users and their installed apps. No AI chat engine is added.
-- **B — Turn Sleepy Hub into an AI chat app.** Add actual assistants, chat history, folders, provider/model configuration, message generation, and assistant-specific chat appearance. This is a major new product feature, not just a UI makeover.
-- **C — A combined app.** Keep the BlackBox container and add a separate AI workspace. This has the largest scope and needs a separate architecture plan.
-
-Do not create the UI implementation branch or replace the main navigation until this decision is confirmed.
+The agreed implementation scope is recorded in [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md). The active implementation branch is `sleepyhub/ui-rikkahub-inspired`; `main` remains untouched.
 
 ## Performance audit: initial findings
 
@@ -125,3 +117,13 @@ These are source-level observations, not measured device benchmarks. They should
 - No Sleepy Hub application code changed as part of this research.
 - Product direction remains unresolved.
 - UI branch creation is on hold until the product-scope decision is made.
+
+
+## Motion and background-image study
+
+Additional upstream files reviewed:
+- [HeroAnimation.kt](https://github.com/rikkahub/rikkahub/blob/master/app/src/main/java/me/rerere/rikkahub/ui/hooks/HeroAnimation.kt) — shared-element and shared-bounds transitions; the shared bounds scale to width and align at the top during list-to-detail navigation.
+- [ConversationList.kt](https://github.com/rikkahub/rikkahub/blob/master/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ConversationList.kt) — list entries use animated item placement/appearance.
+- [ChatPage.kt](https://github.com/rikkahub/rikkahub/blob/master/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt) — modal drawer state, scrim, Back handling, and keyboard/focus dismissal while the drawer opens.
+
+Sleepy Hub uses Android Views rather than Compose. The approved adaptation is DrawerLayout slide/scrim, restrained ViewPager2 page transitions, short profile-card entrance motion, RecyclerView item feedback, and a profile-settings bottom sheet. Per-profile background images are selected with the document picker, persisted by URI, shown on the profile card and app-manager header, overlaid for readable text, and removable/opacity-adjustable.
