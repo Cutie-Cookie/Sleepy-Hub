@@ -4,7 +4,9 @@ name: Sleepy Hub ARM64 debug
 on:
   push:
     branches:
-      - 'sleepyhub/**'
+      - 'sleepyhub/ui-*'
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
