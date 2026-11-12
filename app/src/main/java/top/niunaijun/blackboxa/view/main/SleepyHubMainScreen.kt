@@ -87,6 +87,7 @@ import top.niunaijun.blackboxa.app.ProfileAppearance
 data class ProfileItem(
     val userId: Int,
     val name: String,
+    val folder: String,
     val appCount: Int,
     val accent: Int,
     val backgroundUri: String?,
