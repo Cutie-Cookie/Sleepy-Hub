@@ -46,7 +46,7 @@ class AppsAdapter : RVHolderFactory() {
         init {
             try {
                 
-                binding.icon.scaleType = ImageView.ScaleType.CENTER_CROP
+                binding.icon.scaleType = ImageView.ScaleType.FIT_CENTER
                 
                 
                 itemView.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
