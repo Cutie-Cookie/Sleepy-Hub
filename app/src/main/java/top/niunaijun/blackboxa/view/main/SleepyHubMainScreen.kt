@@ -265,8 +265,15 @@ fun SleepyHubMainScreen(
                     }
                 },
             ) {
-                Scaffold(
-                    containerColor = MaterialTheme.colorScheme.background,
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (activeProfile != null) {
+                        ProfileWorkspaceBackground(
+                            profile = activeProfile,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    Scaffold(
+                    containerColor = Color.Transparent,
                     topBar = {
                         TopAppBar(
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -355,21 +362,12 @@ fun SleepyHubMainScreen(
                         )
                     },
                 ) { innerPadding ->
-                    Box(
+                    AndroidView(
+                        factory = { viewPager },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding),
-                    ) {
-                        if (activeProfile != null) {
-                            ProfileWorkspaceBackground(
-                                profile = activeProfile,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                        AndroidView(
-                            factory = { viewPager },
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                    )
                     }
                 }
             }
