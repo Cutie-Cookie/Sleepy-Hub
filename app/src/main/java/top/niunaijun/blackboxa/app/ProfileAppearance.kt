@@ -36,6 +36,15 @@ object ProfileAppearance {
         0xFFA5D6A7.toInt(),
     )
 
+    fun userNickname(): String {
+        return preferences.getString("user_nickname", "Sleepy Hub")?.takeIf { it.isNotBlank() }
+            ?: "Sleepy Hub"
+    }
+
+    fun setUserNickname(name: String) {
+        preferences.edit { putString("user_nickname", name.trim()) }
+    }
+
     fun profileName(userId: Int, index: Int = userId): String {
         return AppManager.mRemarkSharedPreferences.getString("Remark$userId", null)
             ?.takeIf { it.isNotBlank() }
