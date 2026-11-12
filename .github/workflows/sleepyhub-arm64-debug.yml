@@ -1,6 +1,10 @@
 run-name: Sleepy Hub ARM64 debug build
 name: Sleepy Hub ARM64 debug
 
+concurrency:
+  group: sleepyhub-debug-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
