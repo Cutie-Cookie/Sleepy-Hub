@@ -82,6 +82,7 @@ import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.niunaijun.blackboxa.app.ProfileAppearance
 
 data class ProfileItem(
     val userId: Int,
