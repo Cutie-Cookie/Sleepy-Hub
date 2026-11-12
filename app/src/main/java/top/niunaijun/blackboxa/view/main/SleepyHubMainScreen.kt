@@ -626,7 +626,7 @@ private fun ProfilePickerSheet(
 ) {
     var selectedFolder by rememberSaveable { mutableStateOf("All") }
     var sortAlphabetically by rememberSaveable { mutableStateOf(false) }
-    val folders = remember(profiles) { profiles.map { it.folder }.distinct().sorted() }
+    val folders = remember(profiles) { profiles.map { it.folder }.distinct().filter { it != "All" }.sorted() }
     val filteredProfiles = remember(profiles, selectedFolder, sortAlphabetically) {
         val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
         if (sortAlphabetically) filtered.sortedBy { it.name.lowercase() } else filtered
