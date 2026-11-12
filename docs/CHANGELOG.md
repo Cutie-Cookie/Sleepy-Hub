@@ -79,3 +79,20 @@ The following workflow runs are part of the recorded iteration history:
 - For Android adaptive icons, keep the foreground asset separate from the adaptive mipmap to avoid resource recursion.
 - Preserve artwork masters. Do not aggressively downsample, palette-quantize, crop, or reuse a tiny image as every density output.
 - A green CI build is necessary but not a substitute for device testing.
+
+
+### 2026-11-13 — Begin RikkaHub-inspired Sleepy Hub UI redesign
+
+The user confirmed that Sleepy Hub remains a virtual Android app manager; RikkaHub is a visual/interaction reference only.
+
+On `sleepyhub/ui-rikkahub-inspired`:
+- Replaced the old profile-page shell with a left-side dashboard and wide, inset profile cards.
+- Added explicit Add Profile and profile switching. Empty profiles are retained.
+- Added per-profile wallpaper, opacity, accent, rename, and delete controls.
+- Added global theme/accent and app-grid preferences.
+- Redesigned the profile workspace header while keeping the installed-app manager as the main screen.
+- Added app info and cache-clear actions alongside existing app-management actions.
+- Added sampled background-image loading and a bounded app-icon cache; removed forced GC from list/scroll paths.
+- Added profile card/page transitions and a profile-settings bottom sheet.
+
+**Not yet a release:** the UI branch still needs a successful final CI build and physical-device smoke testing. Background-running apps remain a later-update feature. No signing secrets were created or used.
