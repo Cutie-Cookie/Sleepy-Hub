@@ -805,6 +805,11 @@ internal fun ProfileWorkspaceBackground(
         }
     }
 
+    val imageAlpha by animateFloatAsState(
+        targetValue = if (image != null) profile.backgroundOpacity else 0f,
+        label = "ProfileWorkspaceBackgroundFade",
+    )
+
     Box(
         modifier = modifier.background(
             Brush.linearGradient(
@@ -821,7 +826,7 @@ internal fun ProfileWorkspaceBackground(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alpha = profile.backgroundOpacity,
+                alpha = imageAlpha,
             )
             Box(
                 modifier = Modifier
