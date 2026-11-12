@@ -98,14 +98,28 @@
         android:paddingEnd="20dp"
         android:paddingBottom="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/installed_apps"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/installed_apps"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/app_actions_hint"
+                android:textColor="@color/secondary_text"
+                android:textSize="10sp" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/installedAppCount"
