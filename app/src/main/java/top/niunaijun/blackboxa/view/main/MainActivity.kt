@@ -288,9 +288,16 @@ class MainActivity : LoadingActivity() {
             }
             val subtitle = TextView(this).apply {
                 val appCount = ProfileAppearance.installedAppCount(userId)
-                val countLabel = if (appCount == 0) getString(R.string.profile_no_apps)
-                    else getString(R.string.profile_apps_count, appCount)
-                text = if (selected) getString(R.string.profile_current) + " · " + countLabel else countLabel
+                val countLabel = when {
+                    appCount < 0 -> getString(R.string.profile_open_hint)
+                    appCount == 0 -> getString(R.string.profile_no_apps)
+                    else -> getString(R.string.profile_apps_count, appCount)
+                }
+                text = when {
+                    selected && appCount >= 0 -> getString(R.string.profile_current) + " · " + countLabel
+                    selected -> getString(R.string.profile_current)
+                    else -> countLabel
+                }
                 textSize = 11f
                 maxLines = 1
                 setTextColor(Color.argb(220, 255, 255, 255))
