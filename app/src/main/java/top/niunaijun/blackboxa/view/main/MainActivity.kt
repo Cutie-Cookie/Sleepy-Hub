@@ -115,7 +115,10 @@ class MainActivity : LoadingActivity() {
         super.onResume()
         if (::mViewPagerAdapter.isInitialized) {
             refreshDashboard()
-            fragmentList.forEach { it.refreshProfileHeader() }
+            fragmentList.forEach {
+                it.refreshProfileHeader()
+                it.refreshGridColumns()
+            }
             updateUserRemark(currentUser)
             applyGlobalAccent()
         }
@@ -123,6 +126,7 @@ class MainActivity : LoadingActivity() {
 
     private fun initDashboard() {
         viewBinding.toolbarLayout.toolbar.setNavigationIcon(R.drawable.ic_menu)
+        viewBinding.toolbarLayout.toolbar.navigationContentDescription = getString(R.string.open_dashboard)
         viewBinding.toolbarLayout.toolbar.navigationIcon?.setTint(
             ContextCompat.getColor(this, R.color.primary_text)
         )
@@ -317,7 +321,9 @@ class MainActivity : LoadingActivity() {
             card.setOnClickListener { switchProfile(userId) }
             viewBinding.profileList.addView(card)
 
-            ProfileImageLoader.load(this, ProfileAppearance.backgroundUri(userId), wallpaper)
+            wallpaper.post {
+                ProfileImageLoader.load(this, ProfileAppearance.backgroundUri(userId), wallpaper)
+            }
             card.animate().alpha(1f).translationY(0f).setDuration(190L + index * 25L).start()
         }
         applyGlobalAccent()
