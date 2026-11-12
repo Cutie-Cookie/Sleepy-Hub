@@ -23,6 +23,7 @@ import top.niunaijun.blackboxa.view.apps.AppsFragment
 import top.niunaijun.blackboxa.view.base.BaseActivity
 import top.niunaijun.blackboxa.view.fake.FakeManagerActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
+import top.niunaijun.blackboxa.view.gms.GmsManagerActivity
 
 class MainActivity : BaseActivity() {
 
@@ -109,6 +110,13 @@ class MainActivity : BaseActivity() {
                         onDeleteProfile = ::deleteProfile,
                         onInstallApps = ::openInstallPicker,
                         onOpenFakeLocation = ::openFakeLocation,
+                        onOpenGmsManager = {
+                            if (BlackBoxCore.get().isSupportGms) {
+                                GmsManagerActivity.start(this)
+                            } else {
+                                Toast.makeText(this, "Google services are not supported", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         onRefreshApps = ::refreshCurrentApps,
                         onRefreshProfiles = ::refreshProfiles,
                     )
