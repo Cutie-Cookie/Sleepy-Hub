@@ -20,11 +20,11 @@ import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityMainBinding
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.view.apps.AppsFragment
-import top.niunaijun.blackboxa.view.base.LoadingActivity
+import top.niunaijun.blackboxa.view.base.BaseActivity
 import top.niunaijun.blackboxa.view.fake.FakeManagerActivity
 import top.niunaijun.blackboxa.view.list.ListActivity
 
-class MainActivity : LoadingActivity() {
+class MainActivity : BaseActivity() {
 
     private val viewBinding: ActivityMainBinding by inflate()
     private lateinit var viewPager: ViewPager2
