@@ -31,6 +31,7 @@ class AppsFragment : Fragment() {
     private lateinit var viewModel: AppsViewModel
     private var gridColumns by mutableIntStateOf(4)
     private var isLoading by androidx.compose.runtime.mutableStateOf(false)
+    private var serviceCallbackRegistered = false
 
     companion object {
         private const val TAG = "AppsFragment"
@@ -104,15 +105,18 @@ class AppsFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        try {
-            BlackBoxCore.get().addServiceAvailableCallback {
-                Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
-                if (isAdded) {
-                    viewModel.getInstalledAppsWithRetry(userID)
+        if (!serviceCallbackRegistered) {
+            try {
+                BlackBoxCore.get().addServiceAvailableCallback {
+                    Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
+                    if (isAdded) {
+                        viewModel.getInstalledAppsWithRetry(userID)
+                    }
                 }
+                serviceCallbackRegistered = true
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not register service callback: ${e.message}")
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not register service callback: ${e.message}")
         }
         isLoading = true
         viewModel.getInstalledAppsWithRetry(userID)
@@ -152,7 +156,7 @@ class AppsFragment : Fragment() {
             viewModel.launchApk(info.packageName, userID)
         } catch (e: Exception) {
             Log.e(TAG, "Could not launch ${info.packageName}: ${e.message}", e)
-            hideLoading()
+            isLoading = false
         }
     }
 
@@ -186,7 +190,7 @@ class AppsFragment : Fragment() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "App action failed for ${info.packageName}: ${e.message}", e)
-            hideLoading()
+            isLoading = false
             Toast.makeText(requireContext(), "Couldn't complete that action", Toast.LENGTH_SHORT).show()
         }
     }
