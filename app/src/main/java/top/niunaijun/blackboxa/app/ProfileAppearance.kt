@@ -74,6 +74,12 @@ object ProfileAppearance {
         }
     }
 
+    fun installedAppCount(userId: Int): Int = prefs().getInt("AppCount$userId", 0).coerceAtLeast(0)
+
+    fun setInstalledAppCount(userId: Int, count: Int) {
+        prefs().edit().putInt("AppCount$userId", count.coerceAtLeast(0)).apply()
+    }
+
     fun lastProfileId(): Int = prefs().getInt("LastProfileId", 0)
 
     fun saveLastProfileId(userId: Int) {
@@ -87,6 +93,7 @@ object ProfileAppearance {
             .remove("Background$userId")
             .remove("BackgroundOpacity$userId")
             .remove("Accent$userId")
+            .remove("AppCount$userId")
             .apply()
     }
 
