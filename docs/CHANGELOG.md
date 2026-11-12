@@ -126,3 +126,11 @@ The current UI branch build is being validated again. Record the successful run 
 - The artifact ZIP and APK both passed `unzip -t` integrity checks.
 - This is still a **debug APK**. No signed release build or signing secrets were created.
 - Physical-device interaction testing has not been performed by CI; the user must test profile operations, wallpaper persistence, theme changes, app actions, and navigation on their phone.
+
+### 2026-11-13 — UI direction corrected to follow RikkaHub source code
+
+- User explicitly clarified that RikkaHub source code, not user screenshots, is the design and behavior reference.
+- Documented actual RikkaHub navigation, drawer, assistant picker, assistant management/detail, background picker, and theme patterns.
+- Confirmed RikkaHub is AGPL-3.0 and Sleepy Hub is Apache-2.0; implementation will be independently written rather than copying upstream source.
+- Rejected the earlier oversized profile-card prototype. A clean rebuild branch, `sleepyhub/rikkahub-source-rebuild`, was created from `sleepyhub/identity-icons-no-vpn`.
+- No changes were made to `main`.
