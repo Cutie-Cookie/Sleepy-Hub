@@ -96,6 +96,7 @@
     <string name="profile_deleted">Profile deleted</string>
     <string name="profile_delete_failed">Could not delete profile: %1$s</string>
     <string name="installed_apps">Installed apps</string>
+    <string name="app_actions_hint">Tap to open · long-press for more actions</string>
     <string name="install_app">Install an app</string>
     <string name="appearance">Appearance</string>
     <string name="appearance_mode">App theme</string>
