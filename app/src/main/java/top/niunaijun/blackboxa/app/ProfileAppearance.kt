@@ -66,9 +66,9 @@ object ProfileAppearance {
 
     fun globalAccent(context: Context): Int {
         val value = PreferenceManager.getDefaultSharedPreferences(context)
-            .getString("global_accent", "#9B8BC0")
+            .getString("global_accent", "#8D8D93")
         return try {
-            Color.parseColor(value ?: "#9B8BC0")
+            Color.parseColor(value ?: "#8D8D93")
         } catch (_: IllegalArgumentException) {
             ACCENT_COLORS[0]
         }
