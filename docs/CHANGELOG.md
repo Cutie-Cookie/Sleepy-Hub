@@ -114,3 +114,15 @@ The current UI branch build is being validated again. Record the successful run 
 - Gradle reported `BUILD SUCCESSFUL`; the ARM64 debug artifact uploaded successfully as artifact `sleepy-hub-arm64-debug` (artifact ID `13990365863`).
 - This build predates the final polish commits for 192 px app-icon handling, the app-actions hint, the profile-settings sheet finish, and the narrowed workflow trigger. A fresh build is required for the final candidate.
 - The earlier two compile errors are fixed. No runtime testing on a physical Android device has been performed yet.
+
+
+### 2026-11-13 — Final polished UI debug build succeeded
+
+- Final UI commit: `86bd5789e19a9a17a32a1def7aef933eb4eb0581`.
+- GitHub Actions run: [43320730246](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43320730246) — **success**.
+- Artifact: `sleepy-hub-arm64-debug`, artifact ID `13990921422`.
+- APK: `SleepyHub_4.0.0_arm64-v8a-debug.apk`, 9,214,632 bytes.
+- SHA-256: `42703a57aa8a2f5183d2aa61339bce61b294ed04356b80177527a45f8faa8d1a`.
+- The artifact ZIP and APK both passed `unzip -t` integrity checks.
+- This is still a **debug APK**. No signed release build or signing secrets were created.
+- Physical-device interaction testing has not been performed by CI; the user must test profile operations, wallpaper persistence, theme changes, app actions, and navigation on their phone.
