@@ -339,7 +339,9 @@ class AppsFragment : Fragment() {
             } else {
                 viewBinding.profileBackground.alpha = ProfileAppearance.backgroundOpacity(userID)
                 viewBinding.profileOverlay.setBackgroundResource(R.drawable.profile_header_overlay)
-                ProfileImageLoader.load(requireContext(), background, viewBinding.profileBackground)
+                viewBinding.profileBackground.post {
+                    ProfileImageLoader.load(requireContext(), background, viewBinding.profileBackground)
+                }
             }
             viewBinding.profileMenu.setOnClickListener { anchor ->
                 (requireActivity() as? MainActivity)?.showProfileOptions(userID, anchor)
@@ -352,6 +354,13 @@ class AppsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         refreshProfileHeader()
+    }
+
+    fun refreshGridColumns() {
+        if (!isAdded || view == null) return
+        val columns = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            .getString("app_grid_columns", "4")?.toIntOrNull()?.coerceIn(3, 5) ?: 4
+        (viewBinding.recyclerView.layoutManager as? GridLayoutManager)?.spanCount = columns
     }
 
     private fun clearApkCache(info: AppInfo) {
