@@ -190,6 +190,7 @@ class MainActivity : BaseActivity() {
                 ProfileItem(
                     userId = user.id,
                     name = ProfileAppearance.profileName(user.id, index),
+                    folder = ProfileAppearance.profileFolder(user.id),
                     appCount = profileAppCounts[user.id] ?: -1,
                     accent = ProfileAppearance.profileAccent(user.id),
                     backgroundUri = ProfileAppearance.backgroundUri(user.id),
