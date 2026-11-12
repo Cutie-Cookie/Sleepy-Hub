@@ -11,6 +11,7 @@
         <item>light</item>
     </string-array>
     <string-array name="global_accent_entries">
+        <item>Monochrome</item>
         <item>Lavender</item>
         <item>Rose</item>
         <item>Ocean</item>
@@ -18,6 +19,7 @@
         <item>Amber</item>
     </string-array>
     <string-array name="global_accent_values">
+        <item>#8D8D93</item>
         <item>#9B8BC0</item>
         <item>#C27C91</item>
         <item>#6794BE</item>
