@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,6 +42,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -621,6 +624,13 @@ private fun ProfilePickerSheet(
     onEdit: (Int) -> Unit,
     onAdd: () -> Unit,
 ) {
+    var selectedFolder by rememberSaveable { mutableStateOf("All") }
+    var sortAlphabetically by rememberSaveable { mutableStateOf(false) }
+    val folders = remember(profiles) { profiles.map { it.folder }.distinct().sorted() }
+    val filteredProfiles = remember(profiles, selectedFolder, sortAlphabetically) {
+        val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
+        if (sortAlphabetically) filtered.sortedBy { it.name.lowercase() } else filtered
+    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -638,11 +648,31 @@ private fun ProfilePickerSheet(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 4.dp),
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LazyRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(listOf("All") + folders) { folder ->
+                        FilterChip(
+                            selected = selectedFolder == folder,
+                            onClick = { selectedFolder = folder },
+                            label = { Text(folder) },
+                        )
+                    }
+                }
+                IconButton(onClick = { sortAlphabetically = !sortAlphabetically }) {
+                    Icon(Icons.Outlined.Sort, contentDescription = "Toggle profile sorting")
+                }
+            }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(profiles, key = { it.userId }) { profile ->
+                items(filteredProfiles, key = { it.userId }) { profile ->
                     val selected = profile.userId == activeUserId
                     Card(
                         onClick = { onSelect(profile.userId) },
@@ -678,7 +708,7 @@ private fun ProfilePickerSheet(
                                     maxLines = 1,
                                 )
                                 Text(
-                                    if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
+                                    "${profile.folder} · " + if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
