@@ -124,7 +124,10 @@ fun SleepyHubMainScreen(
                 page = "profile-settings"
             },
         )
-        "settings" -> GlobalSettingsScreen(onBack = { page = "workspace" })
+        "settings" -> GlobalSettingsScreen(
+            onBack = { page = "workspace" },
+            onGridColumnsChanged = onRefreshApps,
+        )
         "profile-settings" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
             if (profile == null) {
