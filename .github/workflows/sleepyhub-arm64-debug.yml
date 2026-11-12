@@ -1,3 +1,4 @@
+run-name: Sleepy Hub ARM64 debug build
 name: Sleepy Hub ARM64 debug
 
 on:
