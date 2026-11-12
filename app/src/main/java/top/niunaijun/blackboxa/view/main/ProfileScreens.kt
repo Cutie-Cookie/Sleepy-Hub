@@ -156,7 +156,7 @@ fun ProfileManagerScreen(
                             ) {
                                 Text(profile.name, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
+                                    "${profile.folder} · " + if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -187,6 +187,7 @@ fun ProfileSettingsScreen(
 ) {
     val context = LocalContext.current
     var name by remember(profile.userId) { mutableStateOf(profile.name) }
+    var folder by remember(profile.userId) { mutableStateOf(profile.folder) }
     var accent by remember(profile.userId) { mutableIntStateOf(profile.accent) }
     var backgroundUri by remember(profile.userId) { mutableStateOf(profile.backgroundUri) }
     var opacity by remember(profile.userId) { mutableStateOf(profile.backgroundOpacity) }
@@ -278,16 +279,27 @@ fun ProfileSettingsScreen(
                             singleLine = true,
                             label = { Text("Profile name") },
                         )
+                        OutlinedTextField(
+                            value = folder,
+                            onValueChange = { folder = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("Folder") },
+                            supportingText = { Text("Group related profiles together in the picker.") },
+                        )
                         Button(
                             onClick = {
                                 if (name.isNotBlank()) {
                                     onRename(name.trim())
-                                    Toast.makeText(context, "Profile name saved", Toast.LENGTH_SHORT).show()
+                                    ProfileAppearance.setProfileFolder(profile.userId, folder.trim())
+                                    onAppearanceChanged()
+                                    Toast.makeText(context, "Profile saved", Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            enabled = name.isNotBlank() && name.trim() != profile.name,
+                            enabled = name.isNotBlank() &&
+                                (name.trim() != profile.name || folder.trim() != profile.folder),
                         ) {
-                            Text("Save name")
+                            Text("Save profile")
                         }
                     }
                 }
