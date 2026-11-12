@@ -70,6 +70,7 @@ class AppsFragment : Fragment() {
                         columns = gridColumns,
                         onLaunch = ::launchApp,
                         onAction = ::handleAppAction,
+                        onScrollChange = { (activity as? MainActivity)?.onWorkspaceScrollChanged(it) },
                     )
                 }
             }
