@@ -131,7 +131,7 @@ class MainActivity : LoadingActivity() {
         super.onResume()
         if (::pagerAdapter.isInitialized) {
             refreshProfiles()
-            refreshCurrentApps()
+            fragmentList.forEach { it.refreshGridColumns() }
         }
     }
 
