@@ -67,6 +67,12 @@ class AppsViewModel(private val repo: AppsRepository) : BaseViewModel() {
         }
     }
 
+    fun clearApkCache(packageName: String, userID: Int) {
+        launchOnUI {
+            repo.clearApkCache(packageName, userID, resultLiveData)
+        }
+    }
+
     fun launchApk(packageName: String, userID: Int) {
         launchOnUI {
             repo.launchApk(packageName, userID, launchLiveData)
