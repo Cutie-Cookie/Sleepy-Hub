@@ -436,7 +436,7 @@ fun ProfileSettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlobalSettingsScreen(onBack: () -> Unit) {
+fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
     val context = LocalContext.current
     var themeMode by remember { mutableStateOf(ProfileAppearance.globalThemeMode()) }
     var dynamicColor by remember { mutableStateOf(ProfileAppearance.useDynamicColor()) }
@@ -541,6 +541,7 @@ fun GlobalSettingsScreen(onBack: () -> Unit) {
                                 onClick = {
                                     columns = value
                                     ProfileAppearance.setAppGridColumns(value)
+                                    onGridColumnsChanged()
                                 },
                                 label = { Text(value.toString()) },
                             )
