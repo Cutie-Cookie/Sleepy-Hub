@@ -38,6 +38,9 @@ class MainActivity : LoadingActivity() {
     var profiles by mutableStateOf<List<ProfileItem>>(emptyList())
         private set
 
+    var workspaceScrolled by mutableStateOf(false)
+        private set
+
     companion object {
         private const val TAG = "MainActivity"
         private const val STORAGE_PERMISSION_REQUEST_CODE = 1001
@@ -98,6 +101,7 @@ class MainActivity : LoadingActivity() {
                     SleepyHubMainScreen(
                         profiles = profiles,
                         activeUserId = activeUserId,
+                        isWorkspaceScrolled = workspaceScrolled,
                         viewPager = viewPager,
                         onSelectProfile = ::selectProfile,
                         onAddProfile = ::createProfile,
@@ -195,6 +199,10 @@ class MainActivity : LoadingActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Could not refresh profiles: ${e.message}")
         }
+    }
+
+    fun onWorkspaceScrollChanged(scrolled: Boolean) {
+        workspaceScrolled = scrolled
     }
 
     fun onProfileAppCountChanged(userId: Int, count: Int) {
