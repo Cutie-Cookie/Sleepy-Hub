@@ -150,3 +150,15 @@ The UI branch then received a final polish pass: app icons now retain up to 192 
 - The downloaded artifact ZIP and extracted APK both passed archive-integrity checks.
 
 **Still required:** physical-device smoke testing. The UI milestone is source-complete and debug-build verified, but it is not yet user-approved or release-ready. Background-running apps remain deferred, and no release signing secrets have been created.
+
+## Corrected UI rebuild status — 2026-11-13
+
+The user rejected the first UI prototype and clarified that **RikkaHub's actual source code is the reference; screenshots are context only**.
+
+- Active clean rebuild branch: `sleepyhub/rikkahub-source-rebuild`
+- Base branch: `sleepyhub/identity-icons-no-vpn`
+- Rejected prototype: `sleepyhub/ui-rikkahub-inspired` (do not merge into rebuild)
+- RikkaHub source inspected at `b10c168577482abed696669a58c0eb59f1eed270`.
+- RikkaHub is AGPL-3.0; Sleepy Hub is Apache-2.0. Reimplement the patterns with original Sleepy Hub code; do not copy upstream files/assets.
+- The new UI must keep the BlackBox app-container purpose. No AI chat functionality.
+- No code changes have yet been made on the new rebuild branch beyond branch creation.
