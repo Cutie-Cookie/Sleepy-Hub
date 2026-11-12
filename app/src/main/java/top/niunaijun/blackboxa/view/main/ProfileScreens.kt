@@ -56,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.app.ProfileAppearance
