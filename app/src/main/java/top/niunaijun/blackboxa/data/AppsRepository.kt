@@ -25,7 +25,7 @@ import top.niunaijun.blackboxa.util.getString
 class AppsRepository {
     val TAG: String = "AppsRepository"
     private var mInstalledList = mutableListOf<AppInfo>()
-    private val iconStateCache = LruCache<String, Drawable.ConstantState>(96)
+    private val iconStateCache = LruCache<String, Drawable.ConstantState>(64)
 
     
     private fun safeLoadAppLabel(applicationInfo: ApplicationInfo): String {
@@ -48,8 +48,8 @@ class AppsRepository {
             val loaded = BlackBoxCore.getPackageManager().getApplicationIcon(applicationInfo)
             val optimized = if (loaded is BitmapDrawable) {
                 val bitmap = loaded.bitmap
-                if (bitmap.width > 96 || bitmap.height > 96) {
-                    val scaled = Bitmap.createScaledBitmap(bitmap, 96, 96, true)
+                if (bitmap.width > 192 || bitmap.height > 192) {
+                    val scaled = Bitmap.createScaledBitmap(bitmap, 192, 192, true)
                     BitmapDrawable(
                         BlackBoxCore.getPackageManager().getResourcesForApplication(packageName),
                         scaled
