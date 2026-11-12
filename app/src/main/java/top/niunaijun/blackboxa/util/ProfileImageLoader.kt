@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
 import java.util.concurrent.Executors
-import kotlin.math.max
 
 /**
  * Decodes profile wallpapers off the main thread and samples them near their
@@ -31,9 +30,10 @@ object ProfileImageLoader {
 
         target.tag = uriString
         val appContext = context.applicationContext
-        val width = max(target.width, appContext.resources.displayMetrics.widthPixels)
-            .coerceAtMost(appContext.resources.displayMetrics.widthPixels)
-        val height = max(target.height, (width * 0.65f).toInt())
+        val width = target.width.takeIf { it > 0 }
+            ?: appContext.resources.displayMetrics.widthPixels
+        val height = target.height.takeIf { it > 0 }
+            ?: (width * 0.65f).toInt()
 
         executor.execute {
             val bitmap = decodeSampled(appContext, Uri.parse(uriString), width, height)
