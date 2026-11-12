@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
@@ -445,6 +447,16 @@ private fun TopBarCapsule(
 
 @Composable
 private fun DrawerHeader() {
+    var nickname by rememberSaveable { mutableStateOf(ProfileAppearance.userNickname()) }
+    var editName by remember { mutableStateOf(false) }
+    var draftName by remember(nickname) { mutableStateOf(nickname) }
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    val greeting = when (hour) {
+        in 5..11 -> "Good morning"
+        in 12..17 -> "Hope your day is going well"
+        else -> "It's late, take care 👋"
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -459,20 +471,72 @@ private fun DrawerHeader() {
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = "S",
+                    text = nickname.trim().firstOrNull()?.uppercase() ?: "S",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Sleepy Hub", style = MaterialTheme.typography.titleMedium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    nickname,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                )
+                Icon(
+                    Icons.Outlined.Edit,
+                    contentDescription = "Edit display name",
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable {
+                            draftName = nickname
+                            editName = true
+                        },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Text(
-                "Your little app spaces",
+                greeting,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+
+    if (editName) {
+        AlertDialog(
+            onDismissRequest = { editName = false },
+            title = { Text("Display name") },
+            text = {
+                OutlinedTextField(
+                    value = draftName,
+                    onValueChange = { draftName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (draftName.isNotBlank()) {
+                            nickname = draftName.trim()
+                            ProfileAppearance.setUserNickname(nickname)
+                        }
+                        editName = false
+                    },
+                    enabled = draftName.isNotBlank(),
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editName = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
