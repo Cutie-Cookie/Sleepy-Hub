@@ -88,3 +88,16 @@ When details disagree, prefer:
 2. The latest successful GitHub Actions run for that exact commit.
 3. These project notes, updated to match the source.
 4. Inherited root-level documentation only after it has been checked and corrected.
+
+
+## RikkaHub-inspired UI and performance research (2026-11-13)
+
+See [RIKKAHUB_RESEARCH.md](RIKKAHUB_RESEARCH.md).
+
+The source review confirmed that Sleepy Hub is currently a BlackBox app container with virtual Android users and installed-app lists. It does not currently contain AI chat/provider/conversation infrastructure. The RikkaHub assistant/chat interaction therefore cannot be transplanted as a simple UI change; product scope must be confirmed first.
+
+Initial source-level performance findings:
+- Scroll callbacks can trigger forced garbage collection; the force path also sleeps for 100 ms.
+- App icon loading is skipped above a heap-usage threshold, causing missing icons.
+- Virtual app list refresh re-enumerates installed packages and loads icons; its duration has not yet been benchmarked.
+- No device performance baseline has been collected. See the research note for a measurement-first plan.

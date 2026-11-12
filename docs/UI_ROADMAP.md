@@ -110,3 +110,17 @@ The redesign is ready for broader use only when:
 - [ ] Agree on design tokens and component style.
 - [ ] Create one main-screen wireframe.
 - [ ] Get user approval before starting the UI implementation branch.
+
+
+## RikkaHub source study (2026-11-13)
+
+See [RIKKAHUB_RESEARCH.md](RIKKAHUB_RESEARCH.md) for the source-by-source study, license boundary, current Sleepy Hub architecture, and performance audit.
+
+Important findings:
+- RikkaHub's drawer combines profile, quick actions, assistant-scoped folders, conversation history, assistant picker, and settings.
+- Assistant selection opens a sheet; selection changes the active assistant and then opens/reuses a conversation.
+- RikkaHub folders are owned by an assistant and the folder filter resets when the assistant changes.
+- RikkaHub global themes and per-assistant chat backgrounds are separate concepts.
+- Sleepy Hub currently has no AI chat engine or assistant/conversation models. Its existing profiles are BlackBox virtual Android users.
+
+**Implementation gate:** before creating `sleepyhub/ui-rikkahub-inspired`, confirm whether Sleepy Hub remains an app container, becomes an AI chat app, or combines both. Do not silently add an AI subsystem as part of a visual redesign.
