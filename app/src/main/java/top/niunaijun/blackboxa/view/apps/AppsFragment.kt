@@ -1,17 +1,16 @@
 package top.niunaijun.blackboxa.view.apps
 
-import android.graphics.Point
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -19,17 +18,17 @@ import cbfg.rvadapter.RVAdapter
 import com.afollestad.materialdialogs.MaterialDialog
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.R
+import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.databinding.FragmentAppsBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
+import top.niunaijun.blackboxa.util.ProfileImageLoader
 import top.niunaijun.blackboxa.util.ShortcutUtil
 import top.niunaijun.blackboxa.util.inflate
-import top.niunaijun.blackboxa.util.MemoryManager
 import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.main.MainActivity
 import java.util.*
-import kotlin.math.abs
 
 
 
@@ -81,7 +80,9 @@ class AppsFragment : Fragment() {
             viewBinding.recyclerView.adapter = mAdapter
             
             
-            val layoutManager = GridLayoutManager(requireContext(), 4)
+            val columns = PreferenceManager.getDefaultSharedPreferences(requireContext())
+                .getString("app_grid_columns", "4")?.toIntOrNull()?.coerceIn(3, 5) ?: 4
+            val layoutManager = GridLayoutManager(requireContext(), columns)
             layoutManager.isItemPrefetchEnabled = true
             layoutManager.initialPrefetchItemCount = 8
             viewBinding.recyclerView.layoutManager = layoutManager
@@ -91,48 +92,6 @@ class AppsFragment : Fragment() {
             viewBinding.recyclerView.setHasFixedSize(true)
             
             
-            viewBinding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    try {
-                        super.onScrollStateChanged(recyclerView, newState)
-                        when (newState) {
-                            RecyclerView.SCROLL_STATE_IDLE -> {
-                                
-                                MemoryManager.optimizeMemoryForRecyclerView()
-                            }
-                            RecyclerView.SCROLL_STATE_DRAGGING -> {
-                                
-                                
-                            }
-                            RecyclerView.SCROLL_STATE_SETTLING -> {
-                                
-                                
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error in scroll state change: ${e.message}")
-                    }
-                }
-                
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    try {
-                        super.onScrolled(recyclerView, dx, dy)
-                        
-                        if (Math.abs(dy) > 100) {
-                            
-                            
-                            
-                            if (MemoryManager.isMemoryCritical()) {
-                                Log.w(TAG, "Memory critical during fast scrolling, forcing GC")
-                                MemoryManager.forceGarbageCollectionIfNeeded()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error in scroll: ${e.message}")
-                    }
-                }
-            })
-
             val touchCallBack = AppsTouchCallBack { from, to ->
                 try {
                     onItemMove(from, to)
@@ -155,7 +114,6 @@ class AppsFragment : Fragment() {
                 }
             }
 
-            interceptTouch()
             setOnLongClick()
             return viewBinding.root
         } catch (e: Exception) {
@@ -169,6 +127,7 @@ class AppsFragment : Fragment() {
         try {
             super.onViewCreated(view, savedInstanceState)
             initData()
+            refreshProfileHeader()
         } catch (e: Exception) {
             Log.e(TAG, "Error in onViewCreated: ${e.message}")
         }
@@ -196,99 +155,6 @@ class AppsFragment : Fragment() {
     }
 
     
-    private fun interceptTouch() {
-        try {
-            val point = Point()
-            var isScrolling = false
-            var scrollStartTime = 0L
-            
-            viewBinding.recyclerView.setOnTouchListener { _, e ->
-                try {
-                    when (e.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            
-                            isScrolling = false
-                            scrollStartTime = System.currentTimeMillis()
-                            point.set(0, 0)
-                        }
-                        
-                        MotionEvent.ACTION_UP -> {
-                            val scrollDuration = System.currentTimeMillis() - scrollStartTime
-                            
-                            
-                            if (!isScrolling && !isMove(point, e) && scrollDuration < 500) {
-                                try {
-                                    popupMenu?.show()
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error showing popup menu: ${e.message}")
-                                }
-                            }
-                            
-                            popupMenu = null
-                            point.set(0, 0)
-                            isScrolling = false
-                        }
-
-                        MotionEvent.ACTION_MOVE -> {
-                            if (point.x == 0 && point.y == 0) {
-                                point.x = e.rawX.toInt()
-                                point.y = e.rawY.toInt()
-                            }
-                            
-                            
-                            if (isMove(point, e)) {
-                                isScrolling = true
-                                popupMenu?.dismiss()
-                            }
-                            
-                            
-                            isDownAndUp(point, e)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error in touch listener: ${e.message}")
-                }
-                return@setOnTouchListener false
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in interceptTouch: ${e.message}")
-        }
-    }
-
-    private fun isMove(point: Point, e: MotionEvent): Boolean {
-        return try {
-            val max = 40
-
-            val x = point.x
-            val y = point.y
-
-            val xU = abs(x - e.rawX)
-            val yU = abs(y - e.rawY)
-            xU > max || yU > max
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in isMove: ${e.message}")
-            false
-        }
-    }
-
-    private fun isDownAndUp(point: Point, e: MotionEvent) {
-        try {
-            val min = 10
-            val y = point.y
-            val yU = y - e.rawY
-
-            if (abs(yU) > min) {
-                try {
-                    (requireActivity() as? MainActivity)?.showFloatButton(yU < 0)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error showing/hiding float button: ${e.message}")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in isDownAndUp: ${e.message}")
-        }
-    }
-
     private fun onItemMove(fromPosition: Int, toPosition: Int) {
         try {
             
@@ -352,6 +218,14 @@ class AppsFragment : Fragment() {
                                         clearApk(data)
                                     }
 
+                                    R.id.app_clear_cache -> {
+                                        clearApkCache(data)
+                                    }
+
+                                    R.id.app_info -> {
+                                        showAppInfo(data)
+                                    }
+
                                     R.id.app_stop -> {
                                         stopApk(data)
                                     }
@@ -385,6 +259,8 @@ class AppsFragment : Fragment() {
                 try {
                     if (it != null) {
                         mAdapter.setItems(it)
+                        viewBinding.installedAppCount.text = it.size.toString() + " apps"
+                        viewBinding.profileSubtitle.text = it.size.toString() + " installed apps"
                         if (it.isEmpty()) {
                             viewBinding.stateView.showEmpty()
                         } else {
@@ -443,6 +319,62 @@ class AppsFragment : Fragment() {
             viewModel.launchLiveData.value = null
         } catch (e: Exception) {
             Log.e(TAG, "Error in onStop: ${e.message}")
+        }
+    }
+
+    fun refreshProfileHeader() {
+        if (!isAdded || view == null) return
+        try {
+            viewBinding.profileName.text = ProfileAppearance.profileName(userID)
+            viewBinding.profileHeader.setCardBackgroundColor(ProfileAppearance.accent(userID))
+            val background = ProfileAppearance.backgroundUri(userID)
+            if (background.isNullOrBlank()) {
+                ProfileImageLoader.clear(viewBinding.profileBackground)
+                val accent = ProfileAppearance.accent(userID)
+                viewBinding.profileOverlay.background = android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                    intArrayOf(accent, android.graphics.Color.BLACK)
+                )
+            } else {
+                viewBinding.profileBackground.alpha = ProfileAppearance.backgroundOpacity(userID)
+                viewBinding.profileOverlay.setBackgroundResource(R.drawable.profile_header_overlay)
+                ProfileImageLoader.load(requireContext(), background, viewBinding.profileBackground)
+            }
+            viewBinding.profileMenu.setOnClickListener { anchor ->
+                (requireActivity() as? MainActivity)?.showProfileOptions(userID, anchor)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing profile header: " + e.message)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshProfileHeader()
+    }
+
+    private fun clearApkCache(info: AppInfo) {
+        MaterialDialog(requireContext()).show {
+            title(R.string.app_clear_cache)
+            message(text = getString(R.string.app_clear_cache_hint, info.name))
+            positiveButton(R.string.done) {
+                try {
+                    showLoading()
+                    viewModel.clearApkCache(info.packageName, userID)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error clearing app cache: " + e.message)
+                    hideLoading()
+                }
+            }
+            negativeButton(R.string.cancel)
+        }
+    }
+
+    private fun showAppInfo(info: AppInfo) {
+        MaterialDialog(requireContext()).show {
+            title(R.string.app_info)
+            message(text = getString(R.string.app_info_message, info.name, info.packageName, info.sourceDir))
+            positiveButton(R.string.done)
         }
     }
 
