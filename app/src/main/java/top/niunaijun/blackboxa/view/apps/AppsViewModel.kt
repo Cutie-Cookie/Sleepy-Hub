@@ -34,7 +34,7 @@ class AppsViewModel(private val repo: AppsRepository) : BaseViewModel() {
                 
                 
                 val currentApps = appsLiveData.value
-                if ((currentApps == null || currentApps.isEmpty()) && retryCount < maxRetries) {
+                if (currentApps == null && retryCount < maxRetries) {
                     retryCount++
                     Log.d("AppsViewModel", "No apps loaded, retrying... (${retryCount}/${maxRetries})")
                     
