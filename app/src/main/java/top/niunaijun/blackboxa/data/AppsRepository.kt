@@ -7,6 +7,7 @@ import android.webkit.URLUtil
 import androidx.lifecycle.MutableLiveData
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.core.env.BEnvironment
 import top.niunaijun.blackbox.utils.AbiUtils
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.AppManager
@@ -36,14 +37,6 @@ class AppsRepository {
     ): android.graphics.drawable.Drawable? {
         return try {
             
-            if (MemoryManager.shouldSkipIconLoading()) {
-                Log.w(
-                        TAG,
-                        "Memory usage high (${MemoryManager.getMemoryUsagePercentage()}%), skipping icon for ${applicationInfo.packageName}"
-                )
-                return null
-            }
-
             val icon = BlackBoxCore.getPackageManager().getApplicationIcon(applicationInfo)
 
             
@@ -164,14 +157,6 @@ class AppsRepository {
     fun getVmInstallList(userId: Int, appsLiveData: MutableLiveData<List<AppInfo>>) {
         try {
             
-            if (MemoryManager.isMemoryCritical()) {
-                Log.w(
-                        TAG,
-                        "Memory critical (${MemoryManager.getMemoryUsagePercentage()}%), forcing garbage collection"
-                )
-                MemoryManager.forceGarbageCollectionIfNeeded()
-            }
-
             val blackBoxCore = BlackBoxCore.get()
 
             
@@ -251,10 +236,6 @@ class AppsRepository {
                 try {
                     
                     if (index > 0 && index % 25 == 0) {
-                        if (MemoryManager.isMemoryCritical()) {
-                            Log.w(TAG, "Memory critical during processing, forcing GC")
-                            MemoryManager.forceGarbageCollectionIfNeeded()
-                        }
                     }
 
                     
@@ -441,6 +422,25 @@ class AppsRepository {
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing APK data: ${e.message}")
             resultLiveData.postValue("Clear failed: ${e.message}")
+        }
+    }
+
+    fun clearApkCache(packageName: String, userId: Int, resultLiveData: MutableLiveData<String>) {
+        try {
+            val cacheDirectories = listOf(
+                BEnvironment.getDataCacheDir(packageName, userId),
+                BEnvironment.getExternalDataCacheDir(packageName, userId),
+            )
+            cacheDirectories.forEach { directory ->
+                if (directory.exists()) {
+                    directory.deleteRecursively()
+                }
+                directory.mkdirs()
+            }
+            resultLiveData.postValue("Cache cleared")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing APK cache: ${e.message}")
+            resultLiveData.postValue("Cache clear failed: ${e.message}")
         }
     }
 
