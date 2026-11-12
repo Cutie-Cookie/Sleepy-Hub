@@ -390,7 +390,6 @@ class AppsRepository {
         try {
             BlackBoxCore.get().uninstallPackageAsUser(packageName, userID)
             updateAppSortList(userID, packageName, false)
-            scanUser()
             resultLiveData.postValue(getString(R.string.uninstall_success))
         } catch (e: Exception) {
             Log.e(TAG, "Error uninstalling APK: ${e.message}")
