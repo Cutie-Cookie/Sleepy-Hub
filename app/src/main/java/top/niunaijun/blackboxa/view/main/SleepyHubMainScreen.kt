@@ -30,7 +30,6 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -55,6 +54,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -64,7 +64,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -100,6 +99,7 @@ fun SleepyHubMainScreen(
     onInstallApps: () -> Unit,
     onOpenFakeLocation: () -> Unit,
     onRefreshApps: () -> Unit,
+    onRefreshProfiles: () -> Unit,
 ) {
     var page by rememberSaveable { mutableStateOf("workspace") }
     var editingProfileId by rememberSaveable { mutableStateOf(-1) }
@@ -138,9 +138,7 @@ fun SleepyHubMainScreen(
                         onDeleteProfile(profile.userId)
                         page = "profiles"
                     },
-                    onAppearanceChanged = {
-                        // Activity state is refreshed through its profile list callback.
-                    },
+                    onAppearanceChanged = onRefreshProfiles,
                 )
             }
         }
@@ -597,7 +595,7 @@ private fun ProfilePickerSheet(
 }
 
 @Composable
-private fun ProfileWorkspaceBackground(
+internal fun ProfileWorkspaceBackground(
     profile: ProfileItem,
     modifier: Modifier = Modifier,
 ) {
