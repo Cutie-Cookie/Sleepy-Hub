@@ -139,7 +139,7 @@ The UI branch then received a final polish pass: app icons now retain up to 192 
 
 ## Final UI build status
 
-<badge color="success">Debug build succeeded</badge>
+**Debug build succeeded.**
 
 - Branch: `sleepyhub/ui-rikkahub-inspired`
 - Commit: `86bd5789e19a9a17a32a1def7aef933eb4eb0581`
