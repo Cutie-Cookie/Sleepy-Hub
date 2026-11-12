@@ -135,3 +135,18 @@ Both source issues were corrected. The latest UI branch build is still pending; 
 A full ARM64 debug build succeeded in [workflow run 43319420454](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43319420454) for UI commit `9775bdc1b81ffe61e199b5512bf57b3ae4806ba7`. Gradle completed with `BUILD SUCCESSFUL`, and artifact `sleepy-hub-arm64-debug` was uploaded (ID `13990365863`).
 
 The UI branch then received a final polish pass: app icons now retain up to 192 px, the app manager explains tap/long-press actions, and the profile-settings sheet has a handle and rounded top. Those later commits still require their own successful build before the final APK is handed over. Device-level testing remains with the user.
+
+
+## Final UI build status
+
+<badge color="success">Debug build succeeded</badge>
+
+- Branch: `sleepyhub/ui-rikkahub-inspired`
+- Commit: `86bd5789e19a9a17a32a1def7aef933eb4eb0581`
+- Workflow: [43320730246](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43320730246)
+- Artifact: `sleepy-hub-arm64-debug` (ID `13990921422`)
+- APK: `SleepyHub_4.0.0_arm64-v8a-debug.apk`, 9,214,632 bytes
+- SHA-256: `42703a57aa8a2f5183d2aa61339bce61b294ed04356b80177527a45f8faa8d1a`
+- The downloaded artifact ZIP and extracted APK both passed archive-integrity checks.
+
+**Still required:** physical-device smoke testing. The UI milestone is source-complete and debug-build verified, but it is not yet user-approved or release-ready. Background-running apps remain deferred, and no release signing secrets have been created.
