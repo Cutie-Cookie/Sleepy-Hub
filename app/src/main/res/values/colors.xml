@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#3F3F3F</color>
-    <color name="primary_dark">#3F3F3F</color>
-    <color name="primary_light">#3F3F3F</color>
-    <color name="accent">#ffffff</color>
-    <color name="primary_text">#212121</color>
-    <color name="secondary_text">#757575</color>
+    <color name="primary">#62557A</color>
+    <color name="primary_dark">#F7F5FA</color>
+    <color name="primary_light">#9B8BC0</color>
+    <color name="accent">#9B8BC0</color>
+    <color name="primary_text">#292532</color>
+    <color name="secondary_text">#716B7A</color>
     <color name="white">#FFFFFFFF</color>
     <color name="launcher_background">#000000</color>
+    <color name="dashboard_background">#F1EFF4</color>
+    <color name="dashboard_divider">#DDD9E3</color>
+    <color name="profile_card_stroke">#55FFFFFF</color>
 </resources>
