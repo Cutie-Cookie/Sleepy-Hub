@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="appearance_mode_entries">
+        <item>Follow system</item>
+        <item>Dark</item>
+        <item>Light</item>
+    </string-array>
+    <string-array name="appearance_mode_values">
+        <item>system</item>
+        <item>dark</item>
+        <item>light</item>
+    </string-array>
+    <string-array name="global_accent_entries">
+        <item>Lavender</item>
+        <item>Rose</item>
+        <item>Ocean</item>
+        <item>Sage</item>
+        <item>Amber</item>
+    </string-array>
+    <string-array name="global_accent_values">
+        <item>#9B8BC0</item>
+        <item>#C27C91</item>
+        <item>#6794BE</item>
+        <item>#709D8B</item>
+        <item>#BE915B</item>
+    </string-array>
+    <string-array name="app_grid_columns_entries">
+        <item>3 columns</item>
+        <item>4 columns</item>
+        <item>5 columns</item>
+    </string-array>
+    <string-array name="app_grid_columns_values">
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+</resources>

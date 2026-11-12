@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#6F6488</color>
+    <color name="primary_dark">#15131A</color>
+    <color name="primary_light">#BBAED5</color>
+    <color name="accent">#E7DDF7</color>
+    <color name="primary_text">#F3EFF7</color>
+    <color name="secondary_text">#B6AFBF</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="launcher_background">#000000</color>
+    <color name="dashboard_background">#242326</color>
+    <color name="dashboard_divider">#3A383D</color>
+    <color name="profile_card_stroke">#55FFFFFF</color>
+</resources>
