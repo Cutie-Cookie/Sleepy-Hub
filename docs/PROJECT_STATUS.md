@@ -1,6 +1,6 @@
 # Project status
 
-_Last reviewed: 2026-11-12, at application commit `6de07c5`._
+_Last reviewed: 2026-11-13. The original application baseline was `6de07c5`; UI implementation is in progress on a separate feature branch._
 
 ## Current state
 
@@ -24,7 +24,8 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` |
 | `sleepyhub/identity-icons-no-vpn` | Current application work | `6de07c5` |
-| `sleepyhub/docs-project-notes` | This documentation-only branch | Created from `6de07c5` |
+| `sleepyhub/docs-project-notes` | Project notebook and decisions | Created from `6de07c5` |
+| `sleepyhub/ui-rikkahub-inspired` | UI redesign and app-manager improvements | Created from the documentation branch; main remains untouched |
 
 At the time these notes were started, the application branch was **8 commits ahead of main and 0 behind**. No application changes were pushed to `main`.
 
@@ -77,7 +78,7 @@ A successful CI build proves the project compiles and the artifact was uploaded.
 1. **Device smoke testing:** record Android version/device class and test installation, first launch, app cloning, permissions, notifications, and normal network access. Do not write private device identifiers.
 2. **Documentation drift:** root `README.md`, `Docs.md`, and `RELEASE_NOTES.md` still contain upstream BlackBox/NewBlackbox names and/or old VPN and log-upload descriptions. Review and replace them deliberately.
 3. **Target SDK review:** target SDK is currently 28. Evaluate a target-SDK upgrade separately, with a compatibility and permission test plan; do not mix it into the UI redesign.
-4. **UI redesign:** follow [UI roadmap](UI_ROADMAP.md). No UI implementation is included in this documentation branch.
+4. **UI redesign:** implementation is underway on `sleepyhub/ui-rikkahub-inspired`. Follow [UI roadmap](UI_ROADMAP.md) and [UI implementation plan](UI_IMPLEMENTATION_PLAN.md).
 5. **Release readiness:** the current verified artifact is a debug build, not a signed production/release package.
 
 ## Source-of-truth order
@@ -94,10 +95,27 @@ When details disagree, prefer:
 
 See [RIKKAHUB_RESEARCH.md](RIKKAHUB_RESEARCH.md).
 
-The source review confirmed that Sleepy Hub is currently a BlackBox app container with virtual Android users and installed-app lists. It does not currently contain AI chat/provider/conversation infrastructure. The RikkaHub assistant/chat interaction therefore cannot be transplanted as a simple UI change; product scope must be confirmed first.
+The user confirmed that Sleepy Hub remains a BlackBox virtual app manager. Profiles are virtual Android users, not AI assistants. No AI chat subsystem is being added. The approved scope is in [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md).
 
 Initial source-level performance findings:
 - Scroll callbacks can trigger forced garbage collection; the force path also sleeps for 100 ms.
 - App icon loading is skipped above a heap-usage threshold, causing missing icons.
 - Virtual app list refresh re-enumerates installed packages and loads icons; its duration has not yet been benchmarked.
 - No device performance baseline has been collected. See the research note for a measurement-first plan.
+
+
+## UI implementation status (2026-11-13)
+
+Active branch: `sleepyhub/ui-rikkahub-inspired`.
+
+Implemented in source so far (still awaiting a successful final CI build and physical-device testing):
+- Modal side dashboard with profile cards, Add Profile, Settings, and Fake Location.
+- Explicit profile creation; empty virtual profiles are retained rather than auto-deleted.
+- Profile rename, delete confirmation, per-profile accent, and per-profile wallpaper selection/removal/opacity.
+- App-manager profile header with wallpaper and installed-app count.
+- Global theme/accent and app-grid preferences.
+- App long-press actions including App Info, Clear Cache, Clear Data, Stop, Uninstall, and Shortcut.
+- Bounded app-icon drawable cache and removal of forced-GC calls from scrolling/list loading.
+- Debug-first acceptance checklist is in `UI_IMPLEMENTATION_PLAN.md`.
+
+Background-running apps are explicitly deferred. No release signing keys/secrets are being created or used in this milestone.
