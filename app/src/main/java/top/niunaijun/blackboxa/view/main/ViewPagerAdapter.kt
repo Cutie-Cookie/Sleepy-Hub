@@ -5,23 +5,21 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import top.niunaijun.blackboxa.view.apps.AppsFragment
 
-
-
-class ViewPagerAdapter(appCompatActivity: AppCompatActivity) : FragmentStateAdapter(appCompatActivity) {
+class ViewPagerAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
 
     private var fragmentList = mutableListOf<AppsFragment>()
 
-    fun replaceData(list: MutableList<AppsFragment>){
-        this.fragmentList = list
+    fun replaceData(list: MutableList<AppsFragment>) {
+        fragmentList = list.toMutableList()
         notifyDataSetChanged()
     }
 
-    override fun getItemCount(): Int {
-        return fragmentList.size
-    }
+    override fun getItemCount(): Int = fragmentList.size
 
-    override fun createFragment(position: Int): Fragment {
-        return fragmentList[position]
-    }
+    override fun createFragment(position: Int): Fragment = fragmentList[position]
 
+    override fun getItemId(position: Int): Long = fragmentList[position].userID.toLong()
+
+    override fun containsItem(itemId: Long): Boolean =
+        fragmentList.any { it.userID.toLong() == itemId }
 }
