@@ -7,6 +7,10 @@ on:
       - 'sleepyhub/**'
   workflow_dispatch:
 
+concurrency:
+  group: sleepyhub-debug-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
