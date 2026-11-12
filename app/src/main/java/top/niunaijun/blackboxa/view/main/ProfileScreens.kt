@@ -291,7 +291,9 @@ fun ProfileSettingsScreen(
                             onClick = {
                                 if (name.isNotBlank()) {
                                     onRename(name.trim())
-                                    ProfileAppearance.setProfileFolder(profile.userId, folder.trim())
+                                    val savedFolder = folder.trim().ifBlank { "General" }
+                                    folder = savedFolder
+                                    ProfileAppearance.setProfileFolder(profile.userId, savedFolder)
                                     onAppearanceChanged()
                                     Toast.makeText(context, "Profile saved", Toast.LENGTH_SHORT).show()
                                 }
