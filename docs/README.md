@@ -7,7 +7,8 @@ This folder is the working notebook for the Sleepy Hub fork. It records the curr
 1. [Project status](PROJECT_STATUS.md) — what exists now, branch/build baseline, and known gaps.
 2. [Change log](CHANGELOG.md) — what changed, why, and which build problems were found and fixed.
 3. [Development rules](DEVELOPMENT_RULES.md) — how we investigate, change, test, and record work without guessing.
-4. [UI roadmap](UI_ROADMAP.md) — the proposed RikkaHub-inspired redesign, before implementation begins.
+4. [UI roadmap](UI_ROADMAP.md) — the agreed RikkaHub-inspired redesign direction.
+5. [UI implementation plan](UI_IMPLEMENTATION_PLAN.md) — confirmed scope, profile wallpapers, animations, and device acceptance tests.
 
 ## Notebook rules
 
@@ -22,4 +23,4 @@ This folder is the working notebook for the Sleepy Hub fork. It records the curr
 
 These notes were created on `sleepyhub/docs-project-notes`, based on the verified application commit `6de07c536a013febe6432148dd23f94eec1bac30` from `sleepyhub/identity-icons-no-vpn`.
 
-The documentation branch is intentionally separate. It has not been merged into `main` or back into the application branch.
+The documentation branch is intentionally separate. The active UI work is on `sleepyhub/ui-rikkahub-inspired`; neither branch has been merged into `main`.
