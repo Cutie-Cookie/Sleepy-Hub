@@ -249,6 +249,12 @@ class MainActivity : LoadingActivity() {
                 return
             }
 
+            val targetUserId = if (activeUserId == userId) {
+                users.firstOrNull { it.id != userId }?.id
+            } else {
+                activeUserId
+            }
+
             val background = ProfileAppearance.backgroundUri(userId)
             if (!background.isNullOrBlank()) {
                 try {
@@ -266,7 +272,7 @@ class MainActivity : LoadingActivity() {
             fragmentList.removeAll { it.userID == userId }
             pagerAdapter.replaceData(fragmentList)
 
-            val nextUser = users.firstOrNull { it.id != userId }?.id ?: fragmentList.first().userID
+            val nextUser = targetUserId ?: fragmentList.first().userID
             refreshProfiles()
             selectProfile(nextUser)
         } catch (e: Exception) {
