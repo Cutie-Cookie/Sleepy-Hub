@@ -74,7 +74,7 @@ object ProfileAppearance {
         }
     }
 
-    fun installedAppCount(userId: Int): Int = prefs().getInt("AppCount$userId", 0).coerceAtLeast(0)
+    fun installedAppCount(userId: Int): Int = prefs().getInt("AppCount$userId", -1)
 
     fun setInstalledAppCount(userId: Int, count: Int) {
         prefs().edit().putInt("AppCount$userId", count.coerceAtLeast(0)).apply()
