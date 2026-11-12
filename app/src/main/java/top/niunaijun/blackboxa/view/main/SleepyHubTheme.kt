@@ -11,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -24,16 +25,21 @@ import top.niunaijun.blackboxa.app.ProfileAppearance
 fun SleepyHubTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val view = LocalView.current
+    val themeRevision = ProfileAppearance.themeRevision
+    val themeMode = remember(themeRevision) { ProfileAppearance.globalThemeMode() }
+    val dynamicEnabled = remember(themeRevision) { ProfileAppearance.useDynamicColor() }
+    val amoledEnabled = remember(themeRevision) { ProfileAppearance.useAmoledDarkMode() }
+    val accentValue = remember(themeRevision) { ProfileAppearance.globalAccent() }
     val systemDark = isSystemInDarkTheme()
-    val darkTheme = when (ProfileAppearance.globalThemeMode()) {
+    val darkTheme = when (themeMode) {
         "light" -> false
         "dark" -> true
         else -> systemDark
     }
-    val dynamic = ProfileAppearance.useDynamicColor() &&
+    val dynamic = dynamicEnabled &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-    val accent = Color(ProfileAppearance.globalAccent())
+    val accent = Color(accentValue)
     val baseScheme = when {
         dynamic && darkTheme -> dynamicDarkColorScheme(context)
         dynamic -> dynamicLightColorScheme(context)
@@ -61,7 +67,7 @@ fun SleepyHubTheme(content: @Composable () -> Unit) {
         )
     }
 
-    val amoled = darkTheme && ProfileAppearance.useAmoledDarkMode()
+    val amoled = darkTheme && amoledEnabled
     val colorScheme = if (amoled) {
         baseScheme.copy(background = Color.Black, surface = Color.Black)
     } else {
