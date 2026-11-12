@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
@@ -87,6 +89,7 @@ data class ProfileItem(
     val backgroundOpacity: Float,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SleepyHubMainScreen(
     profiles: List<ProfileItem>,
@@ -502,6 +505,7 @@ fun ProfileAvatar(name: String, accent: Int, size: androidx.compose.ui.unit.Dp) 
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfilePickerSheet(
     profiles: List<ProfileItem>,
