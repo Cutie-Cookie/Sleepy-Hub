@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,8 +86,17 @@ fun ProfileManagerScreen(
     onEdit: (Int) -> Unit,
 ) {
     var search by remember { mutableStateOf("") }
-    val filtered = remember(profiles, search) {
-        profiles.filter { it.name.contains(search, ignoreCase = true) }
+    var selectedFolder by remember { mutableStateOf("All") }
+    var sortAlphabetically by remember { mutableStateOf(false) }
+    val folders = remember(profiles) {
+        profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
+    }
+    val filtered = remember(profiles, search, selectedFolder, sortAlphabetically) {
+        val matching = profiles.filter {
+            it.name.contains(search, ignoreCase = true) &&
+                (selectedFolder == "All" || it.folder == selectedFolder)
+        }
+        if (sortAlphabetically) matching.sortedBy { it.name.lowercase() } else matching
     }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -124,6 +135,26 @@ fun ProfileManagerScreen(
                 singleLine = true,
                 label = { Text("Search profiles") },
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                LazyRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(listOf("All") + folders) { folder ->
+                        FilterChip(
+                            selected = selectedFolder == folder,
+                            onClick = { selectedFolder = folder },
+                            label = { Text(folder) },
+                        )
+                    }
+                }
+                IconButton(onClick = { sortAlphabetically = !sortAlphabetically }) {
+                    Icon(Icons.Outlined.Sort, contentDescription = "Toggle profile sorting")
+                }
+            }
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = rememberLazyListState(),
