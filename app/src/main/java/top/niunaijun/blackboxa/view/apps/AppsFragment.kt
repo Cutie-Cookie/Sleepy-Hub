@@ -20,7 +20,6 @@ import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.util.InjectionUtil
 import top.niunaijun.blackboxa.util.ShortcutUtil
-import top.niunaijun.blackboxa.view.base.LoadingActivity
 import top.niunaijun.blackboxa.view.main.MainActivity
 import top.niunaijun.blackboxa.view.main.SleepyHubTheme
 
@@ -31,6 +30,7 @@ class AppsFragment : Fragment() {
 
     private lateinit var viewModel: AppsViewModel
     private var gridColumns by mutableIntStateOf(4)
+    private var isLoading by androidx.compose.runtime.mutableStateOf(false)
 
     companion object {
         private const val TAG = "AppsFragment"
@@ -68,6 +68,7 @@ class AppsFragment : Fragment() {
                     AppGridScreen(
                         apps = apps,
                         columns = gridColumns,
+                        loading = isLoading,
                         onLaunch = ::launchApp,
                         onAction = ::handleAppAction,
                         onScrollChange = { (activity as? MainActivity)?.onWorkspaceScrollChanged(it) },
@@ -80,11 +81,12 @@ class AppsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.appsLiveData.observe(viewLifecycleOwner) { apps ->
+            isLoading = false
             (activity as? MainActivity)?.onProfileAppCountChanged(userID, apps?.size ?: 0)
         }
         viewModel.resultLiveData.observe(viewLifecycleOwner) { result ->
             if (!result.isNullOrBlank()) {
-                hideLoading()
+                isLoading = false
                 Toast.makeText(requireContext(), result, Toast.LENGTH_SHORT).show()
                 viewModel.getInstalledApps(userID)
                 (activity as? MainActivity)?.scanUser()
@@ -92,7 +94,7 @@ class AppsFragment : Fragment() {
         }
         viewModel.launchLiveData.observe(viewLifecycleOwner) { launched ->
             if (launched != null) {
-                hideLoading()
+                isLoading = false
                 if (!launched) {
                     Toast.makeText(requireContext(), "Couldn't start this app", Toast.LENGTH_SHORT).show()
                 }
@@ -112,17 +114,20 @@ class AppsFragment : Fragment() {
         } catch (e: Exception) {
             Log.w(TAG, "Could not register service callback: ${e.message}")
         }
+        isLoading = true
         viewModel.getInstalledAppsWithRetry(userID)
     }
 
     override fun onStop() {
         super.onStop()
+        isLoading = false
         viewModel.resultLiveData.value = null
         viewModel.launchLiveData.value = null
     }
 
     fun refreshApps() {
         if (::viewModel.isInitialized) {
+            isLoading = true
             viewModel.getInstalledAppsWithRetry(userID)
         }
     }
@@ -133,17 +138,17 @@ class AppsFragment : Fragment() {
 
     fun installApk(source: String) {
         try {
-            showLoading()
+            isLoading = true
             viewModel.install(source, userID)
         } catch (e: Exception) {
             Log.e(TAG, "Could not install APK: ${e.message}", e)
-            hideLoading()
+            isLoading = false
         }
     }
 
     private fun launchApp(info: AppInfo) {
         try {
-            showLoading()
+            isLoading = true
             viewModel.launchApk(info.packageName, userID)
         } catch (e: Exception) {
             Log.e(TAG, "Could not launch ${info.packageName}: ${e.message}", e)
@@ -156,11 +161,11 @@ class AppsFragment : Fragment() {
             when (action) {
                 AppAction.INFO -> Unit
                 AppAction.CLEAR_CACHE -> {
-                    showLoading()
+                    isLoading = true
                     viewModel.clearApkCache(info.packageName, userID)
                 }
                 AppAction.CLEAR_DATA -> {
-                    showLoading()
+                    isLoading = true
                     viewModel.clearApkData(info.packageName, userID)
                 }
                 AppAction.STOP -> {
@@ -174,7 +179,7 @@ class AppsFragment : Fragment() {
                     if (info.isXpModule) {
                         Toast.makeText(requireContext(), "Uninstall this module from its module manager", Toast.LENGTH_LONG).show()
                     } else {
-                        showLoading()
+                        isLoading = true
                         viewModel.unInstall(info.packageName, userID)
                     }
                 }
@@ -186,11 +191,5 @@ class AppsFragment : Fragment() {
         }
     }
 
-    private fun showLoading() {
-        (activity as? LoadingActivity)?.showLoading()
-    }
 
-    private fun hideLoading() {
-        (activity as? LoadingActivity)?.hideLoading()
-    }
 }
