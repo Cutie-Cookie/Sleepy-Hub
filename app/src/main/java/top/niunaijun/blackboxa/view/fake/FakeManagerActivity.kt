@@ -4,181 +4,102 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.inputmethod.InputMethodManager
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import cbfg.rvadapter.RVAdapter
-import com.afollestad.materialdialogs.MaterialDialog
-import com.ferfalk.simplesearchview.SimpleSearchView
 import top.niunaijun.blackbox.entity.location.BLocation
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager
-import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.FakeLocationBean
-import top.niunaijun.blackboxa.databinding.ActivityListBinding
+import top.niunaijun.blackboxa.databinding.ActivityFakeLocationBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.util.toast
 import top.niunaijun.blackboxa.view.base.BaseActivity
-
+import top.niunaijun.blackboxa.view.main.SleepyHubTheme
 
 class FakeManagerActivity : BaseActivity() {
-    val TAG: String = "FakeManagerActivity"
 
-    private val viewBinding: ActivityListBinding by inflate()
-
-    
-    private lateinit var mAdapter: RVAdapter<FakeLocationBean>
-
+    private val viewBinding: ActivityFakeLocationBinding by inflate()
     private lateinit var viewModel: FakeLocationViewModel
+    private var isLoading by mutableStateOf(true)
 
-    private var appList: List<FakeLocationBean> = ArrayList()
+    private val locationResult =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.let { data ->
+                    val latitude = data.getDoubleExtra("latitude", 0.0)
+                    val longitude = data.getDoubleExtra("longitude", 0.0)
+                    val packageName = data.getStringExtra("pkg") ?: return@let
 
+                    viewModel.setPattern(currentUserID(), packageName, BLocationManager.OWN_MODE)
+                    viewModel.setLocation(
+                        currentUserID(),
+                        packageName,
+                        BLocation(latitude, longitude),
+                    )
+                    toast(getString(top.niunaijun.blackboxa.R.string.set_location, latitude.toString(), longitude.toString()))
+                    loadAppList()
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(viewBinding.root)
 
-        initToolbar(viewBinding.toolbarLayout.toolbar, R.string.fake_location, true)
-
-        mAdapter = RVAdapter<FakeLocationBean>(this,FakeLocationAdapter()).bind(viewBinding.recyclerView)
-            .setItemClickListener { _, data, _ ->
-
-                val intent = Intent(this, FollowMyLocationOverlay::class.java)
-                intent.putExtra("location", data.fakeLocation)
-                intent.putExtra("pkg", data.packageName)
-
-                locationResult.launch(intent)
-            }.setItemLongClickListener { _, item, position ->
-                disableFakeLocation(item,position)
-            }
-
-        viewBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-
-
-        initSearchView()
-        initViewModel()
-    }
-
-    private fun disableFakeLocation(item: FakeLocationBean,position:Int) {
-        MaterialDialog(this).show {
-            title(R.string.close_fake_location)
-            message(text = getString(R.string.close_app_fake_location,item.name))
-            negativeButton(R.string.cancel)
-            positiveButton(R.string.done){
-                BLocationManager.disableFakeLocation(currentUserID(),item.packageName)
-                toast(getString(R.string.close_fake_location_success,item.name))
-                item.fakeLocationPattern = BLocationManager.CLOSE_MODE
-                mAdapter.replaceAt(position,item)
-            }
-        }
-    }
-
-    private fun initSearchView() {
-        viewBinding.searchView.setOnQueryTextListener(object :
-            SimpleSearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                filterApp(newText)
-                return true
-            }
-
-            override fun onQueryTextCleared(): Boolean {
-                return true
-            }
-
-            override fun onQueryTextSubmit(query: String): Boolean {
-                return true
-            }
-
-        })
-    }
-
-    private fun initViewModel() {
-        viewModel = ViewModelProvider(this, InjectionUtil.getFakeLocationFactory()).get(
-            FakeLocationViewModel::class.java
-        )
-        loadAppList()
-        viewBinding.toolbarLayout.toolbar.setTitle(R.string.fake_location)
+        viewModel = ViewModelProvider(
+            this,
+            InjectionUtil.getFakeLocationFactory(),
+        )[FakeLocationViewModel::class.java]
 
         viewModel.appsLiveData.observe(this) {
-            if (it != null) {
-                this.appList = it
-                viewBinding.searchView.setQuery("", false)
-                filterApp("")
-                if (it.isNotEmpty()) {
-                    viewBinding.stateView.showContent()
-                } else {
-                    viewBinding.stateView.showEmpty()
-                }
+            if (it != null) isLoading = false
+        }
+
+        viewBinding.composeView.setViewCompositionStrategy(
+            ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+        )
+        viewBinding.composeView.setContent {
+            SleepyHubTheme {
+                val apps by viewModel.appsLiveData.observeAsState(emptyList())
+                FakeLocationScreen(
+                    apps = apps,
+                    loading = isLoading,
+                    onBack = { finish() },
+                    onSelect = ::openLocationPicker,
+                    onDisable = ::disableFakeLocation,
+                )
             }
         }
+        loadAppList()
     }
 
     private fun loadAppList() {
-        viewBinding.stateView.showLoading()
+        isLoading = true
         viewModel.getInstallAppList(currentUserID())
     }
 
-    private val locationResult =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == RESULT_OK) {
-
-                it.data?.let { data ->
-                    val latitude = data.getDoubleExtra("latitude", 0.0)
-                    val longitude = data.getDoubleExtra("longitude", 0.0)
-                    val pkg = data.getStringExtra("pkg")
-
-                    viewModel.setPattern(currentUserID(), pkg.toString(), BLocationManager.OWN_MODE)
-                    viewModel.setLocation(currentUserID(), pkg.toString(), BLocation(latitude, longitude))
-
-                    toast(getString(R.string.set_location,latitude.toString(), longitude.toString()))
-
-                    loadAppList()
-                }
-
-            }
+    private fun openLocationPicker(app: FakeLocationBean) {
+        val intent = Intent(this, FollowMyLocationOverlay::class.java).apply {
+            putExtra("location", app.fakeLocation)
+            putExtra("pkg", app.packageName)
         }
-
-
-    private fun filterApp(newText: String) {
-        val newList = this.appList.filter {
-            it.name.contains(newText, true) or it.packageName.contains(newText, true)
-        }
-        mAdapter.setItems(newList)
+        locationResult.launch(intent)
     }
 
-    private fun finishWithResult(source: String) {
-        intent.putExtra("source", source)
-        setResult(Activity.RESULT_OK, intent)
-        val imm: InputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        window.peekDecorView()?.run {
-            imm.hideSoftInputFromWindow(windowToken, 0)
-        }
-        finish()
+    private fun disableFakeLocation(app: FakeLocationBean) {
+        viewModel.setPattern(currentUserID(), app.packageName, BLocationManager.CLOSE_MODE)
+        toast(getString(top.niunaijun.blackboxa.R.string.close_fake_location_success, app.name))
+        loadAppList()
     }
-
-
-    override fun onBackPressed() {
-        if (viewBinding.searchView.isSearchOpen) {
-            viewBinding.searchView.closeSearch()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_search, menu)
-        val item = menu!!.findItem(R.id.list_search)
-        viewBinding.searchView.setMenuItem(item)
-        return true
-    }
-
 
     companion object {
         fun start(context: Context) {
-            val intent = Intent(context, FakeManagerActivity::class.java)
-            context.startActivity(intent)
+            context.startActivity(Intent(context, FakeManagerActivity::class.java))
         }
     }
 }
