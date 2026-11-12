@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
@@ -35,6 +36,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,11 +67,17 @@ fun AppGridScreen(
     columns: Int,
     onLaunch: (AppInfo) -> Unit,
     onAction: (AppInfo, AppAction) -> Unit,
+    onScrollChange: (Boolean) -> Unit,
 ) {
     var selectedApp by remember { mutableStateOf<AppInfo?>(null) }
     var confirmingApp by remember { mutableStateOf<AppInfo?>(null) }
     var confirmingAction by remember { mutableStateOf<AppAction?>(null) }
     var infoApp by remember { mutableStateOf<AppInfo?>(null) }
+    val gridState = rememberLazyGridState()
+    val isScrolled by remember {
+        derivedStateOf { gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 0 }
+    }
+    LaunchedEffect(isScrolled) { onScrollChange(isScrolled) }
 
     if (apps.isEmpty()) {
         Box(
@@ -96,6 +105,7 @@ fun AppGridScreen(
         }
     } else {
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(columns.coerceIn(3, 5)),
             modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
