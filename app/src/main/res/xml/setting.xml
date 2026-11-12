@@ -1,31 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto">
-
-
-
-    <PreferenceCategory app:title="@string/other">
-
-        <Preference
-                android:key="gms_manager"
-                android:title="@string/gms_manager"
-                android:summary="@string/jump_gms"/>
-
-
-
-        <SwitchPreferenceCompat
-                app:key="root_hide"
-                app:title="@string/hide_root" />
-
-        <SwitchPreferenceCompat
-                app:key="daemon_enable"
-                app:title="@string/daemon_enable" />
-
-        <SwitchPreferenceCompat
-                app:key="disable_flag_secure"
-                app:title="@string/disable_flag_secure"
-                app:summary="@string/disable_flag_secure_summary" />
-
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:title="@string/appearance">
+        <ListPreference
+            android:key="appearance_mode"
+            android:title="@string/appearance_mode"
+            android:summary="@string/appearance_mode_summary"
+            android:defaultValue="dark"
+            app:entries="@array/appearance_mode_entries"
+            app:entryValues="@array/appearance_mode_values" />
+        <ListPreference
+            android:key="global_accent"
+            android:title="@string/global_accent"
+            android:summary="@string/global_accent_summary"
+            android:defaultValue="#9B8BC0"
+            app:entries="@array/global_accent_entries"
+            app:entryValues="@array/global_accent_values" />
+        <ListPreference
+            android:key="app_grid_columns"
+            android:title="@string/app_grid_columns"
+            android:summary="@string/app_grid_columns_summary"
+            android:defaultValue="4"
+            app:entries="@array/app_grid_columns_entries"
+            app:entryValues="@array/app_grid_columns_values" />
     </PreferenceCategory>
-
+    <PreferenceCategory app:title="@string/other">
+        <Preference android:key="gms_manager" android:title="@string/gms_manager" android:summary="@string/jump_gms" />
+        <SwitchPreferenceCompat app:key="root_hide" app:title="@string/hide_root" />
+        <SwitchPreferenceCompat app:key="daemon_enable" app:title="@string/daemon_enable" />
+        <SwitchPreferenceCompat
+            app:key="disable_flag_secure"
+            app:title="@string/disable_flag_secure"
+            app:summary="@string/disable_flag_secure_summary" />
+    </PreferenceCategory>
 </PreferenceScreen>
