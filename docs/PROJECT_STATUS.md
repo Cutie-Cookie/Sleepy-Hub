@@ -128,3 +128,10 @@ The first UI build attempt ([run 43317494796](https://github.com/Cutie-Cookie/Sl
 - one leftover `scanUser()` reference after removing empty-profile auto-deletion.
 
 Both source issues were corrected. The latest UI branch build is still pending; do not mark the UI milestone as build-verified until the current commit's workflow succeeds and uploads its artifact.
+
+
+## Build validation update
+
+A full ARM64 debug build succeeded in [workflow run 43319420454](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43319420454) for UI commit `9775bdc1b81ffe61e199b5512bf57b3ae4806ba7`. Gradle completed with `BUILD SUCCESSFUL`, and artifact `sleepy-hub-arm64-debug` was uploaded (ID `13990365863`).
+
+The UI branch then received a final polish pass: app icons now retain up to 192 px, the app manager explains tap/long-press actions, and the profile-settings sheet has a handle and rounded top. Those later commits still require their own successful build before the final APK is handed over. Device-level testing remains with the user.
