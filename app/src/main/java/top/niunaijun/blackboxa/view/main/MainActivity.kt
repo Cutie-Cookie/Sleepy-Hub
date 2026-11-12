@@ -706,5 +706,14 @@ class MainActivity : LoadingActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (viewBinding.drawerLayout.isDrawerOpen(Gravity.START)) {
+            viewBinding.drawerLayout.closeDrawer(Gravity.START)
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
