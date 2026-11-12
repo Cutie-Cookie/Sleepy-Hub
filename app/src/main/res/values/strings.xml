@@ -71,6 +71,7 @@
     <string name="disable_gms_hint">Clear the current Google service environment? Google service data will be cleared.</string>
     <string name="no_gms">Google services are not available on this device.</string>
     <string name="dashboard_tagline">Your little app spaces</string>
+    <string name="open_dashboard">Open profile dashboard</string>
     <string name="profiles">PROFILES</string>
     <string name="profiles_count">%1$d PROFILES</string>
     <string name="profile_switch_hint">Choose a space</string>
