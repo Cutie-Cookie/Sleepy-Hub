@@ -110,6 +110,7 @@ fun SleepyHubMainScreen(
     onDeleteProfile: (Int) -> Unit,
     onInstallApps: () -> Unit,
     onOpenFakeLocation: () -> Unit,
+    onOpenGmsManager: () -> Unit,
     onRefreshApps: () -> Unit,
     onRefreshProfiles: () -> Unit,
 ) {
@@ -290,11 +291,11 @@ fun SleepyHubMainScreen(
                                     },
                                 )
                                 DrawerShortcut(
-                                    icon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
-                                    label = "Location",
+                                    icon = { Icon(Icons.Outlined.Cloud, contentDescription = null) },
+                                    label = "GMS",
                                     onClick = {
                                         scope.launch { drawerState.close() }
-                                        onOpenFakeLocation()
+                                        onOpenGmsManager()
                                     },
                                 )
                                 DrawerShortcut(
