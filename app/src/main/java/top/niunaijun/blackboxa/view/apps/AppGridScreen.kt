@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
@@ -133,6 +134,14 @@ fun AppGridScreen(
                             },
                             modifier = Modifier.size(52.dp),
                         )
+                        if (app.icon == null) {
+                            Icon(
+                                Icons.Outlined.Apps,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         if (app.isXpModule) {
                             Surface(
                                 modifier = Modifier.align(Alignment.TopStart),
