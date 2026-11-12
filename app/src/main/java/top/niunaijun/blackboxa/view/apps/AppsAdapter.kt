@@ -24,7 +24,7 @@ class AppsAdapter : RVHolderFactory() {
     
     companion object {
         private const val TAG = "AppsAdapter"
-        private const val MAX_ICON_SIZE = 96 
+        private const val MAX_ICON_SIZE = 192 
         private val DEFAULT_ICON_COLOR = Color.parseColor("#CCCCCC")
     }
 
