@@ -239,7 +239,7 @@ class MainActivity : LoadingActivity() {
             val frame = FrameLayout(this)
             val wallpaper = ImageView(this).apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP
-                alpha = 0.48f
+                alpha = ProfileAppearance.backgroundOpacity(userId) * 0.78f
             }
             val tint = View(this).apply {
                 background = ProfileAppearance.glassBackground(this@MainActivity, userId, selected)
@@ -380,30 +380,59 @@ class MainActivity : LoadingActivity() {
     }
 
     fun showProfileOptions(userId: Int, anchor: View) {
-        val menu = PopupMenu(this, anchor)
-        menu.menu.add(Menu.NONE, 1, Menu.NONE, R.string.rename_profile)
-        menu.menu.add(Menu.NONE, 2, Menu.NONE, R.string.change_profile_background)
-        if (ProfileAppearance.backgroundUri(userId) != null) {
-            menu.menu.add(Menu.NONE, 3, Menu.NONE, R.string.background_visibility)
-            menu.menu.add(Menu.NONE, 4, Menu.NONE, R.string.remove_profile_background)
+        val dialog = BottomSheetDialog(this)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(22), dp(18), dp(22), dp(24))
+            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.dashboard_background))
         }
-        menu.menu.add(Menu.NONE, 5, Menu.NONE, R.string.profile_accent)
-        menu.menu.add(Menu.NONE, 6, Menu.NONE, R.string.delete_profile)
-        menu.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> showRenameProfileDialog(userId)
-                2 -> {
-                    pendingBackgroundUserId = userId
-                    profileBackgroundPicker.launch(arrayOf("image/*"))
+        val heading = TextView(this).apply {
+            text = ProfileAppearance.profileName(userId)
+            textSize = 20f
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.primary_text))
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(4), dp(4), dp(4), dp(14))
+        }
+        root.addView(heading)
+
+        fun addAction(label: Int, destructive: Boolean = false, action: () -> Unit) {
+            val row = TextView(this).apply {
+                text = getString(label)
+                textSize = 14f
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), 0, dp(12), 0)
+                setTextColor(if (destructive) Color.rgb(205, 92, 105) else ContextCompat.getColor(this@MainActivity, R.color.primary_text))
+                background = android.graphics.drawable.RippleDrawable(
+                    ColorStateList.valueOf(Color.argb(28, 130, 120, 150)),
+                    GradientDrawable().apply {
+                        setColor(Color.TRANSPARENT)
+                        cornerRadius = dp(14).toFloat()
+                    },
+                    null
+                )
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50))
+                setOnClickListener {
+                    dialog.dismiss()
+                    action()
                 }
-                3 -> showBackgroundOpacityDialog(userId)
-                4 -> removeProfileBackground(userId)
-                5 -> showProfileAccentDialog(userId)
-                6 -> confirmDeleteProfile(userId)
             }
-            true
+            root.addView(row)
         }
-        menu.show()
+
+        addAction(R.string.rename_profile) { showRenameProfileDialog(userId) }
+        addAction(R.string.change_profile_background) {
+            pendingBackgroundUserId = userId
+            profileBackgroundPicker.launch(arrayOf("image/*"))
+        }
+        if (ProfileAppearance.backgroundUri(userId) != null) {
+            addAction(R.string.background_visibility) { showBackgroundOpacityDialog(userId) }
+            addAction(R.string.remove_profile_background) { removeProfileBackground(userId) }
+        }
+        addAction(R.string.profile_accent) { showProfileAccentDialog(userId) }
+        addAction(R.string.delete_profile, true) { confirmDeleteProfile(userId) }
+
+        dialog.setContentView(root)
+        dialog.show()
     }
 
     private fun showRenameProfileDialog(userId: Int) {
