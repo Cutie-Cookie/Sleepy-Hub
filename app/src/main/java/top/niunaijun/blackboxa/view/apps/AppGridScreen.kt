@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.Launch
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +66,7 @@ enum class AppAction {
 fun AppGridScreen(
     apps: List<AppInfo>,
     columns: Int,
+    loading: Boolean,
     onLaunch: (AppInfo) -> Unit,
     onAction: (AppInfo, AppAction) -> Unit,
     onScrollChange: (Boolean) -> Unit,
@@ -79,6 +81,7 @@ fun AppGridScreen(
     }
     LaunchedEffect(isScrolled) { onScrollChange(isScrolled) }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     if (apps.isEmpty()) {
         Box(
             modifier = Modifier
@@ -86,21 +89,25 @@ fun AppGridScreen(
                 .padding(32.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Outlined.Launch,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(12.dp))
-                Text("No apps in this profile", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Install an app to get started.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
+            if (loading) {
+                CircularProgressIndicator()
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Outlined.Launch,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text("No apps in this profile", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Install an app to get started.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     } else {
@@ -178,6 +185,24 @@ fun AppGridScreen(
                 }
             }
         }
+    }
+    if (loading && apps.isNotEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                modifier = Modifier.padding(16.dp),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.padding(18.dp))
+            }
+        }
+    }
     }
 
     selectedApp?.let { app ->
