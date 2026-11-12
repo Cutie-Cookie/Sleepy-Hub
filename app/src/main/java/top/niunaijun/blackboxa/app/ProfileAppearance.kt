@@ -99,7 +99,7 @@ object ProfileAppearance {
             intArrayOf(first, second)
         ).apply {
             cornerRadius = dp(context, 20f)
-            setStroke(dp(context, if (selected) 1.4f else 1f), Color.argb(72, 255, 255, 255))
+            setStroke(dp(context, if (selected) 2 else 1), Color.argb(72, 255, 255, 255))
         }
     }
 
