@@ -13,7 +13,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.platform.setContent
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import top.niunaijun.blackbox.BlackBoxCore
