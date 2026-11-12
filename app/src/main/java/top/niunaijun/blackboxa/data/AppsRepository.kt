@@ -1,6 +1,10 @@
 package top.niunaijun.blackboxa.data
 
 import android.content.pm.ApplicationInfo
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.util.LruCache
 import android.net.Uri
 import android.util.Log
 import android.webkit.URLUtil
@@ -8,6 +12,8 @@ import androidx.lifecycle.MutableLiveData
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.utils.AbiUtils
+import top.niunaijun.blackbox.utils.FileUtils
+import top.niunaijun.blackbox.core.env.BEnvironment
 import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.bean.AppInfo
@@ -19,6 +25,7 @@ import top.niunaijun.blackboxa.util.getString
 class AppsRepository {
     val TAG: String = "AppsRepository"
     private var mInstalledList = mutableListOf<AppInfo>()
+    private val iconStateCache = LruCache<String, Drawable.ConstantState>(96)
 
     
     private fun safeLoadAppLabel(applicationInfo: ApplicationInfo): String {
@@ -31,50 +38,33 @@ class AppsRepository {
     }
 
     
-    private fun safeLoadAppIcon(
-            applicationInfo: ApplicationInfo
-    ): android.graphics.drawable.Drawable? {
+    private fun safeLoadAppIcon(applicationInfo: ApplicationInfo): Drawable? {
         return try {
-            
-            if (MemoryManager.shouldSkipIconLoading()) {
-                Log.w(
-                        TAG,
-                        "Memory usage high (${MemoryManager.getMemoryUsagePercentage()}%), skipping icon for ${applicationInfo.packageName}"
-                )
-                return null
+            val packageName = applicationInfo.packageName
+            iconStateCache.get(packageName)?.let { cached ->
+                return cached.newDrawable().mutate()
             }
 
-            val icon = BlackBoxCore.getPackageManager().getApplicationIcon(applicationInfo)
-
-            
-            if (icon is android.graphics.drawable.BitmapDrawable) {
-                val bitmap = icon.bitmap
-                
+            val loaded = BlackBoxCore.getPackageManager().getApplicationIcon(applicationInfo)
+            val optimized = if (loaded is BitmapDrawable) {
+                val bitmap = loaded.bitmap
                 if (bitmap.width > 96 || bitmap.height > 96) {
-                    try {
-                        val scaledBitmap =
-                                android.graphics.Bitmap.createScaledBitmap(bitmap, 96, 96, true)
-                        android.graphics.drawable.BitmapDrawable(
-                                BlackBoxCore.getPackageManager()
-                                        .getResourcesForApplication(applicationInfo.packageName),
-                                scaledBitmap
-                        )
-                    } catch (e: Exception) {
-                        Log.w(
-                                TAG,
-                                "Failed to scale icon for ${applicationInfo.packageName}: ${e.message}"
-                        )
-                        icon
-                    }
+                    val scaled = Bitmap.createScaledBitmap(bitmap, 96, 96, true)
+                    BitmapDrawable(
+                        BlackBoxCore.getPackageManager().getResourcesForApplication(packageName),
+                        scaled
+                    )
                 } else {
-                    icon
+                    loaded
                 }
             } else {
-                icon
+                loaded
             }
+            optimized.constantState?.let { iconStateCache.put(packageName, it) }
+            optimized
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to load icon for ${applicationInfo.packageName}: ${e.message}")
-            null 
+            Log.w(TAG, "Failed to load icon for " + applicationInfo.packageName + ": " + e.message)
+            null
         }
     }
 
@@ -164,14 +154,6 @@ class AppsRepository {
     fun getVmInstallList(userId: Int, appsLiveData: MutableLiveData<List<AppInfo>>) {
         try {
             
-            if (MemoryManager.isMemoryCritical()) {
-                Log.w(
-                        TAG,
-                        "Memory critical (${MemoryManager.getMemoryUsagePercentage()}%), forcing garbage collection"
-                )
-                MemoryManager.forceGarbageCollectionIfNeeded()
-            }
-
             val blackBoxCore = BlackBoxCore.get()
 
             
@@ -250,13 +232,6 @@ class AppsRepository {
             sortedApplicationList.forEachIndexed { index, applicationInfo ->
                 try {
                     
-                    if (index > 0 && index % 25 == 0) {
-                        if (MemoryManager.isMemoryCritical()) {
-                            Log.w(TAG, "Memory critical during processing, forcing GC")
-                            MemoryManager.forceGarbageCollectionIfNeeded()
-                        }
-                    }
-
                     
                     if (applicationInfo == null) {
                         Log.w(
@@ -405,7 +380,6 @@ class AppsRepository {
             } else {
                 resultLiveData.postValue(getString(R.string.install_fail, installResult.msg))
             }
-            scanUser()
         } catch (e: Exception) {
             Log.e(TAG, "Error installing APK: ${e.message}")
             resultLiveData.postValue("Installation failed: ${e.message}")
@@ -434,6 +408,27 @@ class AppsRepository {
         }
     }
 
+    fun clearApkCache(packageName: String, userID: Int, resultLiveData: MutableLiveData<String>) {
+        try {
+            val core = BlackBoxCore.get()
+            if (!core.isInstalled(packageName, userID)) {
+                resultLiveData.postValue("App is not installed in this profile")
+                return
+            }
+            core.stopPackage(packageName, userID)
+            val internalCache = BEnvironment.getDataCacheDir(packageName, userID)
+            val externalCache = BEnvironment.getExternalDataCacheDir(packageName, userID)
+            FileUtils.deleteDir(internalCache)
+            FileUtils.deleteDir(externalCache)
+            FileUtils.mkdirs(internalCache)
+            FileUtils.mkdirs(externalCache)
+            resultLiveData.postValue(getString(R.string.app_cache_cleared))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing app cache: " + e.message)
+            resultLiveData.postValue("Cache clear failed: " + (e.message ?: "unknown error"))
+        }
+    }
+
     fun clearApkData(packageName: String, userID: Int, resultLiveData: MutableLiveData<String>) {
         try {
             BlackBoxCore.get().clearPackage(packageName, userID)
@@ -441,32 +436,6 @@ class AppsRepository {
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing APK data: ${e.message}")
             resultLiveData.postValue("Clear failed: ${e.message}")
-        }
-    }
-
-    
-    private fun scanUser() {
-        try {
-            val blackBoxCore = BlackBoxCore.get()
-            val userList = blackBoxCore.users
-
-            if (userList.isEmpty()) {
-                return
-            }
-
-            val id = userList.last().id
-
-            if (blackBoxCore.getInstalledApplications(0, id).isEmpty()) {
-                blackBoxCore.deleteUser(id)
-                AppManager.mRemarkSharedPreferences.edit().apply {
-                    remove("Remark$id")
-                    remove("AppList$id")
-                    apply()
-                }
-                scanUser()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in scanUser: ${e.message}")
         }
     }
 
