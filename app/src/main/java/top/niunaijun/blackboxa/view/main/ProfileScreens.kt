@@ -278,7 +278,7 @@ fun ProfileSettingsScreen(
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             ProfileAppearance.accentPalette.forEach { color ->
@@ -511,7 +511,7 @@ fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
                     Text("Global accent", style = MaterialTheme.typography.labelLarge)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         ProfileAppearance.accentPalette.forEach { color ->
                             val selected = color == accent
