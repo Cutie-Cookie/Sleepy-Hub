@@ -108,6 +108,7 @@ class MainActivity : LoadingActivity() {
                         onInstallApps = ::openInstallPicker,
                         onOpenFakeLocation = ::openFakeLocation,
                         onRefreshApps = ::refreshCurrentApps,
+                        onRefreshProfiles = ::refreshProfiles,
                     )
                 }
             }
