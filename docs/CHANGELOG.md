@@ -96,3 +96,13 @@ On `sleepyhub/ui-rikkahub-inspired`:
 - Added profile card/page transitions and a profile-settings bottom sheet.
 
 **Not yet a release:** the UI branch still needs a successful final CI build and physical-device smoke testing. Background-running apps remain a later-update feature. No signing secrets were created or used.
+
+
+### UI build iteration — compile errors found and corrected
+
+The first RikkaHub-inspired UI build attempt ([run 43317494796](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43317494796)) reached Kotlin compilation and reported two errors:
+
+1. `ProfileAppearance.glassBackground()` passed a floating-point dp value to `GradientDrawable.setStroke`, which requires an integer pixel width. The stroke width is now converted with the integer dp helper.
+2. `AppsRepository.unInstall()` retained one call to `scanUser()` after the old auto-delete helper was removed. The stale call was removed so empty virtual profiles remain persistent.
+
+The current UI branch build is being validated again. Record the successful run and artifact here only after both build and upload complete.
