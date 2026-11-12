@@ -254,7 +254,6 @@ class AppsFragment : Fragment() {
     private fun initData() {
         try {
             viewBinding.stateView.showLoading()
-            viewModel.getInstalledApps(userID)
             viewModel.appsLiveData.observe(viewLifecycleOwner) {
                 try {
                     if (it != null) {
