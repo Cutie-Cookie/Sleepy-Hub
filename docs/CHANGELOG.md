@@ -106,3 +106,11 @@ The first RikkaHub-inspired UI build attempt ([run 43317494796](https://github.c
 2. `AppsRepository.unInstall()` retained one call to `scanUser()` after the old auto-delete helper was removed. The stale call was removed so empty virtual profiles remain persistent.
 
 The current UI branch build is being validated again. Record the successful run and artifact here only after both build and upload complete.
+
+
+### 2026-11-13 — First complete UI debug build passed
+
+- Workflow run [43319420454](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43319420454) completed successfully for UI commit `9775bdc1b81ffe61e199b5512bf57b3ae4806ba7`.
+- Gradle reported `BUILD SUCCESSFUL`; the ARM64 debug artifact uploaded successfully as artifact `sleepy-hub-arm64-debug` (artifact ID `13990365863`).
+- This build predates the final polish commits for 192 px app-icon handling, the app-actions hint, the profile-settings sheet finish, and the narrowed workflow trigger. A fresh build is required for the final candidate.
+- The earlier two compile errors are fixed. No runtime testing on a physical Android device has been performed yet.
