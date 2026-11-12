@@ -288,8 +288,9 @@ class MainActivity : LoadingActivity() {
             }
             val subtitle = TextView(this).apply {
                 val appCount = ProfileAppearance.installedAppCount(userId)
-                text = if (appCount == 0) getString(R.string.profile_no_apps)
+                val countLabel = if (appCount == 0) getString(R.string.profile_no_apps)
                     else getString(R.string.profile_apps_count, appCount)
+                text = if (selected) getString(R.string.profile_current) + " · " + countLabel else countLabel
                 textSize = 11f
                 maxLines = 1
                 setTextColor(Color.argb(220, 255, 255, 255))
@@ -389,9 +390,25 @@ class MainActivity : LoadingActivity() {
         val dialog = BottomSheetDialog(this)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(18), dp(22), dp(24))
-            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.dashboard_background))
+            setPadding(dp(22), dp(10), dp(22), dp(24))
+            background = GradientDrawable().apply {
+                setColor(ContextCompat.getColor(this@MainActivity, R.color.dashboard_background))
+                cornerRadii = floatArrayOf(
+                    dp(26).toFloat(), dp(26).toFloat(), dp(26).toFloat(), dp(26).toFloat(),
+                    0f, 0f, 0f, 0f
+                )
+            }
         }
+        root.addView(View(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.argb(85, 130, 130, 140))
+                cornerRadius = dp(3).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(38), dp(4)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                bottomMargin = dp(14)
+            }
+        })
         val heading = TextView(this).apply {
             text = ProfileAppearance.profileName(userId)
             textSize = 20f
