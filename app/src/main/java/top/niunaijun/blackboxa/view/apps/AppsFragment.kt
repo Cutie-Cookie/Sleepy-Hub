@@ -32,6 +32,12 @@ class AppsFragment : Fragment() {
     private var gridColumns by mutableIntStateOf(4)
     private var isLoading by androidx.compose.runtime.mutableStateOf(false)
     private var serviceCallbackRegistered = false
+    private val serviceAvailableCallback = Runnable {
+        Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
+        if (isAdded && ::viewModel.isInitialized) {
+            viewModel.getInstalledAppsWithRetry(userID)
+        }
+    }
 
     companion object {
         private const val TAG = "AppsFragment"
@@ -107,12 +113,7 @@ class AppsFragment : Fragment() {
         super.onStart()
         if (!serviceCallbackRegistered) {
             try {
-                BlackBoxCore.get().addServiceAvailableCallback {
-                    Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
-                    if (isAdded) {
-                        viewModel.getInstalledAppsWithRetry(userID)
-                    }
-                }
+                BlackBoxCore.get().addServiceAvailableCallback(serviceAvailableCallback)
                 serviceCallbackRegistered = true
             } catch (e: Exception) {
                 Log.w(TAG, "Could not register service callback: ${e.message}")
@@ -127,6 +128,15 @@ class AppsFragment : Fragment() {
         isLoading = false
         viewModel.resultLiveData.value = null
         viewModel.launchLiveData.value = null
+    }
+
+    override fun onDestroy() {
+        try {
+            BlackBoxCore.get().removeServiceAvailableCallback(serviceAvailableCallback)
+        } catch (_: Exception) {
+        }
+        serviceCallbackRegistered = false
+        super.onDestroy()
     }
 
     fun refreshApps() {
