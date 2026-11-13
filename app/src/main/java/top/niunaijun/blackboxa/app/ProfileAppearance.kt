@@ -116,6 +116,34 @@ object ProfileAppearance {
                 if (assigned == null || assigned !in validIds) putString(key, fallbackId)
             }
         }
+
+        // Migrate the previous prototype's profile-owned wallpaper into the default
+        // container once. The profile-specific accent/background keys are then retired.
+        if (!preferences.getBoolean("legacy_profile_appearance_migrated", false)) {
+            val legacyBackgroundOwner = existingUserIds.firstOrNull {
+                !preferences.getString("profile_background_$it", null).isNullOrBlank()
+            }
+            if (legacyBackgroundOwner != null && items.none { !it.backgroundUri.isNullOrBlank() }) {
+                val legacyUri = preferences.getString("profile_background_$legacyBackgroundOwner", null)
+                val legacyOpacity = preferences.getFloat("profile_background_opacity_$legacyBackgroundOwner", 0.32f)
+                items = items.toMutableList().also { list ->
+                    list[0] = list[0].copy(
+                        backgroundUri = legacyUri,
+                        backgroundOpacity = legacyOpacity.coerceIn(0f, 1f),
+                    )
+                }
+                saveContainers(items)
+            }
+            preferences.edit {
+                existingUserIds.forEach { userId ->
+                    remove("profile_accent_$userId")
+                    remove("profile_background_$userId")
+                    remove("profile_background_opacity_$userId")
+                }
+                putBoolean("legacy_profile_appearance_migrated", true)
+            }
+        }
+
         val active = preferences.getString(ACTIVE_CONTAINER_KEY, null)
         if (active == null || active !in validIds) saveActiveContainerId(fallbackId)
         return items
