@@ -23,7 +23,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | Branch | Purpose | Baseline |
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
-| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `c7b28cd` — latest candidate; CI run `43452740407` in progress |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `c7b28cd` — CI run `43452740407` green; preview APK uploaded |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -61,12 +61,12 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 
 ## Latest verified build and current candidate
 
-- Latest successful prior core build: [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130), source head `81599d812db623a5f744d64ff69664b4507f8363`; it compiled the identity, app gesture, Play icon and fake-location hardening changes.
-- Older verified artifact: ID `14046061691` from run `43439814552`; historical only and not suitable for the current retest.
-- Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Current candidate: source head `c7b28cda67535e5ffd4fea497196aec8340b07fe`; Actions run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) is in progress.
-- Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because the folder-selection state was scoped inside the drawer branch but referenced by dialogs outside it. Commit `c7b28cd` moves that state to the screen-level scope.
-- Current-head APK: not available until run `43452740407` passes package/signature/ABI verification and uploads its artifact. Do not install an older APK for this retest.
+- Latest successful core build: [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130), source head `81599d812db623a5f744d64ff69664b4507f8363`.
+- Current green build: [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407), source head `c7b28cda67535e5ffd4fea497196aec8340b07fe`. Build, preview package/label, APK signature, ARM64 library verification and artifact upload all passed.
+- Artifact: `sleepy-hub-arm64-preview-debug`, ID `14052746172`; ZIP SHA-256 `61d62844bca5561c6a0e55a43eb889ca68ab8cdc164301d720a0c03ee88baefb`.
+- APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, 26,095,735 bytes; package `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, version `4.0.0-preview`, ARM64-v8a. APK SHA-256 `4403b84b08118d95e7cc45160ce9d87aa2ad30f78f66fb8a4773f64f29532468`.
+- APK signature verified using v1 and v2 schemes with the persistent Sleepy Hub Preview Debug certificate; archive integrity passed after download. This is a debug preview, not a production release.
+- Historical prior artifact ID `14046061691` is not the current test build.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
