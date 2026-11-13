@@ -64,8 +64,8 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 - Last successful current-feature build: [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176), exact source head `cd917c58c7d4f8baa521f6839eafdb318cb40fa7`.
 - Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14036965394`; extracted APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`.
 - Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Current candidate: feature head `6df0bbcc031bace16bb2461c4963ea23520277ea`; Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is in progress. There is no current APK for the new identity/folder/lifecycle/UI changes until this run succeeds.
-- The previous APK is stale for the latest fixes. Do not tell the user to test it as the current candidate.
+- Current candidate: feature head `6df0bbcc031bace16bb2461c4963ea23520277ea`; Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) **passed**. Artifact `sleepy-hub-arm64-preview-debug`, ID `14044795945`; extracted APK size 26,077,671 bytes; APK SHA-256 `9af76f1ceaa4500d2c5a07dedfe9edbe0305f1a0274254b279edd297096d28c6`.
+- This is the current build candidate. CI verification does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups

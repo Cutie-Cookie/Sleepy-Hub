@@ -232,7 +232,7 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 - Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
 - Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
 - The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
-- Current feature head is 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run 43437776339 is still in progress; do not mark these changes build-verified until it completes.
+- Current feature head is 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run 43437776339 passed the ARM64 build, preview identity/signature/ABI checks and artifact upload. Phone testing is still required;
 
 ### Outstanding device evidence
 

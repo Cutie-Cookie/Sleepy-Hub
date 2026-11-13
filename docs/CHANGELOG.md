@@ -212,5 +212,14 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 - The same commit changes the default unsaved profile name to New Profile, replaces the Stop action with a one-minute idle-stop scheduler and Settings opt-out, prevents long-press release from launching the app, disables profile pager swiping, adds fade-only page transitions, adds a labeled loading state, replaces the Play badge with a plain white triangle, and defines neutral Material 3 roles.
 - Commit `6df0bbcc031bace16bb2461c4963ea23520277ea` adds a per-container folder registry, folder create/rename/delete actions, a selection-based move-to-folder bottom sheet, and a folder dropdown in profile editing.
 - User device feedback on the previous successful APK: drawer PASS; profile switching works and app lists do not combine; container list switching and clone targeting behave correctly; both app-install paths PASS; GMS UI PASS with scope concern; fake-location flow CRASHED; Color mode clipping and white page flashes reported.
-- Current candidate Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is still in progress. No APK for these changes is ready until build, preview identity/signature/ABI checks and artifact upload all pass.
+- Current candidate Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) passed. Artifact ID `14044795945`; archive SHA-256 `655596fb551ade715ea92edacee850a3ac749f21d1cb9cc73a4295e772eba0d2`; extracted APK SHA-256 `9af76f1ceaa4500d2c5a07dedfe9edbe0305f1a0274254b279edd297096d28c6`. The APK is ready for device testing, not yet runtime-approved.
 - `main` remains untouched. Device identifier uniqueness, storage isolation, GMS scope, idle-stop timing, long-press behavior, folder management, and theme/navigation polish all require phone retesting. Fake-location crash requires the exact failing step or trace.
+
+### 2026-11-13 — Latest profile-isolation preview build passed
+
+- Current source head: `6df0bbcc031bace16bb2461c4963ea23520277ea`.
+- GitHub Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) completed successfully. ARM64 debug build, preview APK identity/signature/ABI verification and artifact upload all passed.
+- Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14044795945`, archive size 24,257,606 bytes, archive SHA-256 `655596fb551ade715ea92edacee850a3ac749f21d1cb9cc73a4295e772eba0d2`.
+- Extracted APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, size 26,077,671 bytes, SHA-256 `9af76f1ceaa4500d2c5a07dedfe9edbe0305f1a0274254b279edd297096d28c6`.
+- Package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`. The preview package is intended to install alongside the regular app.
+- This is build verification only. Test identity uniqueness, storage isolation, GMS scope, folder operations, auto-stop timing, long-press behavior, fake location, theme and navigation on the phone before marking features done.

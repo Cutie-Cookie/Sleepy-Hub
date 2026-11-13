@@ -90,5 +90,5 @@ RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the 
 - The theme explicitly defines neutral Material 3 roles to prevent default purple containers from leaking into a monochrome theme.
 - A labeled loading state appears while the initial app list is populated.
 - Long-pressing an app should open its action sheet without launching it on release.
-- Current CI run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is pending. Do not mark these changes complete until CI and the relevant phone checks pass.
+- Current CI run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) passed. The source changes are build-verified; device behavior and visual parity still require the phone checks.
 - Fake-location crash remains blocked on the exact failing sub-step or crash trace.

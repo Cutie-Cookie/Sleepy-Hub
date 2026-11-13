@@ -36,19 +36,19 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Current feature-branch head: 6df0bbcc031bace16bb2461c4963ea23520277ea.
-- Current-head CI run: [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) — **in progress** for the current candidate. Do not mark the new source build-verified until this run completes successfully.
-- Last successful artifact: sleepy-hub-arm64-preview-debug, artifact ID 14036965394, from older head cd917c58c7d4f8baa521f6839eafdb318cb40fa7. It is stale for the new fixes and must not be used for current-head testing.
-- Previous extracted APK: SleepyHub_4.0.0-preview_arm64-v8a-debug.apk; its recorded checksum belongs to the older cd917c58 head only.
-- The previous CI run verified package ID com.cutiecookie.sleepyhub.preview and the preview signing identity. The current candidate must pass the same identity/signature/ABI checks before an APK is shared.
+- Current-head CI run: [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) — **passed** for exact source head 6df0bbcc031bace16bb2461c4963ea23520277ea. ARM64 build, preview identity/signature/ABI verification and artifact upload all succeeded.
+- Current verified artifact: sleepy-hub-arm64-preview-debug, artifact ID 14044795945, created 2026-11-13 13:59:17 UTC; expires 2026-11-20 13:59:16 UTC. Archive size: 24,257,606 bytes. Archive SHA-256: 655596fb551ade715ea92edacee850a3ac749f21d1cb9cc73a4295e772eba0d2.
+- Current extracted APK: SleepyHub_4.0.0-preview_arm64-v8a-debug.apk, 26,077,671 bytes. APK SHA-256: 9af76f1ceaa4500d2c5a07dedfe9edbe0305f1a0274254b279edd297096d28c6.
+- Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
-- The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. New commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea add per-profile identifiers, folder management, idle-stop behavior and UI polish; current run 43437776339 is in progress.
+- The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. New commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea are now build-verified by run 43437776339, including the ARM64 build, identity/signature/ABI checks and artifact upload.
 - Earlier successful builds remain historical only: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for `dae5f468ad1fdf52dee22d3572de37f7a9af619c`, and [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for `046e04bb15ab328f531427a6ea64b9d9dba896fb`. Do not use their APKs for current-head testing.
-- The previous source head is build-verified, but the current candidate is not yet build-verified. No runtime behavior, storage isolation or visual parity is claimed until the current APK and device checks pass.
+- Current source head 6df0bbcc031bace16bb2461c4963ea23520277ea is build-verified by run 43437776339. Device behavior, storage isolation, GMS scope, fake-location stability and visual parity still require phone testing.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
-## Next phone test session — after current candidate passes
+## Next phone test session — current candidate
 
-**Wait for run 43437776339 to pass before installing the new candidate.** The last successful APK was built from older head cd917c58c7d4f8baa521f6839eafdb318cb40fa7; it does not contain the new identity, folder, lifecycle or UI fixes. Do not use that older APK for the next test session.
+**Use only the current Preview APK from run 43437776339.** It contains the identity, folder, lifecycle and UI fixes. Install it alongside the regular app; do not uninstall the regular app, clear its data, or use valuable profiles for destructive tests.
 
 ### Before testing
 - [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.
