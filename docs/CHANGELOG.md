@@ -190,3 +190,16 @@ Files added/rewritten so far:
 - Inspected RikkaHub's `Assistant.kt`, `ConversationRepository`, `ChatDrawerVM`, `AssistantPicker`, `AssistantPage`, `AssistantBasicPage`, and global theme source. The Assistant model has avatar/background fields but no theme field; global theme settings are stored separately.
 - Updated `RIKKAHUB_RESEARCH.md`, `RIKKAHUB_SOURCE_AUDIT.md`, `UI_IMPLEMENTATION_PLAN.md`, and `UI_ROADMAP.md` to supersede the earlier incorrect flat-profile mapping.
 - Documentation-only changes on `sleepyhub/docs-project-notes`. No app source code was changed; `main` remains untouched.
+
+
+### 2026-11-13 — Deep RikkaHub interaction/source-map audit
+
+- Confirmed the long-press conversation menu in `ConversationList.kt` includes Move to assistant. `ChatDrawer.kt` opens a bottom sheet listing assistants; `ChatVM.kt`, `ChatService.kt`, `ConversationRepository.kt`, and `ConversationDAO.kt` update the existing conversation's assistant membership and clear its assistant-scoped folder assignment. Moving the active conversation also selects the destination assistant.
+- Mapped the exact Assistant picker, manager, add sheet, detail editor, avatar/background picker, Settings home, Preferences, Theme pages, and typed navigation routes. Added [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md) with file-by-file paths and Sleepy Hub equivalents.
+- Confirmed the entry points: Assistant manager from the dashboard footer and Settings → General Settings → Assistant; Assistant picker near the bottom of the drawer; edit from the picker row; Add Assistant from the manager top-bar plus; Settings from the dashboard bottom-right.
+- Sleepy Hub mapping: profile long-press → Move to container; preserve the same BlackBox user ID and app data. Add Profile is a small dashboard plus; Add Container is in the Container Manager top bar; Add App replaces RikkaHub's top-right New Message action.
+- Remove Sleepy Hub's top-right MoreVert menu; keep Settings at the dashboard bottom-right and Refresh in the dashboard footer.
+- Audited the current storage permission rationale (`MaterialAlertDialogBuilder`) and planned a Compose Material 3 rationale popup while preserving the Android All Files Access permission intent and result check.
+- Audited the current app picker: the existing UI needs a real hierarchy/interaction redesign, not just color changes. The plan calls for a LargeFlexibleTopAppBar, rounded search, compact app rows with icons/name/package/Add or Installed status, APK chooser, and loading/empty states.
+- Confirmed the container delete popup must have Cancel/Delete and explain the impact on profiles/data. The cascade-vs-move policy remains unconfirmed; do not implement destructive deletion until decided.
+- Documentation-only changes on `sleepyhub/docs-project-notes`. No app source code was changed; `main` remains untouched.
