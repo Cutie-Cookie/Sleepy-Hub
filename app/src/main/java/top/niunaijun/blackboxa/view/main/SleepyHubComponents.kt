@@ -21,7 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -178,15 +183,37 @@ fun ProfileAvatar(
             model = ImageRequest.Builder(context).data(uri).crossfade(260).build(),
             contentDescription = "$name avatar",
             contentScale = ContentScale.Crop,
-            modifier = modifier.size(size).clip(shape),
+            modifier = modifier.size(badgeSize).clip(shape),
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LargeFlexibleTopAppBar(
+    title: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {},
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
+    colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(),
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+) {
+    LargeTopAppBar(
+        title = title,
+        modifier = modifier,
+        navigationIcon = navigationIcon,
+        actions = actions,
+        windowInsets = windowInsets,
+        colors = colors,
+        scrollBehavior = scrollBehavior,
+    )
 }
 
 @Composable
 fun GooglePlayBadge(
     modifier: Modifier = Modifier,
-    size: Dp = 16.dp,
+    badgeSize: Dp = 16.dp,
 ) {
     val context = LocalContext.current
     val playIcon: Drawable? = remember(context) {
@@ -199,10 +226,10 @@ fun GooglePlayBadge(
         AndroidView(
             factory = { ImageView(it).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
             update = { it.setImageDrawable(playIcon) },
-            modifier = modifier.size(size).clip(CircleShape),
+            modifier = modifier.size(badgeSize).clip(CircleShape),
         )
     } else {
-        Canvas(modifier = modifier.size(size)) {
+        Canvas(modifier = modifier.size(badgeSize)) {
             val w = size.width
             val h = size.height
             val blue = Path().apply {
