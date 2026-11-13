@@ -10,7 +10,9 @@ This folder is the working notebook for the Sleepy Hub fork. It records the curr
 4. [RikkaHub source research](RIKKAHUB_RESEARCH.md) — the upstream components and behavior being used as the reference.
 5. [RikkaHub source audit](RIKKAHUB_SOURCE_AUDIT.md) — exact source-level patterns and gaps found in the current Sleepy Hub rebuild.
 6. [UI roadmap](UI_ROADMAP.md) — the agreed RikkaHub-inspired redesign direction.
-7. [UI implementation plan](UI_IMPLEMENTATION_PLAN.md) — confirmed scope, profile wallpapers, animations, and device acceptance tests.
+7. [UI implementation plan](UI_IMPLEMENTATION_PLAN.md) — confirmed scope, container/profile ownership, and device acceptance tests.
+
+8. [RikkaHub source map](RIKKAHUB_SOURCE_MAP.md) — file-by-file paths for the drawer, long-press/move flow, container picker/manager, settings/theme, top-bar action, permissions, and Sleepy Hub adaptations.
 
 ## Notebook rules
 
