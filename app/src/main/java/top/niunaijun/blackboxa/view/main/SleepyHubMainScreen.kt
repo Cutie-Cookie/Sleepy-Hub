@@ -70,6 +70,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.surfaceColorAtElevation
@@ -124,6 +126,7 @@ data class ContainerItem(
 @Composable
 fun SleepyHubMainScreen(
     profiles: List<ProfileItem>,
+    folderNames: List<String>,
     containers: List<ContainerItem>,
     activeUserId: Int,
     activeContainerId: String,
@@ -138,6 +141,9 @@ fun SleepyHubMainScreen(
     onDeleteProfile: (Int) -> Unit,
     onMoveProfile: (Int, String) -> Unit,
     onSetProfileFolder: (Int, String) -> Unit,
+    onCreateFolder: (String) -> Unit,
+    onRenameFolder: (String, String) -> Unit,
+    onDeleteFolder: (String) -> Unit,
     onToggleProfilePinned: (Int, Boolean) -> Unit,
     onCloneProfile: (Int) -> Unit,
     onReorderProfiles: (List<Int>) -> Unit,
@@ -256,6 +262,7 @@ fun SleepyHubMainScreen(
         }
         "profile-manager" -> ProfileManagerScreen(
             profiles = profiles,
+            folders = folderNames,
             onBack = { page = "workspace" },
             onAdd = onAddProfile,
             onEdit = {
@@ -266,6 +273,9 @@ fun SleepyHubMainScreen(
             onClone = onCloneProfile,
             onDelete = onDeleteProfile,
             onReorder = onReorderProfiles,
+            onCreateFolder = onCreateFolder,
+            onRenameFolder = onRenameFolder,
+            onDeleteFolder = onDeleteFolder,
         )
         "profile-settings" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
@@ -288,6 +298,7 @@ fun SleepyHubMainScreen(
             } else {
                 ProfileBasicScreen(
                     profile = profile,
+                    folders = folderNames,
                     onBack = { page = "profile-settings" },
                     onSave = { name, folder, avatarUri ->
                         onRenameProfile(profile.userId, name)
@@ -338,9 +349,7 @@ fun SleepyHubMainScreen(
             var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
             var profileSortMode by rememberSaveable(activeContainerId) { mutableStateOf("custom") }
             var sortMenuExpanded by rememberSaveable(activeContainerId) { mutableStateOf(false) }
-            val folders = remember(profiles) {
-                profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
-            }
+            val folders = folderNames
             val visibleProfiles = remember(profiles, selectedFolder, profileSortMode) {
                 val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
                 when (profileSortMode) {
@@ -698,22 +707,38 @@ fun SleepyHubMainScreen(
     }
 
     if (folderProfileId >= 0) {
+        val movingProfile = profiles.firstOrNull { it.userId == folderProfileId }
         AlertDialog(
             onDismissRequest = { folderProfileId = -1 },
-            title = { Text("Move to folder") },
+            title = { Text("${movingProfile?.name ?: "profile"} to folder") },
             text = {
-                OutlinedTextField(
-                    value = folderDraft,
-                    onValueChange = { folderDraft = it },
-                    singleLine = true,
-                    label = { Text("Folder name") },
-                )
+                Column(
+                    modifier = Modifier.heightIn(max = 280.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    folderNames.forEach { folder ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { folderDraft = folder }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RadioButton(
+                                selected = folderDraft == folder,
+                                onClick = { folderDraft = folder },
+                            )
+                            Text(folder, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
                     onSetProfileFolder(folderProfileId, folderDraft)
                     folderProfileId = -1
-                }, enabled = folderDraft.isNotBlank()) { Text("Save") }
+                }, enabled = folderDraft in folderNames) { Text("Move") }
             },
             dismissButton = {
                 TextButton(onClick = { folderProfileId = -1 }) { Text("Cancel") }
