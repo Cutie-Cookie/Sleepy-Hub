@@ -128,11 +128,27 @@ fun FakeLocationScreen(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 1.dp),
                     )
-                    Text(
-                        "1. Choose an app from this profile.  2. Tap a place on the map to drop the pin, then press “Use this location”.  3. That app, in this profile only, will see the chosen coordinates instead of its real location. Your phone’s GPS and other apps are not changed. To turn it off later, long-press the app and choose Disable.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            "What fake location does",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            "It changes the location reported to one virtual app in this profile. It does not move your phone or change your phone's real GPS.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "1. Tap an app below.  2. Tap a place on the map to drop a pin.  3. Press “Use this location” to apply it.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "To restore its real location later, long-press that app and choose Disable.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 

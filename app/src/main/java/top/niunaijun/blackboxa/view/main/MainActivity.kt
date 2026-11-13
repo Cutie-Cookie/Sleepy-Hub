@@ -198,6 +198,13 @@ class MainActivity : BaseActivity() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
                     if (pagerDataUpdateInProgress) return
+                    // ViewPager2 can deliver a delayed callback for the previous numeric
+                    // position after the adapter's stable IDs have already changed.
+                    // Only accept the page that is actually current now.
+                    if (position != viewPager.currentItem) {
+                        Log.d(TAG, "Ignoring stale page callback: position=$position current=${viewPager.currentItem}")
+                        return
+                    }
                     val fragment = pagerAdapter.fragmentAt(position) ?: return
                     val userId = fragment.userID
                     if (ProfileAppearance.profileContainer(userId) != activeContainerId) return

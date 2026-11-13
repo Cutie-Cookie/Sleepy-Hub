@@ -31,6 +31,20 @@ jobs:
           packages: 'platform-tools'
       - name: Build ARM64 debug APK
         run: ./gradlew --no-daemon :app:assembleDebug -PsleepyHubArm64Only=true
+      - name: Verify preview APK identity, signature, and ABI
+        shell: bash
+        run: |
+          apk="$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)"
+          test -n "$apk"
+          build_tools="$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
+          aapt="$ANDROID_HOME/build-tools/$build_tools/aapt"
+          apksigner="$ANDROID_HOME/build-tools/$build_tools/apksigner"
+          "$apksigner" verify --verbose --print-certs "$apk"
+          "$aapt" dump badging "$apk" | grep -F "package: name='com.cutiecookie.sleepyhub.preview'"
+          "$aapt" dump badging "$apk" | grep -F "application-label:'Sleepy Hub Preview'"
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libblackbox.so'
+          sha256sum "$apk"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
