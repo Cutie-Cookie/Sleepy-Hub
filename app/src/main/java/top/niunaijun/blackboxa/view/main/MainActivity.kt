@@ -182,7 +182,7 @@ class MainActivity : BaseActivity() {
                 }
             }
         )
-        loadContainerProfiles(activeContainerId, ProfileAppearance.lastProfileId())
+        loadContainerProfiles(activeContainerId)
     }
 
     private fun loadContainerProfiles(containerId: String, preferredUserId: Int? = null) {
@@ -199,6 +199,7 @@ class MainActivity : BaseActivity() {
             ?: ProfileAppearance.lastProfileId().takeIf { id -> members.any { it.id == id } }
             ?: members.firstOrNull()?.id
         activeUserId = selected ?: -1
+        if (selected != null) ProfileAppearance.saveLastProfileId(containerId, selected)
         refreshProfiles()
 
         val index = fragmentList.indexOfFirst { it.userID == activeUserId }
