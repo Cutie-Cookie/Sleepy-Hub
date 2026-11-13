@@ -334,10 +334,6 @@ class MainActivity : BaseActivity() {
 
     fun deleteContainer(containerId: String) {
         val allContainers = ProfileAppearance.containers()
-        if (allContainers.size <= 1) {
-            Toast.makeText(this, "Keep at least one container", Toast.LENGTH_SHORT).show()
-            return
-        }
         val existingTarget = allContainers.firstOrNull { it.id != containerId }
         try {
             val userIds = BlackBoxCore.get().users
