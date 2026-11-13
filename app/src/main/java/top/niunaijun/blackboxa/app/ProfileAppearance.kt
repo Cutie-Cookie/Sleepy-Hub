@@ -210,6 +210,13 @@ object ProfileAppearance {
         preferences.edit { putString("profile_folder_$userId", folder.trim().ifBlank { "General" }) }
     }
 
+    fun isProfilePinned(userId: Int): Boolean =
+        preferences.getBoolean("profile_pinned_$userId", false)
+
+    fun setProfilePinned(userId: Int, pinned: Boolean) {
+        preferences.edit { putBoolean("profile_pinned_$userId", pinned) }
+    }
+
     fun globalThemeMode(): String =
         preferences.getString("global_theme_mode", "system") ?: "system"
 
@@ -247,6 +254,7 @@ object ProfileAppearance {
         preferences.edit {
             remove(profileContainerKey(userId))
             remove("profile_folder_$userId")
+            remove("profile_pinned_$userId")
             // Remove legacy per-profile appearance values from earlier prototypes.
             remove("profile_accent_$userId")
             remove("profile_background_$userId")
