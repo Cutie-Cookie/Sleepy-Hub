@@ -85,14 +85,12 @@ fun ContainerSettingsScreen(
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             persistReadPermission(context, uri)
-            releaseReadPermission(context, avatarUri)
             avatarUri = uri.toString()
         }
     }
     val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             persistReadPermission(context, uri)
-            releaseReadPermission(context, backgroundUri)
             backgroundUri = uri.toString()
         }
     }
@@ -133,7 +131,6 @@ fun ContainerSettingsScreen(
                                 }
                                 if (avatarUri != null) {
                                     TextButton(onClick = {
-                                        releaseReadPermission(context, avatarUri)
                                         avatarUri = null
                                     }) { Text("Remove") }
                                 }
@@ -172,7 +169,6 @@ fun ContainerSettingsScreen(
                         }
                         if (backgroundUri != null) {
                             TextButton(onClick = {
-                                releaseReadPermission(context, backgroundUri)
                                 backgroundUri = null
                             }) { Text("Remove") }
                         }
