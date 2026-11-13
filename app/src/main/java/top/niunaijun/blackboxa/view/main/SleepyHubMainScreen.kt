@@ -73,7 +73,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -181,6 +180,7 @@ fun SleepyHubMainScreen(
     var folderToDelete by rememberSaveable { mutableStateOf<String?>(null) }
     var folderNameDraft by rememberSaveable { mutableStateOf("") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val folderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
     val activity = context as? Activity
     val systemBarView = LocalView.current
@@ -773,7 +773,7 @@ fun SleepyHubMainScreen(
         val movingProfile = profiles.firstOrNull { it.userId == folderProfileId }
         ModalBottomSheet(
             onDismissRequest = { folderProfileId = -1 },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = folderSheetState,
         ) {
             Column(
                 modifier = Modifier
@@ -869,7 +869,7 @@ fun SleepyHubMainScreen(
                 TextButton(
                     onClick = {
                         val newName = folderNameDraft.trim()
-                        if (selectedFolder == folder) selectedFolder = newName
+                        if (selectedFolder == folder) selectedFolder = "All"
                         onRenameFolder(folder, newName)
                         folderToRename = null
                     },
@@ -1386,6 +1386,7 @@ private fun StorageRationaleDialog(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ProfileFolderChip(
     label: String,
