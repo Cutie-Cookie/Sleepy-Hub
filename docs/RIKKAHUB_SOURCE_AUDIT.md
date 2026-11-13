@@ -167,3 +167,18 @@ Files inspected:
 - No background-running feature in this milestone.
 - No VPN or remote log upload is reintroduced.
 - `main` remains untouched.
+
+
+## Latest user correction — strict UI fidelity and black workspace (2026-11-13)
+
+The user explicitly requires: **100% RikkaHub UI reference fidelity; do not add anything beyond the agreed Sleepy Hub plan.** RikkaHub's actual source code defines the layout, dimensions, component hierarchy, spacing, typography, visual surfaces, and animations. Screenshots are not a competing specification.
+
+Hard rules:
+- Keep the app-manager workspace plain black by default.
+- Do not add a box, banner, hero card, profile summary panel, illustration, artwork, or decorative header above the app grid.
+- Do not add a large Sleepy Hub logo to the workspace or drawer as decoration.
+- Do not use the rejected wide/tall custom profile cards. Use the compact RikkaHub picker and management-list patterns from source.
+- Profile wallpaper is optional and only appears behind the selected profile's app-manager workspace when the user explicitly chooses an image. Removing it restores plain black. No wallpaper thumbnail in the drawer, picker, or profile list.
+- Keep only the agreed product adaptations: virtual profiles, profile selection/addition/management, folders/profile organization already in scope, virtual app management, global and per-profile customization, and optional profile workspace wallpaper.
+- No AI chat, no background-running feature in this milestone, no speculative shortcuts, and no additional unrequested UI/feature ideas.
+- Reproduce RikkaHub's own navigation and interaction surfaces rather than replacing them with custom dialogs or invented controls. Android system permission surfaces remain system-owned.
