@@ -85,6 +85,7 @@ class FakeManagerActivity : BaseActivity() {
         val intent = Intent(this, FollowMyLocationOverlay::class.java).apply {
             putExtra("location", app.fakeLocation)
             putExtra("pkg", app.packageName)
+            putExtra("appName", app.name)
         }
         locationResult.launch(intent)
     }
