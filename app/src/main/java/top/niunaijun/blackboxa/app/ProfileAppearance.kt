@@ -12,8 +12,8 @@ import java.util.UUID
 /**
  * Persists Sleepy Hub's container identity, profile membership, and global appearance.
  *
- * A container owns its name, picture, and optional workspace background. BlackBox users
- * remain the durable profile identity; moving one only changes its container membership.
+ * Containers own their name and picture. Each BlackBox user keeps its own name, avatar,
+ * workspace background, folder and ordering; moving one only changes its container membership.
  */
 data class HubContainer(
     val id: String,
@@ -117,31 +117,41 @@ object ProfileAppearance {
             }
         }
 
-        // Migrate the previous prototype's profile-owned wallpaper into the default
-        // container once. The profile-specific accent/background keys are then retired.
+        // Keep profile-owned wallpapers. Only retire the old per-profile accent because
+        // appearance/theme is global in Sleepy Hub.
         if (!preferences.getBoolean("legacy_profile_appearance_migrated", false)) {
-            val legacyBackgroundOwner = existingUserIds.firstOrNull {
-                !preferences.getString("profile_background_$it", null).isNullOrBlank()
-            }
-            if (legacyBackgroundOwner != null && items.none { !it.backgroundUri.isNullOrBlank() }) {
-                val legacyUri = preferences.getString("profile_background_$legacyBackgroundOwner", null)
-                val legacyOpacity = preferences.getFloat("profile_background_opacity_$legacyBackgroundOwner", 0.32f)
-                items = items.toMutableList().also { list ->
-                    list[0] = list[0].copy(
-                        backgroundUri = legacyUri,
-                        backgroundOpacity = legacyOpacity.coerceIn(0f, 1f),
-                    )
-                }
-                saveContainers(items)
-            }
             preferences.edit {
-                existingUserIds.forEach { userId ->
-                    remove("profile_accent_$userId")
-                    remove("profile_background_$userId")
-                    remove("profile_background_opacity_$userId")
-                }
+                existingUserIds.forEach { userId -> remove("profile_accent_$userId") }
                 putBoolean("legacy_profile_appearance_migrated", true)
             }
+        }
+
+        // The previous test build stored one workspace image on each container. Preserve it
+        // by assigning it to that container's first profile once, without deleting the old
+        // value or revoking its URI permission.
+        if (!preferences.getBoolean("container_background_to_profile_migrated", false)) {
+            items.forEach { container ->
+                val firstProfile = existingUserIds.firstOrNull {
+                    profileContainer(it) == container.id
+                }
+                if (firstProfile != null &&
+                    profileBackgroundUri(firstProfile).isNullOrBlank() &&
+                    !container.backgroundUri.isNullOrBlank()
+                ) {
+                    setProfileBackgroundUri(firstProfile, container.backgroundUri)
+                    setProfileBackgroundOpacity(firstProfile, container.backgroundOpacity)
+                }
+            }
+            preferences.edit { putBoolean("container_background_to_profile_migrated", true) }
+        }
+
+        // Repair or initialize each container's explicit profile order.
+        items.forEach { container ->
+            val members = existingUserIds.filter { profileContainer(it) == container.id }
+            val savedOrder = profileOrder(container.id)
+            val repairedOrder = savedOrder.filter { it in members }.distinct() +
+                members.filterNot { it in savedOrder }
+            if (savedOrder != repairedOrder) setProfileOrder(container.id, repairedOrder)
         }
 
         val active = preferences.getString(ACTIVE_CONTAINER_KEY, null)
@@ -164,7 +174,10 @@ object ProfileAppearance {
 
     fun removeContainer(containerId: String) {
         saveContainers(containers().filterNot { it.id == containerId })
-        preferences.edit { remove("last_profile_id_$containerId") }
+        preferences.edit {
+            remove("last_profile_id_$containerId")
+            remove(profileOrderKey(containerId))
+        }
         preferences.edit {
             preferences.all.keys
                 .filter { it.startsWith("profile_container_") }
@@ -181,7 +194,12 @@ object ProfileAppearance {
         preferences.getString(profileContainerKey(userId), null)
 
     fun setProfileContainer(userId: Int, containerId: String) {
+        val previousContainer = profileContainer(userId)
         preferences.edit { putString(profileContainerKey(userId), containerId) }
+        if (previousContainer != null && previousContainer != containerId) {
+            setProfileOrder(previousContainer, profileOrder(previousContainer).filterNot { it == userId })
+        }
+        setProfileOrder(containerId, profileOrder(containerId).filterNot { it == userId } + userId)
     }
 
     fun activeContainerId(): String =
@@ -216,6 +234,48 @@ object ProfileAppearance {
 
     fun setProfileName(userId: Int, name: String) {
         AppManager.mRemarkSharedPreferences.edit { putString("Remark$userId", name.trim()) }
+    }
+
+    fun profileAvatarUri(userId: Int): String? =
+        preferences.getString("profile_avatar_$userId", null)?.takeIf { it.isNotBlank() }
+
+    fun setProfileAvatarUri(userId: Int, uri: String?) {
+        preferences.edit {
+            if (uri.isNullOrBlank()) remove("profile_avatar_$userId")
+            else putString("profile_avatar_$userId", uri)
+        }
+    }
+
+    fun profileBackgroundUri(userId: Int): String? =
+        preferences.getString("profile_background_$userId", null)?.takeIf { it.isNotBlank() }
+
+    fun profileBackgroundOpacity(userId: Int): Float =
+        preferences.getFloat("profile_background_opacity_$userId", 0.32f).coerceIn(0f, 1f)
+
+    fun setProfileBackgroundUri(userId: Int, uri: String?) {
+        preferences.edit {
+            if (uri.isNullOrBlank()) remove("profile_background_$userId")
+            else putString("profile_background_$userId", uri)
+        }
+    }
+
+    fun setProfileBackgroundOpacity(userId: Int, opacity: Float) {
+        preferences.edit {
+            putFloat("profile_background_opacity_$userId", opacity.coerceIn(0f, 1f))
+        }
+    }
+
+    fun profileOrder(containerId: String): List<Int> =
+        preferences.getString(profileOrderKey(containerId), null)
+            ?.split(",")
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.distinct()
+            ?: emptyList()
+
+    fun setProfileOrder(containerId: String, userIds: List<Int>) {
+        preferences.edit {
+            putString(profileOrderKey(containerId), userIds.distinct().joinToString(","))
+        }
     }
 
     fun profileFolder(userId: Int): String =
@@ -265,22 +325,28 @@ object ProfileAppearance {
         preferences.edit { putInt("app_grid_columns", columns.coerceIn(3, 5)) }
     }
 
-    /** Remove profile-owned preferences. Container artwork is intentionally separate. */
+    /** Remove profile-owned preferences. URI permission release is handled by MainActivity. */
     fun clearProfile(userId: Int) {
+        containers().forEach { container ->
+            val order = profileOrder(container.id)
+            if (userId in order) setProfileOrder(container.id, order.filterNot { it == userId })
+        }
         preferences.edit {
             remove(profileContainerKey(userId))
             remove("profile_folder_$userId")
             remove("profile_pinned_$userId")
-            // Remove legacy per-profile appearance values from earlier prototypes.
-            remove("profile_accent_$userId")
+            remove("profile_avatar_$userId")
             remove("profile_background_$userId")
             remove("profile_background_opacity_$userId")
+            remove("profile_accent_$userId")
         }
         AppManager.mRemarkSharedPreferences.edit {
             remove("Remark$userId")
             remove("AppList$userId")
         }
     }
+
+    private fun profileOrderKey(containerId: String) = "profile_order_$containerId"
 
     private fun profileContainerKey(userId: Int) = "profile_container_$userId"
 }
