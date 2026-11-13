@@ -316,7 +316,9 @@ class MainActivity : BaseActivity() {
         if (activeUserId == userId) {
             switchContainer(targetContainerId, userId)
         } else {
-            refreshProfiles()
+            // Rebuild the current container's pager so a moved, non-active profile
+            // can no longer be reached by swiping from its previous container.
+            loadContainerProfiles(activeContainerId, activeUserId)
         }
     }
 
@@ -402,11 +404,10 @@ class MainActivity : BaseActivity() {
             BlackBoxCore.get().deleteUser(userId)
             ProfileAppearance.clearProfile(userId)
             profileAppCounts.remove(userId)
-            if (wasActive) {
-                loadContainerProfiles(activeContainerId, sameContainer.firstOrNull()?.id)
-            } else {
-                refreshProfiles()
-            }
+            loadContainerProfiles(
+                activeContainerId,
+                if (wasActive) sameContainer.firstOrNull()?.id else activeUserId,
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Could not delete profile $userId: ${e.message}", e)
             Toast.makeText(this, "Couldn't delete profile", Toast.LENGTH_SHORT).show()
