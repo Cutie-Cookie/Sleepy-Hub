@@ -319,7 +319,7 @@ fun AppGridScreen(
                     Text(
                         app.sourceDir,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
