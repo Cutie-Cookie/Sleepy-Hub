@@ -267,7 +267,8 @@ class MainActivity : BaseActivity() {
                 }
             }
             pagerDataUpdateInProgress = false
-            pendingPagerUserId = null
+            // Do not erase a newer selection made after this container refresh began.
+            if (pendingPagerUserId == selected) pendingPagerUserId = null
         }
     }
 
