@@ -238,7 +238,16 @@ fun SleepyHubMainScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                         ) {
-                            DrawerHeader()
+                            DrawerHeader(
+                                container = activeContainer,
+                                onEdit = {
+                                    activeContainer?.let {
+                                        editingContainerId = it.id
+                                        scope.launch { drawerState.close() }
+                                        page = "container-settings"
+                                    }
+                                },
+                            )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -579,10 +588,10 @@ fun SleepyHubMainScreen(
 }
 
 @Composable
-private fun DrawerHeader() {
-    var nickname by rememberSaveable { mutableStateOf(ProfileAppearance.userNickname()) }
-    var showEdit by remember { mutableStateOf(false) }
-    var draft by remember(nickname) { mutableStateOf(nickname) }
+private fun DrawerHeader(
+    container: ContainerItem?,
+    onEdit: () -> Unit,
+) {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
         in 5..11 -> "Good morning 👋"
@@ -595,51 +604,25 @@ private fun DrawerHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Surface(
-            modifier = Modifier.size(50.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    nickname.firstOrNull()?.uppercase() ?: "S",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
-        }
+        ContainerAvatar(container, 50.dp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(nickname, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                IconButton(onClick = { draft = nickname; showEdit = true }) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Edit display name")
+                Text(
+                    container?.name ?: "Sleepy Hub",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                IconButton(onClick = onEdit, enabled = container != null) {
+                    Icon(Icons.Outlined.Edit, contentDescription = "Edit container")
                 }
             }
-            Text(greeting, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                greeting,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-    }
-
-    if (showEdit) {
-        AlertDialog(
-            onDismissRequest = { showEdit = false },
-            title = { Text("Display name") },
-            text = {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (draft.isNotBlank()) {
-                        nickname = draft.trim()
-                        ProfileAppearance.setUserNickname(nickname)
-                    }
-                    showEdit = false
-                }, enabled = draft.isNotBlank()) { Text("Save") }
-            },
-            dismissButton = { TextButton(onClick = { showEdit = false }) { Text("Cancel") } },
-        )
     }
 }
 
