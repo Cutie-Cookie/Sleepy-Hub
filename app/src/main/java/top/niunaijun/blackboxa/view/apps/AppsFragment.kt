@@ -32,6 +32,7 @@ class AppsFragment : Fragment() {
     private var gridColumns by mutableIntStateOf(4)
     private var isLoading by androidx.compose.runtime.mutableStateOf(false)
     private var serviceCallbackRegistered = false
+    private var pendingInstallSource: String? = null
     private val serviceAvailableCallback = Runnable {
         Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
         if (isAdded && ::viewModel.isInitialized) {
@@ -108,6 +109,11 @@ class AppsFragment : Fragment() {
                 }
             }
         }
+
+        pendingInstallSource?.let { source ->
+            pendingInstallSource = null
+            installApk(source)
+        }
     }
 
     override fun onStart() {
@@ -152,6 +158,10 @@ class AppsFragment : Fragment() {
     }
 
     fun installApk(source: String) {
+        if (!::viewModel.isInitialized) {
+            pendingInstallSource = source
+            return
+        }
         try {
             isLoading = true
             viewModel.install(source, userID)
