@@ -98,6 +98,10 @@ data class ProfileItem(
     val folder: String,
     val appCount: Int,
     val pinned: Boolean,
+    val avatarUri: String? = null,
+    val backgroundUri: String? = null,
+    val backgroundOpacity: Float = 0.32f,
+    val googlePlayEnabled: Boolean = false,
 )
 
 data class ContainerItem(
