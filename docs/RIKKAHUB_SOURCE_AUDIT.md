@@ -207,3 +207,36 @@ The items below record the initial UI mismatch list. The latest implementation a
 ### Source-map document
 
 Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upstream file paths and functions for drawer, row long-press, move-to-assistant service/repository/DAO, picker, manager/add, detail/avatar/background, Settings, global theme, route registration, and permission-dialog patterns.
+
+## 2026-11-13 — Device feedback and source-level isolation audit
+
+### Folder behavior mapped to RikkaHub
+
+- Pinned RikkaHub's ChatDrawer folder row and ConversationList long-press menu. The drawer owns the folder filter; profile/conversation actions use a picker rather than asking the user to type a folder name.
+- Sleepy Hub now stores folder names per container, keeps General as the reserved default folder, and supports creating, renaming and deleting folders. Drawer folder chips expose rename/delete on long press; moving a profile opens a folder-selection bottom sheet. The profile editor also uses a dropdown of existing folders.
+- Deleting a folder moves its profiles to General; it does not delete BlackBox users, installed apps or app data.
+
+### Virtual device identifiers versus app storage
+
+- Device testing showed matching identifiers across profiles and containers. Source tracing found that AndroidIdProxy passed through the host Android ID whenever valid; ITelephonyManagerProxy returned an MD5 of the host package for device ID/IMEI, MEID and subscriber ID; device-ID fallback and serial hooks also used shared values.
+- Commit 28443fd adds BUserIdentifiers, keyed by BlackBox user ID and persisted under that virtual user's directory. Android ID, IMEI, MEID, subscriber ID, SIM serial and device serial are now generated per virtual profile and remain stable across app launches/processes. This is source-level implementation only until the current CI build and device checks pass.
+- Storage has a separate source-level boundary: BEnvironment.getDataDir(packageName, userId), getUserDir(userId), getExternalUserDir(userId) and getExternalDataDir(packageName, userId) include the BlackBox user ID in their paths. This supports per-profile storage separation, but a device test is still required: write local app data in one profile and verify it is absent in another.
+- GMS install/uninstall paths call the selected BlackBox user ID. The apparent global GMS effect may be related to Google apps seeing the same virtual device identifiers; re-test after the new identifiers are installed.
+
+### Current feedback-driven UI/lifecycle changes
+
+- The Google Play profile badge is now a plain white triangle at the existing size/position.
+- The default unsaved profile name is New Profile, independent of the global BlackBox user ID.
+- App long-press now suppresses the click-on-release event; the action sheet should open without launching the app.
+- The nonfunctional Stop menu action was removed. A virtual app that leaves the foreground is scheduled to stop after 60 seconds; a global Settings toggle disables this behavior.
+- Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
+- Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
+- The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
+- Current feature head is 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run 43437776339 is still in progress; do not mark these changes build-verified until it completes.
+
+### Outstanding device evidence
+
+- The fake-location test crashed. No source change should be guessed until the exact failing step (open screen, select app, open map, apply, disable) or a crash trace is available.
+- Re-test GMS profile scope after the per-profile identifiers change.
+- Verify storage isolation separately from ID uniqueness.
+- Verify idle-stop timing and opt-out, long-press behavior, folder management, monochrome colors, Color mode clipping, loading state and fade-only navigation on the target phone.

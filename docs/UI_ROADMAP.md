@@ -6,7 +6,7 @@ Reproduce RikkaHub's actual navigation, layout hierarchy, component proportions,
 
 Reference repository: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub), commit `b10c168577482abed696669a58c0eb59f1eed270`.
 
-The pinned source is the specification. Screenshots are context only. The rejected `sleepyhub/ui-rikkahub-inspired` prototype must not be reused. Work remains on `sleepyhub/rikkahub-source-rebuild`; `main` must remain untouched.
+The pinned source is the specification. Screenshots are context only. The rejected prototype must not be reused. Work continues on `sleepyhub/bugfix-install-switch-polish`; `main` must remain untouched.
 
 ## Correct product hierarchy
 
@@ -59,10 +59,7 @@ The complete approved mapping and acceptance checklist are in [UI_IMPLEMENTATION
 
 ## Current audit checkpoint — 2026-11-13
 
-The current rebuild branch does not yet match the approved hierarchy. It is flat-profile based, has per-profile accents/backgrounds, puts the profile list in a bottom sheet instead of inline in the drawer, and has no container entity or container avatar. Its default workspace also draws an accent gradient. The latest ARM64 build failed and no APK was produced. See [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md).
-
-The latest failure is recorded rather than hidden. No application code was changed during this audit; documentation was corrected on `sleepyhub/docs-project-notes` only.
-
+The feature branch now contains the container/profile ownership model and inline profile drawer structure. The latest user phone test confirms profile switching and container list separation work, but exposed shared virtual device identifiers, incomplete folder management, a long-press click leak, a fake-location crash, and several theme/transition details. Source fixes for identifiers, folder management, auto-stop, loading and navigation polish are committed at 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is in progress; see RIKKAHUB_SOURCE_AUDIT.md for remaining evidence.
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the same flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.
@@ -82,3 +79,16 @@ RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the 
 - Container deletion always shows Cancel/Delete confirmation and explains the impact on contained profiles/data. Do not implement destructive cascade behavior until the user confirms the policy.
 - The app picker needs a genuine interaction/layout pass: compact app rows, icons, search, APK chooser, installed status, loading/empty states. Do not merely recolor the current cards.
 - File-by-file upstream references are indexed in [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md).
+
+## Latest feedback-driven implementation pass — 2026-11-13
+
+- Folder row supports create, rename, delete and selection-based profile moves, scoped to the active container.
+- The first profile in an empty container defaults to New Profile.
+- Virtual device identifiers are persisted per BlackBox user ID; app-data path isolation remains a separate device acceptance check.
+- The ineffective Stop action is removed. Inactive virtual apps stop after one minute by default; a global setting opts out.
+- Profile switching no longer sweeps horizontally; page transitions use a short fade over the theme background.
+- The theme explicitly defines neutral Material 3 roles to prevent default purple containers from leaking into a monochrome theme.
+- A labeled loading state appears while the initial app list is populated.
+- Long-pressing an app should open its action sheet without launching it on release.
+- Current CI run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is pending. Do not mark these changes complete until CI and the relevant phone checks pass.
+- Fake-location crash remains blocked on the exact failing sub-step or crash trace.

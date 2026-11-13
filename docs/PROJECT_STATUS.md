@@ -22,15 +22,12 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 
 | Branch | Purpose | Baseline |
 |---|---|---|
-| `main` | Upstream/default branch; do not push project work here | `89b5983` |
-| `sleepyhub/identity-icons-no-vpn` | Current application work | `6de07c5` |
-| `sleepyhub/docs-project-notes` | Project notebook and decisions | Created from `6de07c5` |
-| `sleepyhub/ui-rikkahub-inspired` | UI redesign and app-manager improvements | Created from the documentation branch; main remains untouched |
+| `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `6df0bbc` — current candidate |
+| `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
+| `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
-At the time these notes were started, the application branch was **8 commits ahead of main and 0 behind**. No application changes were pushed to `main`.
-
-The documentation branch inherits the application code at that baseline, then adds notebook files. Keep it separate until we deliberately decide how to merge or cherry-pick documentation.
-
+No application changes have been pushed to main. The documentation branch remains separate from the feature branch.
 ## What is currently in place
 
 ### Identity and appearance
@@ -62,17 +59,15 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 - With `sleepyHubArm64Only=true`, the build includes only `arm64-v8a` and does not create a universal APK.
 - Without that property, the Gradle configuration includes `armeabi-v7a` and `arm64-v8a`, with a universal APK enabled.
 
-## Latest verified build
+## Latest verified build and current candidate
 
-- **Workflow run:** [43309146086](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43309146086)
-- **Commit:** `6de07c536a013febe6432148dd23f94eec1bac30`
-- **Result:** successful; build and artifact upload steps both passed.
-- **Artifact:** `sleepy-hub-arm64-debug`
-- **Artifact size:** 7,752,711 bytes (ZIP archive)
-- **Artifact expiry shown by GitHub:** 2026-11-19 21:22:40 UTC
+- Last successful current-feature build: [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176), exact source head `cd917c58c7d4f8baa521f6839eafdb318cb40fa7`.
+- Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14036965394`; extracted APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`.
+- Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
+- Current candidate: feature head `6df0bbcc031bace16bb2461c4963ea23520277ea`; Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is in progress. There is no current APK for the new identity/folder/lifecycle/UI changes until this run succeeds.
+- The previous APK is stale for the latest fixes. Do not tell the user to test it as the current candidate.
 
-A successful CI build proves the project compiles and the artifact was uploaded. It does **not**, by itself, prove every feature works on a physical phone. Record device smoke-test results separately.
-
+A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
 
 1. **Device smoke testing:** record Android version/device class and test installation, first launch, app cloning, permissions, notifications, and normal network access. Do not write private device identifiers.
@@ -217,3 +212,19 @@ Confirmed UI placements:
 - Container delete shows Cancel/Delete confirmation. The impact on contained profiles/data must be clear; destructive cascade behavior is not yet authorized.
 
 Only documentation changed in this audit. Application source remains unchanged and the latest ARM64 workflow remains failed with no APK.
+
+## Device feedback and current source candidate — 2026-11-13
+
+The user tested the previous successful preview APK and reported:
+
+- Drawer/profile presentation: PASS, with a request for a plain white Google Play triangle.
+- Profile switching and container list separation: switching works and app lists do not combine. Device identifiers appeared shared across profiles/containers; app-data isolation still needs a separate test.
+- Empty container behavior: PASS; first profile name incorrectly used global numbering.
+- Clone/container targeting: clone remained in its source container after switching away.
+- Installed-app and external-APK installation: both PASS.
+- App long-press: app also launched on release; fix committed.
+- GMS UI: PASS, but profile scope appeared global; source calls install/uninstall with a user ID, so retest after identifier isolation.
+- Fake location: CRASHED; exact failing step and trace still needed.
+- Navigation/settings: Color mode text clipped and page transitions flashed white.
+
+The latest source candidate adds persistent profile-scoped virtual identifiers, folder create/rename/delete and selection, New Profile defaults, long-press click suppression, one-minute idle auto-stop with an opt-out, neutral theme roles, fade-only transitions and an initial loading state. These changes are on the feature branch, not main, and remain build/device-unverified until run 43437776339 and phone retesting complete.

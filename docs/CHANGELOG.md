@@ -203,3 +203,14 @@ Files added/rewritten so far:
 - Audited the current app picker: the existing UI needs a real hierarchy/interaction redesign, not just color changes. The plan calls for a LargeFlexibleTopAppBar, rounded search, compact app rows with icons/name/package/Add or Installed status, APK chooser, and loading/empty states.
 - Confirmed the container delete popup must have Cancel/Delete and explain the impact on profiles/data. The cascade-vs-move policy remains unconfirmed; do not implement destructive deletion until decided.
 - Documentation-only changes on `sleepyhub/docs-project-notes`. No app source code was changed; `main` remains untouched.
+
+### 2026-11-13 — Profile isolation, folder management and lifecycle polish
+
+Feature branch: `sleepyhub/bugfix-install-switch-polish`.
+
+- Commit `28443fd7dfaebaf774935b7c6f601345b7535c0e` adds persistent per-BlackBox-user Android ID, IMEI, MEID, subscriber ID, SIM serial and device serial values. It removes the host-package hash/shared identifier behavior from Android, telephony and serial hooks.
+- The same commit changes the default unsaved profile name to New Profile, replaces the Stop action with a one-minute idle-stop scheduler and Settings opt-out, prevents long-press release from launching the app, disables profile pager swiping, adds fade-only page transitions, adds a labeled loading state, replaces the Play badge with a plain white triangle, and defines neutral Material 3 roles.
+- Commit `6df0bbcc031bace16bb2461c4963ea23520277ea` adds a per-container folder registry, folder create/rename/delete actions, a selection-based move-to-folder bottom sheet, and a folder dropdown in profile editing.
+- User device feedback on the previous successful APK: drawer PASS; profile switching works and app lists do not combine; container list switching and clone targeting behave correctly; both app-install paths PASS; GMS UI PASS with scope concern; fake-location flow CRASHED; Color mode clipping and white page flashes reported.
+- Current candidate Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is still in progress. No APK for these changes is ready until build, preview identity/signature/ABI checks and artifact upload all pass.
+- `main` remains untouched. Device identifier uniqueness, storage isolation, GMS scope, idle-stop timing, long-press behavior, folder management, and theme/navigation polish all require phone retesting. Fake-location crash requires the exact failing step or trace.
