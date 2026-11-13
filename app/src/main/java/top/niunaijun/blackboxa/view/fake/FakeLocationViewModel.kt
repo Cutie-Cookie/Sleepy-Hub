@@ -30,4 +30,21 @@ class FakeLocationViewModel(private val mRepo: FakeLocationRepository) : BaseVie
         }
     }
 
+    fun applyFakeLocation(userId: Int, pkg: String, location: BLocation) {
+        launchOnUI {
+            // Apply mode and coordinates in one ordered operation so the list cannot
+            // refresh between the two binder calls and display a half-applied state.
+            mRepo.setPattern(userId, pkg, top.niunaijun.blackbox.fake.frameworks.BLocationManager.OWN_MODE)
+            mRepo.setLocation(userId, pkg, location)
+            mRepo.getInstalledAppList(userId, appsLiveData)
+        }
+    }
+
+    fun disableFakeLocation(userId: Int, pkg: String) {
+        launchOnUI {
+            mRepo.setPattern(userId, pkg, top.niunaijun.blackbox.fake.frameworks.BLocationManager.CLOSE_MODE)
+            mRepo.getInstalledAppList(userId, appsLiveData)
+        }
+    }
+
 }
