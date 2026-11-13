@@ -96,7 +96,7 @@ class AppsFragment : Fragment() {
         viewModel.resultLiveData.observe(viewLifecycleOwner) { result ->
             if (!result.isNullOrBlank()) {
                 isLoading = false
-                Toast.makeText(requireContext(), result, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), result, Toast.LENGTH_LONG).show()
                 viewModel.getInstalledApps(userID)
                 (activity as? MainActivity)?.scanUser()
             }
