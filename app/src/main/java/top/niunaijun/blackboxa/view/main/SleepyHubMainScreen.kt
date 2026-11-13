@@ -710,7 +710,7 @@ fun SleepyHubMainScreen(
         val movingProfile = profiles.firstOrNull { it.userId == folderProfileId }
         AlertDialog(
             onDismissRequest = { folderProfileId = -1 },
-            title = { Text("${movingProfile?.name ?: "profile"} to folder") },
+            title = { Text("Move ${movingProfile?.name ?: "profile"} to folder") },
             text = {
                 Column(
                     modifier = Modifier.heightIn(max = 280.dp),
@@ -880,7 +880,7 @@ private fun ProfileDrawerRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                if (profile.googlePlayEnabled) GooglePlayBadge(size = 14.dp)
+                if (profile.googlePlayEnabled) GooglePlayBadge(userId = profile.userId, size = 14.dp)
                 if (profile.pinned) {
                     Icon(
                         Icons.Outlined.PushPin,
