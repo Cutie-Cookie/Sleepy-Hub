@@ -123,3 +123,21 @@ The current rebuild branch does not yet implement this model. See [UI_IMPLEMENTA
 - RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0.
 - Recreate the UI and flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project.
 - Literal source reuse requires an explicit licensing decision and compliance review first.
+
+
+## Exact interaction and file map
+
+The full path-by-path implementation reference is now in [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md).
+
+The important long-press flow was traced beyond the menu itself:
+`ConversationList.kt` opens the row menu → `ChatDrawer.kt` opens the move sheet → `ChatVM.kt` calls `ChatService.moveConversationToAssistant` → `ConversationRepository.updateConversationAssistant` persists the new owner → `ConversationDAO.updateAssistantId` updates the assistant ID and clears the folder ID. If the active conversation is moved, `ChatVM` also selects the target assistant. `ChatDrawerVM` scopes the conversation/folder list to the selected assistant and resets the folder filter on assistant switch.
+
+Assistant entry points:
+- Compact picker near the bottom of `ChatDrawer.kt` → `AssistantPicker.kt`.
+- Picker-row edit button → `Screen.AssistantDetail`.
+- Drawer footer Assistant action → `Screen.Assistant`.
+- Settings home → General Settings → Assistant → same manager.
+- Manager top-bar Add icon → `AssistantCreationSheet`.
+- Global theme: Settings → Preferences → Theme, with System/Light/Dark on Settings home, dynamic color/AMOLED in theme preferences, and preset/custom themes in Theme Settings.
+
+Sleepy Hub equivalents and the exact UI placements (Add Profile plus, Add Container top-bar plus, Add App in the New Message position, no top-right dots, bottom-right dashboard Settings, storage rationale dialog, and container deletion confirmation) are specified in the source map and implementation plan.
