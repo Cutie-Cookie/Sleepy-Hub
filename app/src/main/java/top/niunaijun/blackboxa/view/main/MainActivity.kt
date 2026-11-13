@@ -50,6 +50,9 @@ class MainActivity : BaseActivity() {
     var profiles by mutableStateOf<List<ProfileItem>>(emptyList())
         private set
 
+    var folderNames by mutableStateOf<List<String>>(listOf("General"))
+        private set
+
     var containers by mutableStateOf<List<ContainerItem>>(emptyList())
         private set
 
@@ -129,6 +132,7 @@ class MainActivity : BaseActivity() {
                 SleepyHubTheme {
                     SleepyHubMainScreen(
                         profiles = profiles,
+                        folderNames = folderNames,
                         containers = containers,
                         activeUserId = activeUserId,
                         activeContainerId = activeContainerId,
@@ -143,6 +147,9 @@ class MainActivity : BaseActivity() {
                         onDeleteProfile = ::deleteProfile,
                         onMoveProfile = ::moveProfile,
                         onSetProfileFolder = ::setProfileFolder,
+                        onCreateFolder = ::createProfileFolder,
+                        onRenameFolder = ::renameProfileFolder,
+                        onDeleteFolder = ::deleteProfileFolder,
                         onToggleProfilePinned = ::toggleProfilePinned,
                         onCloneProfile = ::cloneProfile,
                         onReorderProfiles = ::reorderProfiles,
@@ -277,6 +284,11 @@ class MainActivity : BaseActivity() {
         try {
             val users = BlackBoxCore.get().users.sortedBy { it.id }
             ProfileAppearance.ensureContainers(users.map { it.id })
+            folderNames = if (activeContainerId.isBlank()) {
+                listOf("General")
+            } else {
+                ProfileAppearance.profileFolders(activeContainerId, users.map { it.id })
+            }
             val allProfiles = users.mapIndexed { index, user ->
                 ProfileItem(
                     userId = user.id,
@@ -394,7 +406,35 @@ class MainActivity : BaseActivity() {
     }
 
     fun setProfileFolder(userId: Int, folder: String) {
+        if (folder !in folderNames) return
         ProfileAppearance.setProfileFolder(userId, folder)
+        refreshProfiles()
+    }
+
+    fun createProfileFolder(name: String) {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        if (!ProfileAppearance.createProfileFolder(activeContainerId, name, userIds)) {
+            Toast.makeText(this, "That folder name is empty or already exists.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        refreshProfiles()
+    }
+
+    fun renameProfileFolder(oldName: String, newName: String) {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        if (!ProfileAppearance.renameProfileFolder(activeContainerId, oldName, newName, userIds)) {
+            Toast.makeText(this, "Couldn't rename that folder. Check the name and try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        refreshProfiles()
+    }
+
+    fun deleteProfileFolder(name: String) {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        if (!ProfileAppearance.deleteProfileFolder(activeContainerId, name, userIds)) {
+            Toast.makeText(this, "Couldn't delete that folder.", Toast.LENGTH_SHORT).show()
+            return
+        }
         refreshProfiles()
     }
 
