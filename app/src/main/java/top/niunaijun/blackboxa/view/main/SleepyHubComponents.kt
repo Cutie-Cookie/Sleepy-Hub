@@ -155,7 +155,7 @@ fun ProfileAvatar(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val shape = RoundedCornerShape((size.value * 0.34f).dp)
+    val shape = CircleShape
     if (uri.isNullOrBlank()) {
         Box(
             modifier = modifier
