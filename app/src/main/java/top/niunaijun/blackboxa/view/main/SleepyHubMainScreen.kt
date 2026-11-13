@@ -49,6 +49,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
@@ -78,6 +79,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -883,10 +885,12 @@ private fun ContainerManagerScreen(
     val filtered = remember(containers, query) {
         containers.filter { it.name.contains(query, ignoreCase = true) }
     }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text("Containers") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -898,6 +902,7 @@ private fun ContainerManagerScreen(
                         Icon(Icons.Outlined.Add, contentDescription = "Add container")
                     }
                 },
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { padding ->
