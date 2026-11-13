@@ -1,7 +1,7 @@
 package top.niunaijun.blackboxa.view.fake
 
 import android.app.Activity
-import android.content.res.Configuration
+import android.content.res.Configuration as AndroidConfiguration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -32,8 +32,8 @@ class FollowMyLocationOverlay : AppCompatActivity() {
     private var darkTheme = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val systemNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
+        val systemNight = (resources.configuration.uiMode and AndroidConfiguration.UI_MODE_NIGHT_MASK) ==
+            AndroidConfiguration.UI_MODE_NIGHT_YES
         darkTheme = when (ProfileAppearance.globalThemeMode()) {
             "dark" -> true
             "light" -> false

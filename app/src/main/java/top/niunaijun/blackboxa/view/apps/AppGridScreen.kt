@@ -60,7 +60,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
-import sh.calvin.reorderable.reorderable
 import top.niunaijun.blackboxa.bean.AppInfo
 
 enum class AppAction {
@@ -137,7 +136,7 @@ fun AppGridScreen(
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns.coerceIn(3, 5)),
-            modifier = Modifier.fillMaxSize().reorderable(reorderableState),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 start = 12.dp,
                 top = 12.dp,
