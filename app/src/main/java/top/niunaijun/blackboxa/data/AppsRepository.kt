@@ -3,10 +3,10 @@ package top.niunaijun.blackboxa.data
 import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.util.Log
-import android.webkit.URLUtil
 import androidx.lifecycle.MutableLiveData
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.core.GmsCore
 import top.niunaijun.blackbox.core.env.BEnvironment
 import top.niunaijun.blackbox.utils.AbiUtils
 import top.niunaijun.blackboxa.R
@@ -82,9 +82,8 @@ class AppsRepository {
                     try {
                         val file = File(installedApplication.sourceDir)
 
-                        if ((installedApplication.flags and ApplicationInfo.FLAG_SYSTEM) != 0)
-                                continue
-
+                        if ((installedApplication.flags and ApplicationInfo.FLAG_SYSTEM) != 0) continue
+                        if (GmsCore.isGoogleAppOrService(installedApplication.packageName)) continue
                         if (!AbiUtils.isSupport(file)) continue
 
                         
@@ -255,6 +254,9 @@ class AppsRepository {
                         )
                         return@forEachIndexed
                     }
+                    if (GmsCore.isGoogleAppOrService(applicationInfo.packageName)) {
+                        return@forEachIndexed
+                    }
 
                     val info =
                             AppInfo(
@@ -339,46 +341,46 @@ class AppsRepository {
     }
 
     fun installApk(source: String, userId: Int, resultLiveData: MutableLiveData<String>) {
+        var temporaryApk: File? = null
         try {
-            
-            if (source.contains("blackbox") ||
-                            source.contains("niunaijun") ||
-                            source.contains("vspace") ||
-                            source.contains("virtual")
-            ) {
-                
-                try {
-                    val blackBoxCore = BlackBoxCore.get()
-                    val hostPackageName = BlackBoxCore.getHostPkg()
+            val blackBoxCore = BlackBoxCore.get()
+            val hostPackageName = BlackBoxCore.getHostPkg()
+            val parsedUri = Uri.parse(source)
+            val sourceFile = when {
+                parsedUri.scheme == "file" -> parsedUri.path?.let(::File)
+                File(source).isFile -> File(source)
+                else -> null
+            }
 
-                    
-                    if (!URLUtil.isValidUrl(source)) {
-                        val file = File(source)
-                        if (file.exists()) {
-                            val packageInfo =
-                                    BlackBoxCore.getPackageManager()
-                                            .getPackageArchiveInfo(source, 0)
-                            if (packageInfo != null && packageInfo.packageName == hostPackageName) {
-                                resultLiveData.postValue(
-                                        "Cannot install BlackBox app from within BlackBox. This would create infinite recursion and is not allowed for security reasons."
-                                )
-                                return
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Could not verify if this is BlackBox app: ${e.message}")
+            // Never allow Sleepy Hub to install itself into its own virtual container.
+            val archivePackageName = sourceFile?.takeIf { it.isFile }?.let { file ->
+                runCatching {
+                    BlackBoxCore.getPackageManager().getPackageArchiveInfo(file.absolutePath, 0)?.packageName
+                }.getOrNull()
+            }
+            if (source == hostPackageName || archivePackageName == hostPackageName) {
+                resultLiveData.postValue(
+                    "Sleepy Hub cannot be installed inside its own virtual profile."
+                )
+                return
+            }
+
+            if (sourceFile != null) {
+                temporaryApk = sourceFile.takeIf {
+                    it.absolutePath.contains("/cache/apk-imports/")
                 }
             }
 
-            val blackBoxCore = BlackBoxCore.get()
-            val installResult =
-                    if (URLUtil.isValidUrl(source)) {
-                        val uri = Uri.parse(source)
-                        blackBoxCore.installPackageAsUser(uri, userId)
-                    } else {
-                        blackBoxCore.installPackageAsUser(source, userId)
-                    }
+            val installResult = when {
+                parsedUri.scheme == "content" ||
+                    parsedUri.scheme == "http" ||
+                    parsedUri.scheme == "https" -> blackBoxCore.installPackageAsUser(parsedUri, userId)
+                sourceFile != null && sourceFile.isFile -> blackBoxCore.installPackageAsUser(sourceFile, userId)
+                else -> {
+                    // A package name means "clone this host-installed app into the virtual user".
+                    blackBoxCore.installPackageAsUser(source, userId)
+                }
+            }
 
             if (installResult.success) {
                 updateAppSortList(userId, installResult.packageName, true)
@@ -387,8 +389,10 @@ class AppsRepository {
                 resultLiveData.postValue(getString(R.string.install_fail, installResult.msg))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error installing APK: ${e.message}")
-            resultLiveData.postValue("Installation failed: ${e.message}")
+            Log.e(TAG, "Error installing APK from '$source': ${e.message}", e)
+            resultLiveData.postValue("Installation failed: ${e.message ?: "Unknown error"}")
+        } finally {
+            temporaryApk?.delete()
         }
     }
 
