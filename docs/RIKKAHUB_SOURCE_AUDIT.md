@@ -7,7 +7,7 @@ Reviewed 2026-11-13.
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected head: `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`
+- Latest inspected head: `168d15ba71e7f1f879d1869c32c676519ba39590`
 - Living roadmap and bug register: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 - Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
@@ -20,9 +20,9 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="success">ARM64 debug build succeeded</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature commit: `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4` (drawer-row, clone-container, and profile-ID allocation changes; CI status not yet retrieved).
+- Latest inspected feature commit: `168d15ba71e7f1f879d1869c32c676519ba39590` (drawer-row, clone-container, profile-ID allocation, and pager selection changes; CI status not yet retrieved).
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Latest successful build: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`. The newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, and `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4` have not yet been build-verified.
+- Latest successful build: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`. The newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` have not yet been build-verified.
 - Latest artifact: `sleepy-hub-arm64-preview-debug` (ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (archive digest, not APK file checksum); expires 2026-11-20 11:47:43 UTC.
 - The latest workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
@@ -37,6 +37,7 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 - Drawer profile rows (commit `6a11fed`) now follow the pinned `ConversationList.kt` pattern: one text line, no profile image or app-count subtitle, compact 6dp vertical padding, and an elevated selected surface. CI and phone screenshot review are still pending for this newest change.
 - Profile cloning (commit `28167df`) now captures the source container before background work, assigns the new profile to that container even if the user switches away, and cleans up if the container disappears during the copy. CI and device timing tests are pending.
 - Profile creation and cloning (commit `bf6752f`) now share a process-wide lock around `max(userId) + 1` allocation and `createUser`, preventing simultaneous requests from reusing one virtual user ID. CI and rapid-action device tests are pending.
+- Pager cleanup (commit `168d15b`) now clears `pendingPagerUserId` only when it still belongs to the container refresh that scheduled the callback, preserving a newer profile selection. CI and rapid-switch device tests are pending.
 - Inline, independently scrollable profile rows in the drawer, folder filtering, profile sorting, a small Add Profile action, and a separate bottom container selector.
 - Profile manager search, compact rows, reorder handles, detail/basic/background pages, and per-profile workspace wallpapers.
 - Container settings now cover container name and picture only. Legacy container wallpaper data is migrated to profiles when needed; no per-container theme or accent controls remain.
