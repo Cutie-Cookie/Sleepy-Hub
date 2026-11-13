@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import java.io.File
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -13,8 +14,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.viewpager2.widget.ViewPager2
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.core.GmsCore
 import top.niunaijun.blackboxa.app.HubContainer
 import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityMainBinding
@@ -219,11 +225,23 @@ class MainActivity : BaseActivity() {
                     folder = ProfileAppearance.profileFolder(user.id),
                     appCount = profileAppCounts[user.id] ?: -1,
                     pinned = ProfileAppearance.isProfilePinned(user.id),
+                    avatarUri = ProfileAppearance.profileAvatarUri(user.id),
+                    backgroundUri = ProfileAppearance.profileBackgroundUri(user.id),
+                    backgroundOpacity = ProfileAppearance.profileBackgroundOpacity(user.id),
+                    googlePlayEnabled = runCatching {
+                        BlackBoxCore.get().isInstallGms(user.id)
+                    }.getOrDefault(false),
                 )
             }
-            profiles = allProfiles.filter {
-                ProfileAppearance.profileContainer(it.userId) == activeContainerId
-            }
+            val order = ProfileAppearance.profileOrder(activeContainerId)
+            val orderIndex = order.withIndex().associate { it.value to it.index }
+            profiles = allProfiles
+                .filter { ProfileAppearance.profileContainer(it.userId) == activeContainerId }
+                .sortedWith(
+                    compareByDescending<ProfileItem> { it.pinned }
+                        .thenBy { orderIndex[it.userId] ?: Int.MAX_VALUE }
+                        .thenBy { it.userId }
+                )
             containers = ProfileAppearance.containers().map { container ->
                 ContainerItem(
                     id = container.id,
@@ -312,6 +330,91 @@ class MainActivity : BaseActivity() {
         refreshProfiles()
     }
 
+    fun reorderProfiles(userIds: List<Int>) {
+        val validIds = profiles.map { it.userId }.toSet()
+        val ordered = userIds.filter { it in validIds }.distinct() +
+            profiles.map { it.userId }.filterNot { it in userIds }
+        ProfileAppearance.setProfileOrder(activeContainerId, ordered)
+        refreshProfiles()
+    }
+
+    fun updateProfileAvatar(userId: Int, uri: String?) {
+        val previous = ProfileAppearance.profileAvatarUri(userId)
+        ProfileAppearance.setProfileAvatarUri(userId, uri)
+        if (previous != uri) releaseProfileUriIfUnused(previous, userId)
+        refreshProfiles()
+    }
+
+    fun updateProfileBackground(userId: Int, uri: String?, opacity: Float) {
+        val previous = ProfileAppearance.profileBackgroundUri(userId)
+        ProfileAppearance.setProfileBackgroundUri(userId, uri)
+        ProfileAppearance.setProfileBackgroundOpacity(userId, opacity)
+        if (previous != uri) releaseProfileUriIfUnused(previous, userId)
+        refreshProfiles()
+    }
+
+    fun cloneProfile(sourceUserId: Int) {
+        if (ProfileAppearance.profileContainer(sourceUserId) != activeContainerId) return
+        lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val core = BlackBoxCore.get()
+                    val sourceUser = core.users.firstOrNull { it.id == sourceUserId }
+                        ?: throw IllegalStateException("The source profile no longer exists.")
+                    val newUserId = (core.users.maxOfOrNull { it.id } ?: -1) + 1
+                    core.createUser(newUserId)
+                    try {
+                        ProfileAppearance.setProfileContainer(newUserId, activeContainerId)
+                        ProfileAppearance.setProfileName(
+                            newUserId,
+                            "${ProfileAppearance.profileName(sourceUserId, sourceUserId)} copy",
+                        )
+                        ProfileAppearance.setProfileFolder(newUserId, ProfileAppearance.profileFolder(sourceUserId))
+                        ProfileAppearance.setProfileAvatarUri(newUserId, ProfileAppearance.profileAvatarUri(sourceUserId))
+                        ProfileAppearance.setProfileBackgroundUri(newUserId, ProfileAppearance.profileBackgroundUri(sourceUserId))
+                        ProfileAppearance.setProfileBackgroundOpacity(
+                            newUserId,
+                            ProfileAppearance.profileBackgroundOpacity(sourceUserId),
+                        )
+
+                        if (core.isInstallGms(sourceUserId)) {
+                            runCatching { core.installGms(newUserId) }
+                        }
+
+                        var copied = 0
+                        var skipped = 0
+                        val sourceApps = core.getInstalledApplications(0, sourceUserId)
+                        sourceApps.forEach { app ->
+                            val packageName = app.packageName ?: return@forEach
+                            if (packageName.isBlank() || GmsCore.isGoogleAppOrService(packageName)) return@forEach
+                            val apk = app.sourceDir?.let(::File)
+                            val result = if (apk?.isFile == true) {
+                                core.installPackageAsUser(apk, newUserId)
+                            } else {
+                                core.installPackageAsUser(packageName, newUserId)
+                            }
+                            if (result.success) copied++ else skipped++
+                        }
+                        Triple(newUserId, copied, skipped)
+                    } catch (error: Exception) {
+                        runCatching { core.deleteUser(newUserId) }
+                        ProfileAppearance.clearProfile(newUserId)
+                        throw error
+                    }
+                }
+                loadContainerProfiles(activeContainerId, result.first)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Profile cloned: ${result.second} apps copied, ${result.third} skipped. App data starts fresh.",
+                    Toast.LENGTH_LONG,
+                ).show()
+            } catch (error: Exception) {
+                Log.e(TAG, "Could not clone profile $sourceUserId", error)
+                Toast.makeText(this@MainActivity, "Couldn't clone that profile", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     fun moveProfile(userId: Int, targetContainerId: String) {
         if (containers.none { it.id == targetContainerId }) return
         if (ProfileAppearance.profileContainer(userId) == targetContainerId) return
@@ -384,8 +487,31 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun releaseProfileUriIfUnused(value: String?, deletedOrUpdatedUserId: Int) {
+        if (value.isNullOrBlank()) return
+        val usedByAnotherProfile = BlackBoxCore.get().users.any { user ->
+            user.id != deletedOrUpdatedUserId &&
+                (ProfileAppearance.profileAvatarUri(user.id) == value ||
+                    ProfileAppearance.profileBackgroundUri(user.id) == value)
+        }
+        val usedByContainer = ProfileAppearance.containers().any { container ->
+            container.avatarUri == value || container.backgroundUri == value
+        }
+        if (!usedByAnotherProfile && !usedByContainer) releaseContainerUri(value)
+    }
+
     private fun releaseContainerUri(value: String?) {
         if (value.isNullOrBlank()) return
+        val stillUsedByProfile = runCatching {
+            BlackBoxCore.get().users.any { user ->
+                ProfileAppearance.profileAvatarUri(user.id) == value ||
+                    ProfileAppearance.profileBackgroundUri(user.id) == value
+            }
+        }.getOrDefault(false)
+        val stillUsedByContainer = ProfileAppearance.containers().any { container ->
+            container.avatarUri == value || container.backgroundUri == value
+        }
+        if (stillUsedByProfile || stillUsedByContainer) return
         try {
             contentResolver.releasePersistableUriPermission(
                 Uri.parse(value),
@@ -407,8 +533,12 @@ class MainActivity : BaseActivity() {
                 it.id != userId && ProfileAppearance.profileContainer(it.id) == activeContainerId
             }
             val wasActive = activeUserId == userId
+            val oldAvatar = ProfileAppearance.profileAvatarUri(userId)
+            val oldBackground = ProfileAppearance.profileBackgroundUri(userId)
             BlackBoxCore.get().deleteUser(userId)
             ProfileAppearance.clearProfile(userId)
+            releaseProfileUriIfUnused(oldAvatar, userId)
+            releaseProfileUriIfUnused(oldBackground, userId)
             profileAppCounts.remove(userId)
             loadContainerProfiles(
                 activeContainerId,
@@ -441,7 +571,7 @@ class MainActivity : BaseActivity() {
 
     fun openGmsManager() {
         if (BlackBoxCore.get().isSupportGms) {
-            GmsManagerActivity.start(this)
+            GmsManagerActivity.start(this, activeContainerId)
         } else {
             Toast.makeText(this, "Google services are not supported", Toast.LENGTH_SHORT).show()
         }
