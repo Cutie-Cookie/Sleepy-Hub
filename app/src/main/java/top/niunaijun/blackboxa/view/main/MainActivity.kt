@@ -62,6 +62,7 @@ class MainActivity : BaseActivity() {
     companion object {
         private const val TAG = "MainActivity"
         private const val STORAGE_PERMISSION_REQUEST_CODE = 1001
+        private val profileUserCreationLock = Any()
 
         fun start(context: Context) {
             context.startActivity(Intent(context, MainActivity::class.java))
@@ -360,15 +361,22 @@ class MainActivity : BaseActivity() {
         loadContainerProfiles(containerId, preferredUserId)
     }
 
+    private fun createProfileUser(core: BlackBoxCore): Int =
+        synchronized(profileUserCreationLock) {
+            // Creation and cloning both allocate IDs; serialize the whole allocation +
+            // create operation so concurrent requests cannot receive the same user ID.
+            val nextId = (core.users.maxOfOrNull { it.id } ?: -1) + 1
+            core.createUser(nextId)
+            nextId
+        }
+
     fun createProfile() {
         try {
             if (activeContainerId.isBlank()) {
                 Toast.makeText(this, "Choose a container first", Toast.LENGTH_SHORT).show()
                 return
             }
-            val users = BlackBoxCore.get().users
-            val nextId = (users.maxOfOrNull { it.id } ?: -1) + 1
-            BlackBoxCore.get().createUser(nextId)
+            val nextId = createProfileUser(BlackBoxCore.get())
             ProfileAppearance.setProfileContainer(nextId, activeContainerId)
             loadContainerProfiles(activeContainerId, nextId)
         } catch (e: Exception) {
@@ -433,8 +441,7 @@ class MainActivity : BaseActivity() {
                     if (ProfileAppearance.containers().none { it.id == sourceContainerId }) {
                         throw IllegalStateException("The source container no longer exists.")
                     }
-                    val newUserId = (core.users.maxOfOrNull { it.id } ?: -1) + 1
-                    core.createUser(newUserId)
+                    val newUserId = createProfileUser(core)
                     try {
                         ProfileAppearance.setProfileContainer(newUserId, sourceContainerId)
                         ProfileAppearance.setProfileName(
