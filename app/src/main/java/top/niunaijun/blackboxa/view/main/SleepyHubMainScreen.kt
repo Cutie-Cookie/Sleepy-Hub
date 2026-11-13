@@ -2,21 +2,24 @@ package top.niunaijun.blackboxa.view.main
 
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,31 +30,30 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -71,16 +73,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -92,22 +94,39 @@ data class ProfileItem(
     val name: String,
     val folder: String,
     val appCount: Int,
-    val accent: Int,
-    val backgroundUri: String?,
-    val backgroundOpacity: Float,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class ContainerItem(
+    val id: String,
+    val name: String,
+    val avatarUri: String?,
+    val backgroundUri: String?,
+    val backgroundOpacity: Float,
+    val profileCount: Int,
+)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SleepyHubMainScreen(
     profiles: List<ProfileItem>,
+    containers: List<ContainerItem>,
     activeUserId: Int,
+    activeContainerId: String,
     isWorkspaceScrolled: Boolean,
     viewPager: ViewPager2,
+    storageRationaleVisible: Boolean,
+    onDismissStorageRationale: () -> Unit,
+    onGrantStoragePermission: () -> Unit,
     onSelectProfile: (Int) -> Unit,
     onAddProfile: () -> Unit,
     onRenameProfile: (Int, String) -> Unit,
     onDeleteProfile: (Int) -> Unit,
+    onMoveProfile: (Int, String) -> Unit,
+    onSetProfileFolder: (Int, String) -> Unit,
+    onCreateContainer: (String) -> Unit,
+    onSelectContainer: (String) -> Unit,
+    onUpdateContainer: (ContainerItem) -> Unit,
+    onDeleteContainer: (String) -> Unit,
     onInstallApps: () -> Unit,
     onOpenFakeLocation: () -> Unit,
     onOpenGmsManager: () -> Unit,
@@ -115,153 +134,142 @@ fun SleepyHubMainScreen(
     onRefreshProfiles: () -> Unit,
 ) {
     var page by rememberSaveable { mutableStateOf("workspace") }
+    var returnToPage by rememberSaveable { mutableStateOf("workspace") }
     var editingProfileId by rememberSaveable { mutableStateOf(-1) }
-    var showProfilePicker by rememberSaveable { mutableStateOf(false) }
-    var drawerFolder by rememberSaveable { mutableStateOf("All") }
-    val profileFolders = remember(profiles) { profiles.map { it.folder }.distinct().filter { it != "All" }.sorted() }
-    val activeProfile = profiles.firstOrNull { it.userId == activeUserId } ?: profiles.firstOrNull()
+    var editingContainerId by rememberSaveable { mutableStateOf("") }
+    var showContainerPicker by rememberSaveable { mutableStateOf(false) }
+    var moveProfileId by rememberSaveable { mutableStateOf(-1) }
+    var deleteProfileId by rememberSaveable { mutableStateOf(-1) }
+    var folderProfileId by rememberSaveable { mutableStateOf(-1) }
+    var folderDraft by rememberSaveable { mutableStateOf("") }
+
+    val activeProfile = profiles.firstOrNull { it.userId == activeUserId }
+    val activeContainer = containers.firstOrNull { it.id == activeContainerId }
 
     when (page) {
-        "profiles" -> ProfileManagerScreen(
-            profiles = profiles,
-            activeUserId = activeUserId,
-            onBack = { page = "workspace" },
+        "container-manager" -> ContainerManagerScreen(
+            containers = containers,
+            activeContainerId = activeContainerId,
+            onBack = { page = returnToPage },
+            onAdd = onCreateContainer,
             onSelect = {
-                onSelectProfile(it)
+                onSelectContainer(it)
                 page = "workspace"
             },
-            onAdd = onAddProfile,
             onEdit = {
-                editingProfileId = it
-                page = "profile-settings"
+                editingContainerId = it
+                page = "container-settings"
             },
+            onDelete = onDeleteContainer,
         )
-        "settings" -> GlobalSettingsScreen(
-            onBack = { page = "workspace" },
-            onGridColumnsChanged = onRefreshApps,
-        )
-        "profile-settings" -> {
-            val profile = profiles.firstOrNull { it.userId == editingProfileId }
-            if (profile == null) {
-                page = "profiles"
+        "container-settings" -> {
+            val container = containers.firstOrNull { it.id == editingContainerId }
+            if (container == null) {
+                page = "container-manager"
             } else {
-                ProfileSettingsScreen(
-                    profile = profile,
-                    profileCount = profiles.size,
-                    onBack = { page = "profiles" },
-                    onRename = { name ->
-                        onRenameProfile(profile.userId, name)
+                ContainerSettingsScreen(
+                    container = container,
+                    onBack = { page = "container-manager" },
+                    onSave = {
+                        onUpdateContainer(it)
+                        page = "container-manager"
                     },
-                    onDelete = {
-                        onDeleteProfile(profile.userId)
-                        page = "profiles"
-                    },
-                    onAppearanceChanged = onRefreshProfiles,
                 )
             }
         }
+        "profile-settings" -> {
+            val profile = profiles.firstOrNull { it.userId == editingProfileId }
+            if (profile == null) {
+                page = "workspace"
+            } else {
+                ProfileSettingsScreen(
+                    profile = profile,
+                    onBack = { page = "workspace" },
+                    onRename = { onRenameProfile(profile.userId, it) },
+                    onDelete = {
+                        onDeleteProfile(profile.userId)
+                        page = "workspace"
+                    },
+                    onSaved = onRefreshProfiles,
+                )
+            }
+        }
+        "settings" -> GlobalSettingsScreen(
+            onBack = { page = "workspace" },
+            onOpenPreferences = { page = "preferences" },
+            onOpenContainers = {
+                returnToPage = "settings"
+                page = "container-manager"
+            },
+            onOpenFakeLocation = onOpenFakeLocation,
+            onOpenGmsManager = onOpenGmsManager,
+            onGridColumnsChanged = onRefreshApps,
+        )
+        "preferences" -> SettingsPreferencesScreen(
+            onBack = { page = "settings" },
+            onOpenTheme = { page = "theme" },
+            onGridColumnsChanged = onRefreshApps,
+        )
+        "theme" -> ThemeSettingsScreen(onBack = { page = "preferences" })
         else -> {
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             val scope = rememberCoroutineScope()
+            var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
+            val folders = remember(profiles) {
+                profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
+            }
+            val visibleProfiles = remember(profiles, selectedFolder) {
+                if (selectedFolder == "All") profiles
+                else profiles.filter { it.folder == selectedFolder }
+            }
 
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
+                    ModalDrawerSheet(
+                        modifier = Modifier.width(300.dp),
+                        drawerContainerColor = MaterialTheme.colorScheme.surface,
+                    ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
                         ) {
                             DrawerHeader()
 
-                            DrawerEntry(
-                                icon = { Icon(Icons.Outlined.Apps, contentDescription = null) },
-                                label = "Manage profiles",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    page = "profiles"
-                                },
-                            )
-                            DrawerEntry(
-                                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                                label = "Install app",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    onInstallApps()
-                                },
-                            )
-                            DrawerEntry(
-                                icon = { Icon(Icons.Outlined.LocationOn, contentDescription = null) },
-                                label = "Fake location",
-                                onClick = {
-                                    scope.launch { drawerState.close() }
-                                    onOpenFakeLocation()
-                                },
-                            )
-
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                LazyRow(
+                                DrawerQuickAction(
+                                    icon = { Icon(Icons.Outlined.LocationOn, null) },
+                                    label = "Fake location",
                                     modifier = Modifier.weight(1f),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    items(listOf("All") + profileFolders) { folder ->
-                                        FilterChip(
-                                            selected = drawerFolder == folder,
-                                            onClick = {
-                                                drawerFolder = folder
-                                                showProfilePicker = true
-                                                scope.launch { drawerState.close() }
-                                            },
-                                            label = { Text(folder) },
-                                        )
-                                    }
-                                }
-                                IconButton(
                                     onClick = {
-                                        showProfilePicker = true
                                         scope.launch { drawerState.close() }
+                                        onOpenFakeLocation()
                                     },
-                                ) {
-                                    Icon(Icons.Outlined.Sort, contentDescription = "Browse and sort profiles")
-                                }
+                                )
+                                DrawerQuickAction(
+                                    icon = { Icon(Icons.Outlined.Cloud, null) },
+                                    label = "Google services",
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        scope.launch { drawerState.close() }
+                                        onOpenGmsManager()
+                                    },
+                                )
                             }
 
+                            Spacer(Modifier.size(16.dp))
                             Row(
+                                modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 2.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                NavigationDrawerItem(
-                                    label = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(
-                                                text = activeProfile?.name ?: "Profiles",
-                                                maxLines = 1,
-                                                modifier = Modifier.weight(1f),
-                                            )
-                                            if (activeProfile != null) {
-                                                ProfileAvatar(
-                                                    name = activeProfile.name,
-                                                    accent = activeProfile.accent,
-                                                    size = 30.dp,
-                                                )
-                                            }
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Outlined.Apps, contentDescription = null) },
-                                    selected = false,
-                                    onClick = { showProfilePicker = true },
+                                Text(
+                                    "Profiles",
+                                    style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.weight(1f),
-                                    colors = NavigationDrawerItemDefaults.colors(
-                                        unselectedContainerColor = Color.Transparent,
-                                    ),
                                 )
                                 IconButton(
                                     onClick = {
@@ -269,383 +277,448 @@ fun SleepyHubMainScreen(
                                         onAddProfile()
                                     },
                                 ) {
-                                    Icon(Icons.Outlined.PersonAdd, contentDescription = "Add profile")
+                                    Icon(Icons.Outlined.Add, contentDescription = "Add profile")
                                 }
                             }
 
-                            Spacer(Modifier.weight(1f))
+                            if (folders.isNotEmpty()) {
+                                LazyRow(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    items(listOf("All") + folders) { folder ->
+                                        androidx.compose.material3.FilterChip(
+                                            selected = selectedFolder == folder,
+                                            onClick = { selectedFolder = folder },
+                                            label = { Text(folder) },
+                                        )
+                                    }
+                                }
+                            }
 
+                            LazyColumn(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                items(visibleProfiles, key = { it.userId }) { profile ->
+                                    ProfileDrawerRow(
+                                        profile = profile,
+                                        selected = profile.userId == activeUserId,
+                                        onSelect = {
+                                            scope.launch { drawerState.close() }
+                                            onSelectProfile(profile.userId)
+                                        },
+                                        onMove = { moveProfileId = profile.userId },
+                                        onMoveToFolder = {
+                                            folderProfileId = profile.userId
+                                            folderDraft = profile.folder
+                                        },
+                                        onRename = {
+                                            editingProfileId = profile.userId
+                                            scope.launch { drawerState.close() }
+                                            page = "profile-settings"
+                                        },
+                                        onDelete = { deleteProfileId = profile.userId },
+                                    )
+                                }
+                                if (visibleProfiles.isEmpty()) {
+                                    item {
+                                        Text(
+                                            "No profiles in this folder",
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                        )
+                                    }
+                                }
+                            }
+
+                            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 4.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceAround,
+                                    .padding(horizontal = 4.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                DrawerShortcut(
-                                    icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
-                                    label = "Settings",
+                                Surface(
+                                    onClick = { showContainerPicker = true },
+                                    modifier = Modifier.weight(1f),
+                                    shape = MaterialTheme.shapes.large,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        ContainerAvatar(activeContainer, 34.dp)
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                activeContainer?.name ?: "Container",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                            Text(
+                                                "Switch container",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        Icon(Icons.Outlined.ArrowForward, contentDescription = "Choose container")
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        returnToPage = "workspace"
+                                        page = "container-manager"
+                                    },
+                                ) {
+                                    Icon(Icons.Outlined.Edit, contentDescription = "Manage containers")
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                IconButton(onClick = {
+                                    scope.launch { drawerState.close() }
+                                    onRefreshApps()
+                                }) {
+                                    Icon(Icons.Outlined.Refresh, contentDescription = "Refresh apps")
+                                }
+                                TextButton(
                                     onClick = {
                                         scope.launch { drawerState.close() }
                                         page = "settings"
                                     },
-                                )
-                                DrawerShortcut(
-                                    icon = { Icon(Icons.Outlined.Cloud, contentDescription = null) },
-                                    label = "GMS",
-                                    onClick = {
-                                        scope.launch { drawerState.close() }
-                                        onOpenGmsManager()
-                                    },
-                                )
-                                DrawerShortcut(
-                                    icon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
-                                    label = "Refresh",
-                                    onClick = {
-                                        scope.launch { drawerState.close() }
-                                        onRefreshApps()
-                                    },
-                                )
+                                ) {
+                                    Icon(Icons.Outlined.Settings, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Settings")
+                                }
                             }
                         }
                     }
                 },
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    if (activeProfile != null) {
-                        ProfileWorkspaceBackground(
-                            profile = activeProfile,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black),
+                ) {
+                    ContainerWorkspaceBackground(
+                        container = activeContainer,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                     Scaffold(
-                    containerColor = Color.Transparent,
-                    topBar = {
-                        TopAppBar(
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                            ),
-                            navigationIcon = {
-                                TopBarCapsule(
-                                    showBackground = isWorkspaceScrolled,
-                                    modifier = Modifier.padding(start = 8.dp, end = 4.dp),
-                                ) {
-                                    IconButton(
-                                        onClick = { scope.launch { drawerState.open() } },
-                                    ) {
-                                        Icon(Icons.Outlined.Menu, contentDescription = "Open dashboard")
-                                    }
-                                }
-                            },
-                            title = {
-                                Surface(
-                                    onClick = {
-                                        editingProfileId = activeUserId
-                                        page = "profile-settings"
-                                    },
-                                    color = Color.Transparent,
-                                ) {
-                                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        containerColor = Color.Transparent,
+                        topBar = {
+                            TopAppBar(
+                                title = {
+                                    Column {
                                         Text(
-                                            text = activeProfile?.name ?: "Sleepy Hub",
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            activeProfile?.name ?: activeContainer?.name ?: "Sleepy Hub",
+                                            color = Color.White,
+                                            style = MaterialTheme.typography.titleMedium,
                                             maxLines = 1,
                                         )
                                         Text(
-                                            text = when {
-                                                activeProfile == null -> "Your little app spaces"
+                                            when {
+                                                activeProfile == null -> "No profile selected"
                                                 activeProfile.appCount >= 0 -> "${activeProfile.appCount} installed apps"
                                                 else -> "Virtual profile"
                                             },
-                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                            color = Color.White.copy(alpha = 0.64f),
+                                            style = MaterialTheme.typography.labelSmall,
                                             maxLines = 1,
                                         )
                                     }
-                                }
-                            },
-                            actions = {
-                                var menuExpanded by remember { mutableStateOf(false) }
-                                TopBarCapsule(
-                                    showBackground = isWorkspaceScrolled,
-                                    modifier = Modifier.padding(start = 4.dp, end = 8.dp),
-                                ) {
-                                    IconButton(onClick = onInstallApps) {
-                                        Icon(Icons.Outlined.Add, contentDescription = "Install app")
+                                },
+                                navigationIcon = {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(Icons.Outlined.Menu, contentDescription = "Open dashboard", tint = Color.White)
                                     }
-                                    Box {
-                                        IconButton(onClick = { menuExpanded = true }) {
-                                            Icon(Icons.Outlined.MoreVert, contentDescription = "More options")
-                                        }
-                                        DropdownMenu(
-                                            expanded = menuExpanded,
-                                            onDismissRequest = { menuExpanded = false },
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Profile settings") },
-                                                leadingIcon = { Icon(Icons.Outlined.Settings, null) },
-                                                onClick = {
-                                                    menuExpanded = false
-                                                    editingProfileId = activeUserId
-                                                    page = "profile-settings"
-                                                },
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Manage profiles") },
-                                                leadingIcon = { Icon(Icons.Outlined.Apps, null) },
-                                                onClick = {
-                                                    menuExpanded = false
-                                                    page = "profiles"
-                                                },
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Refresh apps") },
-                                                leadingIcon = { Icon(Icons.Outlined.Refresh, null) },
-                                                onClick = {
-                                                    menuExpanded = false
-                                                    onRefreshApps()
-                                                },
-                                            )
-                                        }
+                                },
+                                actions = {
+                                    IconButton(
+                                        onClick = onInstallApps,
+                                        enabled = activeUserId >= 0,
+                                    ) {
+                                        Icon(Icons.Outlined.Add, contentDescription = "Add app", tint = Color.White)
                                     }
-                                }
-                            },
-                        )
-                    },
-                ) { innerPadding ->
-                    AndroidView(
-                        factory = { viewPager },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                    )
+                                },
+                                colors = TopAppBarDefaults.topAppBarColors(
+                                    containerColor = Color.Black,
+                                    titleContentColor = Color.White,
+                                    navigationIconContentColor = Color.White,
+                                    actionIconContentColor = Color.White,
+                                ),
+                            )
+                        },
+                    ) { innerPadding ->
+                        if (activeUserId >= 0) {
+                            AndroidView(
+                                factory = { viewPager },
+                                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "This container is empty",
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            if (showProfilePicker) {
-                ProfilePickerSheet(
-                    profiles = profiles,
-                    activeUserId = activeUserId,
-                    initialFolder = drawerFolder,
-                    onDismiss = { showProfilePicker = false },
+            if (showContainerPicker) {
+                ContainerPickerSheet(
+                    containers = containers,
+                    activeContainerId = activeContainerId,
+                    onDismiss = { showContainerPicker = false },
                     onSelect = {
-                        showProfilePicker = false
-                        scope.launch { drawerState.close() }
-                        onSelectProfile(it)
+                        showContainerPicker = false
+                        onSelectContainer(it)
                     },
                     onEdit = {
-                        showProfilePicker = false
-                        scope.launch { drawerState.close() }
-                        editingProfileId = it
-                        page = "profile-settings"
+                        showContainerPicker = false
+                        editingContainerId = it
+                        page = "container-settings"
                     },
-                    onAdd = {
-                        showProfilePicker = false
-                        scope.launch { drawerState.close() }
-                        onAddProfile()
+                    onManage = {
+                        showContainerPicker = false
+                        returnToPage = "workspace"
+                        page = "container-manager"
                     },
                 )
             }
         }
     }
 
-    BackHandler(enabled = page != "workspace") {
-        page = if (page == "profile-settings") "profiles" else "workspace"
-    }
-}
-
-@Composable
-private fun TopBarCapsule(
-    showBackground: Boolean,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
-) {
-    val backgroundAlpha by animateFloatAsState(
-        targetValue = if (showBackground) 1f else 0f,
-        label = "SleepyHubTopBarCapsuleBackground",
-    )
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        if (backgroundAlpha > 0f) {
-            Surface(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer { alpha = backgroundAlpha },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
-                border = BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                ),
-                content = {},
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
+    if (moveProfileId >= 0) {
+        MoveProfileSheet(
+            containers = containers,
+            activeContainerId = activeContainerId,
+            onDismiss = { moveProfileId = -1 },
+            onMove = { targetId ->
+                onMoveProfile(moveProfileId, targetId)
+                moveProfileId = -1
+            },
         )
+    }
+
+    if (deleteProfileId >= 0) {
+        val target = profiles.firstOrNull { it.userId == deleteProfileId }
+        AlertDialog(
+            onDismissRequest = { deleteProfileId = -1 },
+            title = { Text("Delete ${target?.name ?: "profile"}?") },
+            text = { Text("This permanently deletes this virtual profile and its installed apps and data.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteProfile(deleteProfileId)
+                    deleteProfileId = -1
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteProfileId = -1 }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (folderProfileId >= 0) {
+        AlertDialog(
+            onDismissRequest = { folderProfileId = -1 },
+            title = { Text("Move to folder") },
+            text = {
+                OutlinedTextField(
+                    value = folderDraft,
+                    onValueChange = { folderDraft = it },
+                    singleLine = true,
+                    label = { Text("Folder name") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSetProfileFolder(folderProfileId, folderDraft)
+                    folderProfileId = -1
+                }, enabled = folderDraft.isNotBlank()) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderProfileId = -1 }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (storageRationaleVisible) {
+        StorageRationaleDialog(
+            onDismiss = onDismissStorageRationale,
+            onGrant = onGrantStoragePermission,
+        )
+    }
+
+    BackHandler(enabled = page != "workspace") {
+        page = when (page) {
+            "container-settings" -> "container-manager"
+            "preferences" -> "settings"
+            "theme" -> "preferences"
+            else -> "workspace"
+        }
     }
 }
 
 @Composable
 private fun DrawerHeader() {
     var nickname by rememberSaveable { mutableStateOf(ProfileAppearance.userNickname()) }
-    var editName by remember { mutableStateOf(false) }
-    var draftName by remember(nickname) { mutableStateOf(nickname) }
+    var showEdit by remember { mutableStateOf(false) }
+    var draft by remember(nickname) { mutableStateOf(nickname) }
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
-        in 5..11 -> "Good morning"
+        in 5..11 -> "Good morning 👋"
         in 12..17 -> "Hope your day is going well"
-        else -> "It's late, take care 👋"
+        else -> "It's late, take care"
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Surface(
             modifier = Modifier.size(50.dp),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
+            color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
-                    text = nickname.trim().firstOrNull()?.uppercase() ?: "S",
+                    nickname.firstOrNull()?.uppercase() ?: "S",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    nickname,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                )
-                Icon(
-                    Icons.Outlined.Edit,
-                    contentDescription = "Edit display name",
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clickable {
-                            draftName = nickname
-                            editName = true
-                        },
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(nickname, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                IconButton(onClick = { draft = nickname; showEdit = true }) {
+                    Icon(Icons.Outlined.Edit, contentDescription = "Edit display name")
+                }
             }
-            Text(
-                greeting,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(greeting, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 
-    if (editName) {
+    if (showEdit) {
         AlertDialog(
-            onDismissRequest = { editName = false },
+            onDismissRequest = { showEdit = false },
             title = { Text("Display name") },
             text = {
                 OutlinedTextField(
-                    value = draftName,
-                    onValueChange = { draftName = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    value = draft,
+                    onValueChange = { draft = it },
                     singleLine = true,
                 )
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (draftName.isNotBlank()) {
-                            nickname = draftName.trim()
-                            ProfileAppearance.setUserNickname(nickname)
-                        }
-                        editName = false
-                    },
-                    enabled = draftName.isNotBlank(),
-                ) {
-                    Text("Save")
-                }
+                TextButton(onClick = {
+                    if (draft.isNotBlank()) {
+                        nickname = draft.trim()
+                        ProfileAppearance.setUserNickname(nickname)
+                    }
+                    showEdit = false
+                }, enabled = draft.isNotBlank()) { Text("Save") }
             },
-            dismissButton = {
-                TextButton(onClick = { editName = false }) { Text("Cancel") }
-            },
+            dismissButton = { TextButton(onClick = { showEdit = false }) { Text("Cancel") } },
         )
     }
 }
 
 @Composable
-private fun DrawerEntry(
+private fun DrawerQuickAction(
     icon: @Composable () -> Unit,
     label: String,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Surface(
+    NavigationDrawerItem(
+        label = { Text(label, maxLines = 1) },
+        icon = icon,
+        selected = false,
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
-                icon()
-            }
-            Text(label, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
+        modifier = modifier,
+    )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DrawerShortcut(
-    icon: @Composable () -> Unit,
-    label: String,
-    onClick: () -> Unit,
+private fun ProfileDrawerRow(
+    profile: ProfileItem,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onMove: () -> Unit,
+    onMoveToFolder: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
         Surface(
-            modifier = Modifier.size(42.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onSelect,
+                    onLongClick = { expanded = true },
+                ),
+            shape = MaterialTheme.shapes.medium,
+            color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                icon()
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    profile.name,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (profile.appCount >= 0) {
+                    Text(
+                        profile.appCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Outlined.MoreHoriz, contentDescription = "Profile actions")
+                }
             }
         }
-        Text(label, style = MaterialTheme.typography.labelSmall)
-    }
-}
-
-@Composable
-fun ProfileAvatar(name: String, accent: Int, size: androidx.compose.ui.unit.Dp) {
-    Surface(
-        modifier = Modifier.size(size),
-        shape = CircleShape,
-        color = Color(accent),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = name.trim().firstOrNull()?.uppercase() ?: "?",
-                color = Color.White,
-                fontSize = (size.value * 0.38f).sp,
-                style = MaterialTheme.typography.titleMedium,
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Move to container") },
+                onClick = { expanded = false; onMove() },
+            )
+            DropdownMenuItem(
+                text = { Text("Move to folder") },
+                onClick = { expanded = false; onMoveToFolder() },
+            )
+            DropdownMenuItem(
+                text = { Text("Rename") },
+                onClick = { expanded = false; onRename() },
+            )
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = { expanded = false; onDelete() },
             )
         }
     }
@@ -653,193 +726,372 @@ fun ProfileAvatar(name: String, accent: Int, size: androidx.compose.ui.unit.Dp) 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfilePickerSheet(
-    profiles: List<ProfileItem>,
-    activeUserId: Int,
-    initialFolder: String,
+private fun ContainerPickerSheet(
+    containers: List<ContainerItem>,
+    activeContainerId: String,
     onDismiss: () -> Unit,
-    onSelect: (Int) -> Unit,
-    onEdit: (Int) -> Unit,
-    onAdd: () -> Unit,
+    onSelect: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onManage: () -> Unit,
 ) {
-    var selectedFolder by rememberSaveable(initialFolder) { mutableStateOf(initialFolder) }
-    var sortAlphabetically by rememberSaveable { mutableStateOf(false) }
-    val folders = remember(profiles) { profiles.map { it.folder }.distinct().filter { it != "All" }.sorted() }
-    val filteredProfiles = remember(profiles, selectedFolder, sortAlphabetically) {
-        val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
-        if (sortAlphabetically) filtered.sortedBy { it.name.lowercase() } else filtered
-    }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.8f)
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "Profiles",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LazyRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(listOf("All") + folders) { folder ->
-                        FilterChip(
-                            selected = selectedFolder == folder,
-                            onClick = { selectedFolder = folder },
-                            label = { Text(folder) },
-                        )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Containers", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                TextButton(onClick = onManage) { Text("Manage") }
+            }
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(containers, key = { it.id }) { container ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            onClick = { onSelect(container.id) },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (container.id == activeContainerId) {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            } else Color.Transparent,
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                ContainerAvatar(container, 34.dp)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(container.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                                    Text(
+                                        "${container.profileCount} profiles",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                        IconButton(onClick = { onEdit(container.id) }) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Edit container")
+                        }
                     }
                 }
-                IconButton(onClick = { sortAlphabetically = !sortAlphabetically }) {
-                    Icon(Icons.Outlined.Sort, contentDescription = "Toggle profile sorting")
-                }
             }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(filteredProfiles, key = { it.userId }) { profile ->
-                    val selected = profile.userId == activeUserId
-                    Card(
-                        onClick = { onSelect(profile.userId) },
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (selected) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            },
-                            contentColor = if (selected) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                        ),
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MoveProfileSheet(
+    containers: List<ContainerItem>,
+    activeContainerId: String,
+    onDismiss: () -> Unit,
+    onMove: (String) -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.72f).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("Move profile to container", style = MaterialTheme.typography.titleLarge)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(containers, key = { it.id }) { container ->
+                    Surface(
+                        onClick = { if (container.id != activeContainerId) onMove(container.id) },
+                        enabled = container.id != activeContainerId,
+                        shape = MaterialTheme.shapes.medium,
+                        color = if (container.id == activeContainerId) {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            ProfileAvatar(profile.name, profile.accent, 36.dp)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
+                            ContainerAvatar(container, 36.dp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(container.name, style = MaterialTheme.typography.bodyLarge)
                                 Text(
-                                    profile.name,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    maxLines = 1,
-                                )
-                                Text(
-                                    "${profile.folder} · " + if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
+                                    if (container.id == activeContainerId) "Current container" else "${container.profileCount} profiles",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                            }
-                            IconButton(onClick = { onEdit(profile.userId) }) {
-                                Icon(Icons.Outlined.Edit, contentDescription = "Edit profile")
                             }
                         }
                     }
                 }
             }
-            FilledTonalButton(
-                onClick = onAdd,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-            ) {
-                Icon(Icons.Outlined.PersonAdd, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add profile")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContainerManagerScreen(
+    containers: List<ContainerItem>,
+    activeContainerId: String,
+    onBack: () -> Unit,
+    onAdd: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    var showCreate by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<ContainerItem?>(null) }
+    val filtered = remember(containers, query) {
+        containers.filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Containers") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowForward, contentDescription = "Back", modifier = Modifier.size(0.dp))
+                        Icon(Icons.Outlined.Apps, contentDescription = "Containers")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { newName = ""; showCreate = true }) {
+                        Icon(Icons.Outlined.Add, contentDescription = "Add container")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = CircleShape,
+                label = { Text("Search containers") },
+            )
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(filtered, key = { it.id }) { container ->
+                    var expanded by remember { mutableStateOf(false) }
+                    Card(
+                        onClick = { onSelect(container.id) },
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (container.id == activeContainerId) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            },
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, top = 10.dp, end = 4.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            ContainerAvatar(container, 48.dp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(container.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                Text(
+                                    "${container.profileCount} profiles",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { onEdit(container.id) }) {
+                                Icon(Icons.Outlined.Edit, contentDescription = "Edit container")
+                            }
+                            Box {
+                                IconButton(onClick = { expanded = true }) {
+                                    Icon(Icons.Outlined.MoreHoriz, contentDescription = "Container actions")
+                                }
+                                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("Edit") },
+                                        onClick = { expanded = false; onEdit(container.id) },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                        onClick = { expanded = false; deleteTarget = container },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreate) {
+        AlertDialog(
+            onDismissRequest = { showCreate = false },
+            title = { Text("New container") },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    singleLine = true,
+                    label = { Text("Name") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onAdd(newName)
+                    showCreate = false
+                }, enabled = newName.isNotBlank()) { Text("Create") }
+            },
+            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel") } },
+        )
+    }
+
+    deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Delete ${target.name}?") },
+            text = {
+                Text(
+                    "This permanently deletes this container, all ${target.profileCount} profiles inside it, " +
+                        "and every app and all app data belonging to those profiles. This cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete(target.id)
+                    deleteTarget = null
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+@Composable
+private fun ContainerAvatar(container: ContainerItem?, size: androidx.compose.ui.unit.Dp) {
+    val image = rememberUriImage(container?.avatarUri)
+    Surface(
+        modifier = Modifier.size(size),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        if (image != null) {
+            Image(bitmap = image, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    container?.name?.firstOrNull()?.uppercase() ?: "C",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = (size.value * 0.42f).sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
             }
         }
     }
 }
 
 @Composable
-internal fun ProfileWorkspaceBackground(
-    profile: ProfileItem,
-    modifier: Modifier = Modifier,
-) {
+private fun rememberUriImage(uriString: String?): ImageBitmap? {
     val context = LocalContext.current
-    val image by produceState<ImageBitmap?>(initialValue = null, key1 = profile.backgroundUri) {
-        val uriString = profile.backgroundUri
-        value = if (uriString.isNullOrBlank()) {
-            null
-        } else {
-            withContext(Dispatchers.IO) {
-                try {
-                    val uri = Uri.parse(uriString)
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    context.contentResolver.openInputStream(uri)?.use {
-                        BitmapFactory.decodeStream(it, null, bounds)
-                    }
-                    var sample = 1
-                    while (bounds.outWidth / sample > 1800 || bounds.outHeight / sample > 1800) {
-                        sample *= 2
-                    }
-                    val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                    context.contentResolver.openInputStream(uri)?.use {
-                        BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                    }
-                } catch (_: Exception) {
-                    null
+    val image by produceState<ImageBitmap?>(initialValue = null, key1 = uriString) {
+        value = if (uriString.isNullOrBlank()) null else withContext(Dispatchers.IO) {
+            try {
+                val uri = Uri.parse(uriString)
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, bounds)
                 }
+                var sample = 1
+                while (bounds.outWidth / sample > 1800 || bounds.outHeight / sample > 1800) sample *= 2
+                val options = BitmapFactory.Options().apply { inSampleSize = sample }
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
+                }
+            } catch (_: Exception) {
+                null
             }
         }
     }
+    return image
+}
 
-    val imageAlpha by animateFloatAsState(
-        targetValue = if (image != null) profile.backgroundOpacity else 0f,
-        label = "ProfileWorkspaceBackgroundFade",
+@Composable
+private fun ContainerWorkspaceBackground(
+    container: ContainerItem?,
+    modifier: Modifier = Modifier,
+) {
+    val image = rememberUriImage(container?.backgroundUri)
+    val alpha by animateFloatAsState(
+        targetValue = if (image != null) container?.backgroundOpacity ?: 0f else 0f,
+        label = "ContainerWorkspaceBackground",
     )
-
-    Box(
-        modifier = modifier.background(
-            Brush.linearGradient(
-                listOf(
-                    Color(profile.accent).copy(alpha = 0.14f),
-                    MaterialTheme.colorScheme.background,
-                )
-            )
-        ),
-    ) {
+    Box(modifier = modifier.background(Color.Black)) {
         if (image != null) {
             Image(
-                bitmap = image!!,
+                bitmap = image,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alpha = imageAlpha,
+                alpha = alpha,
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.38f),
-                                MaterialTheme.colorScheme.background.copy(alpha = 0.76f),
-                            )
-                        )
-                    ),
-            )
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
+        }
+    }
+}
+
+@Composable
+private fun StorageRationaleDialog(
+    onDismiss: () -> Unit,
+    onGrant: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    Icons.Outlined.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text("Storage access", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Sleepy Hub needs All Files Access so BlackBox can create and manage the files used by virtual apps. Android will open its permission settings next.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Later") }
+                    TextButton(onClick = onGrant) { Text("Grant permission") }
+                }
+            }
         }
     }
 }
