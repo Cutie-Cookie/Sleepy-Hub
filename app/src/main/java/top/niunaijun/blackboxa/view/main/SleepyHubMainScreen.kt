@@ -176,9 +176,37 @@ fun SleepyHubMainScreen(
                 ContainerSettingsScreen(
                     container = container,
                     onBack = { page = containerSettingsReturnPage },
+                    onOpenBasic = { page = "container-basic" },
+                    onOpenBackground = { page = "container-background" },
+                )
+            }
+        }
+        "container-basic" -> {
+            val container = containers.firstOrNull { it.id == editingContainerId }
+            if (container == null) {
+                page = "container-manager"
+            } else {
+                ContainerBasicScreen(
+                    container = container,
+                    onBack = { page = "container-settings" },
                     onSave = {
                         onUpdateContainer(it)
-                        page = containerSettingsReturnPage
+                        page = "container-settings"
+                    },
+                )
+            }
+        }
+        "container-background" -> {
+            val container = containers.firstOrNull { it.id == editingContainerId }
+            if (container == null) {
+                page = "container-manager"
+            } else {
+                ContainerBackgroundScreen(
+                    container = container,
+                    onBack = { page = "container-settings" },
+                    onSave = {
+                        onUpdateContainer(it)
+                        page = "container-settings"
                     },
                 )
             }
@@ -587,6 +615,7 @@ fun SleepyHubMainScreen(
     BackHandler(enabled = page != "workspace") {
         page = when (page) {
             "container-settings" -> containerSettingsReturnPage
+            "container-basic", "container-background" -> "container-settings"
             "preferences" -> "settings"
             "theme" -> "preferences"
             else -> "workspace"
