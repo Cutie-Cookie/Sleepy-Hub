@@ -371,6 +371,16 @@ class AppsRepository {
                 }
             }
 
+            Log.i(
+                TAG,
+                "Installing into profile=$userId sourceType=${when {
+                    sourceFile != null -> "apk-file"
+                    parsedUri.scheme == "content" -> "content-uri"
+                    parsedUri.scheme == "http" || parsedUri.scheme == "https" -> "remote-uri"
+                    else -> "host-package"
+                }} source=$source",
+            )
+
             val installResult = when {
                 parsedUri.scheme == "content" ||
                     parsedUri.scheme == "http" ||
@@ -382,11 +392,27 @@ class AppsRepository {
                 }
             }
 
+            if (installResult == null) {
+                Log.e(TAG, "The virtual package service returned no install result for profile=$userId")
+                resultLiveData.postValue(
+                    "Installation failed: the virtual package service returned no result. Refresh the profile and try again.",
+                )
+                return
+            }
+
             if (installResult.success) {
-                updateAppSortList(userId, installResult.packageName, true)
+                installResult.packageName?.takeIf { it.isNotBlank() }?.let {
+                    updateAppSortList(userId, it, true)
+                }
                 resultLiveData.postValue(getString(R.string.install_success))
             } else {
-                resultLiveData.postValue(getString(R.string.install_fail, installResult.msg))
+                Log.e(
+                    TAG,
+                    "Install failed for profile=$userId package=${installResult.packageName} reason=${installResult.msg}",
+                )
+                resultLiveData.postValue(
+                    getString(R.string.install_fail, installResult.msg?.takeIf { it.isNotBlank() } ?: "Unknown install error"),
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error installing APK from '$source': ${e.message}", e)
