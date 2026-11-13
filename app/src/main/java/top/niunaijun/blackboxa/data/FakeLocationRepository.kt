@@ -10,6 +10,7 @@ import top.niunaijun.blackbox.core.GmsCore
 import top.niunaijun.blackbox.entity.location.BLocation
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager
 import top.niunaijun.blackboxa.bean.FakeLocationBean
+import kotlin.math.abs
 
 
 class FakeLocationRepository {
@@ -29,6 +30,23 @@ class FakeLocationRepository {
 
     fun setLocation(userId: Int, pkg: String, location: BLocation) {
         BLocationManager.get().setLocation(userId, pkg, location)
+    }
+
+    fun applyFakeLocation(userId: Int, pkg: String, location: BLocation): Boolean {
+        val manager = BLocationManager.get()
+        if (!manager.trySetLocation(userId, pkg, location)) return false
+        if (!manager.trySetPattern(userId, pkg, BLocationManager.OWN_MODE)) return false
+
+        val storedLocation = manager.getLocation(userId, pkg) ?: return false
+        return manager.getPattern(userId, pkg) == BLocationManager.OWN_MODE &&
+            abs(storedLocation.latitude - location.latitude) < 0.000001 &&
+            abs(storedLocation.longitude - location.longitude) < 0.000001
+    }
+
+    fun disableFakeLocation(userId: Int, pkg: String): Boolean {
+        val manager = BLocationManager.get()
+        return manager.trySetPattern(userId, pkg, BLocationManager.CLOSE_MODE) &&
+            manager.getPattern(userId, pkg) == BLocationManager.CLOSE_MODE
     }
 
     fun getInstalledAppList(
