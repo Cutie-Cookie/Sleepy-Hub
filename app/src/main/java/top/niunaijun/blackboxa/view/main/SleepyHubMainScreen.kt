@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +43,7 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -76,6 +80,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -84,6 +89,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import top.niunaijun.blackboxa.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.viewpager2.widget.ViewPager2
@@ -132,6 +138,10 @@ fun SleepyHubMainScreen(
     onMoveProfile: (Int, String) -> Unit,
     onSetProfileFolder: (Int, String) -> Unit,
     onToggleProfilePinned: (Int, Boolean) -> Unit,
+    onCloneProfile: (Int) -> Unit,
+    onReorderProfiles: (List<Int>) -> Unit,
+    onUpdateProfileAvatar: (Int, String?) -> Unit,
+    onUpdateProfileBackground: (Int, String?, Float) -> Unit,
     onCreateContainer: (String) -> Unit,
     onSelectContainer: (String) -> Unit,
     onUpdateContainer: (ContainerItem) -> Unit,
@@ -183,7 +193,6 @@ fun SleepyHubMainScreen(
                     container = container,
                     onBack = { page = containerSettingsReturnPage },
                     onOpenBasic = { page = "container-basic" },
-                    onOpenBackground = { page = "container-background" },
                 )
             }
         }
@@ -202,35 +211,60 @@ fun SleepyHubMainScreen(
                 )
             }
         }
-        "container-background" -> {
-            val container = containers.firstOrNull { it.id == editingContainerId }
-            if (container == null) {
-                page = "container-manager"
-            } else {
-                ContainerBackgroundScreen(
-                    container = container,
-                    onBack = { page = "container-settings" },
-                    onSave = {
-                        onUpdateContainer(it)
-                        page = "container-settings"
-                    },
-                )
-            }
-        }
+        "profile-manager" -> ProfileManagerScreen(
+            profiles = profiles,
+            onBack = { page = "workspace" },
+            onAdd = onAddProfile,
+            onEdit = { userId -> editingProfileId = userId; page = "profile-settings" },
+            onClone = onCloneProfile,
+            onDelete = onDeleteProfile,
+            onReorder = onReorderProfiles,
+        )
         "profile-settings" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
             if (profile == null) {
                 page = "workspace"
             } else {
-                ProfileSettingsScreen(
+                ProfileDetailScreen(
                     profile = profile,
                     onBack = { page = "workspace" },
-                    onRename = { onRenameProfile(profile.userId, it) },
-                    onDelete = {
-                        onDeleteProfile(profile.userId)
-                        page = "workspace"
+                    onOpenBasic = { page = "profile-basic" },
+                    onOpenBackground = { page = "profile-background" },
+                    onDelete = { onDeleteProfile(profile.userId); page = "workspace" },
+                )
+            }
+        }
+        "profile-basic" -> {
+            val profile = profiles.firstOrNull { it.userId == editingProfileId }
+            if (profile == null) {
+                page = "workspace"
+            } else {
+                ProfileBasicScreen(
+                    profile = profile,
+                    onBack = { page = "profile-settings" },
+                    onSave = { name, folder, avatarUri ->
+                        onRenameProfile(profile.userId, name)
+                        onSetProfileFolder(profile.userId, folder)
+                        onUpdateProfileAvatar(profile.userId, avatarUri)
+                        onRefreshProfiles()
+                        page = "profile-settings"
                     },
-                    onSaved = onRefreshProfiles,
+                )
+            }
+        }
+        "profile-background" -> {
+            val profile = profiles.firstOrNull { it.userId == editingProfileId }
+            if (profile == null) {
+                page = "workspace"
+            } else {
+                ProfileBackgroundScreen(
+                    profile = profile,
+                    onBack = { page = "profile-settings" },
+                    onSave = { uri, opacity ->
+                        onUpdateProfileBackground(profile.userId, uri, opacity)
+                        onRefreshProfiles()
+                        page = "profile-settings"
+                    },
                 )
             }
         }
@@ -260,8 +294,7 @@ fun SleepyHubMainScreen(
                 profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
             }
             val visibleProfiles = remember(profiles, selectedFolder) {
-                val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
-                filtered.sortedWith(compareByDescending<ProfileItem> { it.pinned }.thenBy { it.name.lowercase() })
+                if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
             }
 
             ModalNavigationDrawer(
@@ -276,17 +309,7 @@ fun SleepyHubMainScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                         ) {
-                            DrawerHeader(
-                                container = activeContainer,
-                                onEdit = {
-                                    activeContainer?.let {
-                                        editingContainerId = it.id
-                                        containerSettingsReturnPage = "workspace"
-                                        scope.launch { drawerState.close() }
-                                        page = "container-settings"
-                                    }
-                                },
-                            )
+                            DrawerHeader()
 
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -325,6 +348,14 @@ fun SleepyHubMainScreen(
                                 IconButton(
                                     onClick = {
                                         scope.launch { drawerState.close() }
+                                        page = "profile-manager"
+                                    },
+                                ) {
+                                    Icon(Icons.Outlined.Tune, contentDescription = "Manage profiles")
+                                }
+                                IconButton(
+                                    onClick = {
+                                        scope.launch { drawerState.close() }
                                         onAddProfile()
                                     },
                                 ) {
@@ -356,8 +387,10 @@ fun SleepyHubMainScreen(
                                         profile = profile,
                                         selected = profile.userId == activeUserId,
                                         onSelect = {
-                                            scope.launch { drawerState.close() }
-                                            onSelectProfile(profile.userId)
+                                            scope.launch {
+                                                drawerState.close()
+                                                onSelectProfile(profile.userId)
+                                            }
                                         },
                                         onMove = { moveProfileId = profile.userId },
                                         onMoveToFolder = {
@@ -370,6 +403,7 @@ fun SleepyHubMainScreen(
                                             scope.launch { drawerState.close() }
                                             page = "profile-settings"
                                         },
+                                        onClone = { onCloneProfile(profile.userId) },
                                         onDelete = { deleteProfileId = profile.userId },
                                     )
                                 }
@@ -461,32 +495,33 @@ fun SleepyHubMainScreen(
                         .fillMaxSize()
                         .background(Color.Black),
                 ) {
-                    ContainerWorkspaceBackground(
-                        container = activeContainer,
+                    ProfileWorkspaceBackground(
+                        profile = activeProfile,
                         modifier = Modifier.fillMaxSize(),
+                    )
+                    val topBarColor by animateColorAsState(
+                        targetValue = if (isWorkspaceScrolled) Color.Black.copy(alpha = 0.76f) else Color.Transparent,
+                        animationSpec = tween(durationMillis = 320),
+                        label = "workspace-topbar-color",
                     )
                     Scaffold(
                         containerColor = Color.Transparent,
+                        contentWindowInsets = WindowInsets.safeDrawing,
                         topBar = {
                             TopAppBar(
                                 title = {
-                                    Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
                                         Text(
-                                            activeProfile?.name ?: activeContainer?.name ?: "Sleepy Hub",
+                                            activeProfile?.name ?: "Sleepy Hub",
                                             color = Color.White,
                                             style = MaterialTheme.typography.titleMedium,
                                             maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                         )
-                                        Text(
-                                            when {
-                                                activeProfile == null -> "No profile selected"
-                                                activeProfile.appCount >= 0 -> "${activeProfile.appCount} installed apps"
-                                                else -> "Virtual profile"
-                                            },
-                                            color = Color.White.copy(alpha = 0.64f),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            maxLines = 1,
-                                        )
+                                        if (activeProfile?.googlePlayEnabled == true) GooglePlayBadge(size = 16.dp)
                                     }
                                 },
                                 navigationIcon = {
@@ -503,7 +538,8 @@ fun SleepyHubMainScreen(
                                     }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = Color.Black,
+                                    containerColor = topBarColor,
+                                    scrolledContainerColor = topBarColor,
                                     titleContentColor = Color.White,
                                     navigationIconContentColor = Color.White,
                                     actionIconContentColor = Color.White,
@@ -631,13 +667,10 @@ fun SleepyHubMainScreen(
 }
 
 @Composable
-private fun DrawerHeader(
-    container: ContainerItem?,
-    onEdit: () -> Unit,
-) {
+private fun DrawerHeader() {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
-        in 5..11 -> "Good morning 👋"
+        in 5..11 -> "Good morning"
         in 12..17 -> "Hope your day is going well"
         else -> "It's late, take care"
     }
@@ -645,21 +678,16 @@ private fun DrawerHeader(
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ContainerAvatar(container, 50.dp)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    container?.name ?: "Sleepy Hub",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                IconButton(onClick = onEdit, enabled = container != null) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Edit container")
-                }
-            }
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher),
+            contentDescription = "Sleepy Hub",
+            modifier = Modifier.size(42.dp),
+            contentScale = ContentScale.Crop,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Sleepy Hub", style = MaterialTheme.typography.titleMedium)
             Text(
                 greeting,
                 style = MaterialTheme.typography.labelMedium,
@@ -668,7 +696,6 @@ private fun DrawerHeader(
         }
     }
 }
-
 @Composable
 private fun DrawerQuickAction(
     icon: @Composable () -> Unit,
@@ -695,9 +722,15 @@ private fun ProfileDrawerRow(
     onMoveToFolder: () -> Unit,
     onTogglePinned: () -> Unit,
     onRename: () -> Unit,
+    onClone: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val rowColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+        animationSpec = tween(220),
+        label = "profile-row-selection",
+    )
     Box {
         Surface(
             modifier = Modifier
@@ -706,55 +739,55 @@ private fun ProfileDrawerRow(
                     onClick = onSelect,
                     onLongClick = { expanded = true },
                 ),
-            shape = MaterialTheme.shapes.medium,
-            color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+            color = rowColor,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    profile.name,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (profile.appCount >= 0) {
-                    Text(
-                        profile.appCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                ProfileAvatar(profile.name, profile.avatarUri, 34.dp)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(
+                            profile.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (profile.googlePlayEnabled) GooglePlayBadge(size = 14.dp)
+                    }
+                    if (profile.appCount >= 0) {
+                        Text(
+                            "${profile.appCount} apps",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                if (profile.pinned) {
+                    Icon(
+                        Icons.Outlined.Folder,
+                        contentDescription = "Pinned profile",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text("Move to container") },
-                onClick = { expanded = false; onMove() },
-            )
-            DropdownMenuItem(
-                text = { Text("Move to folder") },
-                onClick = { expanded = false; onMoveToFolder() },
-            )
-            DropdownMenuItem(
-                text = { Text(if (profile.pinned) "Unpin" else "Pin") },
-                onClick = { expanded = false; onTogglePinned() },
-            )
-            DropdownMenuItem(
-                text = { Text("Rename") },
-                onClick = { expanded = false; onRename() },
-            )
-            DropdownMenuItem(
-                text = { Text("Delete") },
-                onClick = { expanded = false; onDelete() },
-            )
+            DropdownMenuItem(text = { Text("Move to container") }, onClick = { expanded = false; onMove() })
+            DropdownMenuItem(text = { Text("Move to folder") }, onClick = { expanded = false; onMoveToFolder() })
+            DropdownMenuItem(text = { Text(if (profile.pinned) "Unpin" else "Pin") }, onClick = { expanded = false; onTogglePinned() })
+            DropdownMenuItem(text = { Text("Edit profile") }, onClick = { expanded = false; onRename() })
+            DropdownMenuItem(text = { Text("Clone profile") }, onClick = { expanded = false; onClone() })
+            DropdownMenuItem(text = { Text("Delete") }, onClick = { expanded = false; onDelete() })
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContainerPickerSheet(
@@ -1032,25 +1065,11 @@ private fun ContainerManagerScreen(
 
 @Composable
 internal fun ContainerAvatar(container: ContainerItem?, size: androidx.compose.ui.unit.Dp) {
-    val image = rememberUriImage(container?.avatarUri)
-    Surface(
-        modifier = Modifier.size(size),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-    ) {
-        if (image != null) {
-            Image(bitmap = image, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    container?.name?.firstOrNull()?.uppercase() ?: "C",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = (size.value * 0.42f).sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
-    }
+    ProfileAvatar(
+        name = container?.name ?: "Container",
+        uri = container?.avatarUri,
+        size = size,
+    )
 }
 
 @Composable
