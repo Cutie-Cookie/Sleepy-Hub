@@ -2,7 +2,10 @@ package top.niunaijun.blackboxa.view.fake
 
 import androidx.lifecycle.MutableLiveData
 import top.niunaijun.blackbox.entity.location.BLocation
+import top.niunaijun.blackboxa.R
 import top.niunaijun.blackboxa.bean.FakeLocationBean
+import top.niunaijun.blackboxa.bean.FakeLocationBeanInstallBean
+import top.niunaijun.blackboxa.util.getString
 import top.niunaijun.blackboxa.data.FakeLocationRepository
 import top.niunaijun.blackboxa.view.base.BaseViewModel
 
@@ -10,6 +13,11 @@ import top.niunaijun.blackboxa.view.base.BaseViewModel
 class FakeLocationViewModel(private val mRepo: FakeLocationRepository) : BaseViewModel() {
 
     val appsLiveData = MutableLiveData<List<FakeLocationBean>>()
+    val actionLiveData = MutableLiveData<FakeLocationBeanInstallBean?>()
+
+    fun clearActionResult() {
+        actionLiveData.value = null
+    }
 
 
     fun getInstallAppList(userID: Int) {
@@ -32,17 +40,30 @@ class FakeLocationViewModel(private val mRepo: FakeLocationRepository) : BaseVie
 
     fun applyFakeLocation(userId: Int, pkg: String, location: BLocation) {
         launchOnUI {
-            // Store coordinates before enabling fake-location mode. A location request
-            // cannot briefly observe an enabled mode with no selected point.
-            mRepo.setLocation(userId, pkg, location)
-            mRepo.setPattern(userId, pkg, top.niunaijun.blackbox.fake.frameworks.BLocationManager.OWN_MODE)
+            val success = runCatching {
+                mRepo.applyFakeLocation(userId, pkg, location)
+            }.getOrDefault(false)
+            val message = if (success) {
+                getString(R.string.set_location, location.latitude.toString(), location.longitude.toString())
+            } else {
+                getString(R.string.set_location_failed)
+            }
+            actionLiveData.postValue(FakeLocationBeanInstallBean(userId, success, message))
             mRepo.getInstalledAppList(userId, appsLiveData)
         }
     }
 
-    fun disableFakeLocation(userId: Int, pkg: String) {
+    fun disableFakeLocation(userId: Int, pkg: String, appName: String) {
         launchOnUI {
-            mRepo.setPattern(userId, pkg, top.niunaijun.blackbox.fake.frameworks.BLocationManager.CLOSE_MODE)
+            val success = runCatching {
+                mRepo.disableFakeLocation(userId, pkg)
+            }.getOrDefault(false)
+            val message = if (success) {
+                getString(R.string.close_fake_location_success, appName)
+            } else {
+                getString(R.string.close_fake_location_failed, appName)
+            }
+            actionLiveData.postValue(FakeLocationBeanInstallBean(userId, success, message))
             mRepo.getInstalledAppList(userId, appsLiveData)
         }
     }
