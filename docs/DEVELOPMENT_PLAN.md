@@ -37,13 +37,59 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Current feature-branch head at this update: `168d15ba71e7f1f879d1869c32c676519ba39590`.
 - Latest completed CI run: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) — **successful** for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
-- New source commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` update drawer rows, clone-container handling, profile-ID allocation, and pager selection cleanup. Their push-triggered CI status has not yet been retrieved; do not treat these commits as build-verified.
+- New source commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` update drawer rows, clone-container handling, profile-ID allocation, and pager selection cleanup. No successful CI run or artifact has been confirmed for these four commits; keep them **unverified** and do not distribute the older APK as the current test build.
 - Previous successful CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
 - Most recent completed artifact (for commit `dae5f46`): `sleepy-hub-arm64-preview-debug` (artifact ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (this is the artifact archive digest, not the APK file checksum); expires 2026-11-20 11:47:43 UTC.
 - Run `43419141589` passed the ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload steps. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native library presence.
 - Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity or a reduced-feature app.
 - Recent changes include a stale-ViewPager-callback guard, clearer fake-location instructions, corrected remaining-height constraints for the profile manager/fake-location/GMS screens, a compact text-only profile-row treatment matching the pinned RikkaHub conversation list, a clone-container race fix, serialized profile-ID allocation shared by create/clone, and a guard preventing delayed pager cleanup from clearing a newer profile selection. The layout fix is build-verified; the four newer source commits are awaiting CI. Scrolling and visual behavior still need device testing.
 - No claim is made that app installation, all profile/container switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
+
+## Next phone test session — current-head APK only
+
+**Do not use an older artifact to verify the four unbuilt commits.** The newest source head recorded above is `168d15ba71e7f1f879d1869c32c676519ba39590`; the latest available successful APK is from `dae5f468ad1fdf52dee22d3572de37f7a9af619c` and does not contain the four newer changes. Wait for an ARM64 Preview APK whose CI metadata identifies the exact tested source commit before starting this checklist.
+
+### Before testing
+- [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.
+- [ ] Install it alongside the normal Sleepy Hub app. Do not uninstall the normal app, clear its data, or use valuable profiles for destructive tests.
+- [ ] Record the phone model, Android version, and whether gesture or three-button navigation is enabled.
+
+### Test in this order
+1. **Launch and drawer appearance**
+   - [ ] Open the Preview app and confirm it reaches the workspace.
+   - [ ] Open the drawer. Profile rows should be compact, one line, and text-only (no profile image or app-count subtitle).
+   - [ ] Confirm the selected profile is visibly selected and the container selector remains at the bottom.
+2. **Profile switching**
+   - [ ] In a disposable container with two profiles, tap A, then B, then A again.
+   - [ ] Repeat with quick consecutive taps and, if available, swipe between profiles.
+   - [ ] Confirm each profile shows its own app grid and the selected profile name matches the visible grid.
+   - [ ] Close and reopen Preview; confirm the last selected profile is restored.
+3. **Container switching**
+   - [ ] Create/use two disposable populated containers and one empty container.
+   - [ ] Switch populated A → populated B → A. Confirm each container restores its own last profile.
+   - [ ] Switch to the empty container. It must remain empty; no profile should be created automatically.
+   - [ ] Switch back to A and confirm its previous profile and apps are still there.
+4. **Clone destination and profile IDs**
+   - [ ] In container A, clone a disposable profile that has several apps.
+   - [ ] While cloning is still running, switch to container B.
+   - [ ] When cloning finishes, check that the new profile appears in A, not B, and that the original profile is unchanged.
+   - [ ] Create two disposable profiles quickly, then make two separate clone requests. Confirm each result is a distinct profile and neither replaces another.
+5. **App installation**
+   - [ ] Install a harmless app from the installed-app picker into a disposable virtual profile.
+   - [ ] Install a second harmless APK obtained from its developer's official source.
+   - [ ] Launch each installed app. If either fails, note which route failed and capture the full error dialog.
+6. **Google services and fake location**
+   - [ ] Toggle Google services for a disposable profile. Confirm only the small Play indicator appears beside the profile name; Google service packages must not appear as ordinary app tiles.
+   - [ ] Apply a non-sensitive test location to one test app, verify that app sees it, then disable fake location and verify the override is removed.
+7. **Scrolling, keyboard and system navigation**
+   - [ ] Scroll the profile manager and fake-location list to the bottom.
+   - [ ] Search while the keyboard is open; confirm the list resizes and remains scrollable.
+   - [ ] Check the Google-services empty state.
+   - [ ] Confirm bottom controls remain visible and tappable above the transparent navigation area.
+
+### Feedback format
+For each failed step, report the step number, what you tapped, what you expected, what happened, and the exact error text. A screenshot is helpful; hide personal app names, account details, and precise location information. Mark untested steps as **Not tested** rather than guessing.
+
 
 ## Phase 0 — project safety and repeatable builds
 
