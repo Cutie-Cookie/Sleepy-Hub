@@ -61,11 +61,11 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 
 ## Latest verified build and current candidate
 
-- Last successful current-feature build: [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176), exact source head `cd917c58c7d4f8baa521f6839eafdb318cb40fa7`.
-- Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14036965394`; extracted APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`.
+- Latest successful current-feature build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552), exact source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`.
+- Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14046061691`; extracted APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`.
 - Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Previous candidate: feature head `6df0bbcc031bace16bb2461c4963ea23520277ea`; Actions run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) passed. Latest head `0fea772e8f7acc8e84c1ce244ca1c995f294db02` adds a file-backed cross-process idle-stop opt-out; run [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) is in progress.
-- Do not use the previous artifact to verify the file-backed opt-out change. Wait for run 43439814552 to pass; CI still does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
+- Current candidate: feature head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`; Actions run [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) passed. Artifact ID `14046061691`; archive SHA-256 `8f5e4914278612dafb35ffd531548bb1500b3f852b809058eb6c37a8ea4f973b`; extracted APK SHA-256 `a14390801ff923333e0414d11c569a4c46308613a41cda7b454cb6299bea08cf`.
+- This is the current build candidate and includes the file-backed cross-process idle-stop opt-out. CI verification does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
