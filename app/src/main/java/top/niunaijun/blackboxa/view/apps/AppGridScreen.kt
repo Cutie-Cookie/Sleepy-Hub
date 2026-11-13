@@ -2,6 +2,7 @@ package top.niunaijun.blackboxa.view.apps
 
 import android.widget.ImageView
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -44,6 +46,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,7 +84,7 @@ fun AppGridScreen(
     }
     LaunchedEffect(isScrolled) { onScrollChange(isScrolled) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
     if (apps.isEmpty()) {
         Box(
             modifier = Modifier
@@ -97,14 +100,14 @@ fun AppGridScreen(
                         Icons.Outlined.Launch,
                         contentDescription = null,
                         modifier = Modifier.size(36.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = Color.White.copy(alpha = 0.72f),
                     )
                     Spacer(Modifier.size(12.dp))
                     Text("No apps in this profile", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Install an app to get started.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.72f),
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -306,7 +309,7 @@ fun AppGridScreen(
                     Text(
                         app.sourceDir,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.72f),
                     )
                 }
             },
