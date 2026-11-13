@@ -35,13 +35,14 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head at this update: `dae5f468ad1fdf52dee22d3572de37f7a9af619c`
-- Latest completed CI run: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) — **successful** for the current feature-branch head `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
+- Current feature-branch head at this update: `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`.
+- Latest completed CI run: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) — **successful** for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
+- New source commit `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3` updates the drawer profile rows. Its push-triggered CI status has not yet been retrieved; do not treat this commit as build-verified.
 - Previous successful CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Latest artifact: `sleepy-hub-arm64-preview-debug` (artifact ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (this is the artifact archive digest, not the APK file checksum); expires 2026-11-20 11:47:43 UTC.
+- Most recent completed artifact (for commit `dae5f46`): `sleepy-hub-arm64-preview-debug` (artifact ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (this is the artifact archive digest, not the APK file checksum); expires 2026-11-20 11:47:43 UTC.
 - Run `43419141589` passed the ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload steps. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native library presence.
 - Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity or a reduced-feature app.
-- Recent changes include a stale-ViewPager-callback guard, clearer fake-location instructions, and corrected remaining-height constraints for the profile manager, fake-location list and Google-services empty state. The latest layout-fix commit is now build-verified; source review confirms the affected lists/empty states are weighted children of their parent Columns. Scrolling and visual behavior still need device testing.
+- Recent changes include a stale-ViewPager-callback guard, clearer fake-location instructions, corrected remaining-height constraints for the profile manager/fake-location/GMS screens, and a new compact text-only profile-row treatment matching the pinned RikkaHub conversation list. The layout fix is build-verified; the newer drawer-row source change is awaiting CI. Scrolling and visual behavior still need device testing.
 - No claim is made that app installation, all profile/container switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
 
 ## Phase 0 — project safety and repeatable builds
@@ -152,6 +153,7 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-008 | P1 | Fake location is confusing; user cannot tell what it does or how to use it. | Explanation updated; behavior unverified | Current instructions explain choosing an app, dropping a map pin, applying it, and disabling it later. Verify location override is limited to the chosen virtual app/profile and disabling restores real location. |
 | BUG-009 | P1 | Further UI and functional bugs are expected; initial report is incomplete. | Open intake | Append every new report as the next BUG ID. Do not close or overwrite earlier issues without evidence. |
 | BUG-010 | P1 | Profile manager and fake-location lists, plus the Google-services empty state, can request the full screen height underneath earlier content in a Column. | Build verified; device testing | Static audit found `fillMaxSize()` used for vertically stacked children. Commit `dae5f46` changes those children to consume only the remaining height with `weight(1f)`. CI run 43419141589 passed build, APK identity/signature/ABI verification and upload. Source review confirms the affected list/empty-state branches are direct children of Columns. Test scrolling, keyboard/search behavior, and empty states on device. |
+| BUG-011 | P1 | Drawer profile rows are too tall and show a profile picture plus an app-count subtitle; RikkaHub's conversation rows are compact, text-only, single-line rows. | Fixing; CI pending | Compared against pinned upstream `ConversationList.kt` at `b10c168`. Commit `6a11fed` removes the row avatar and app-count subtitle, reduces vertical padding to 6dp, uses the source's elevated selected surface, and keeps only the small Play/pin indicators. Verify the new commit builds and compare the drawer on the target phone. |
 
 ## Bug intake and update rules
 
