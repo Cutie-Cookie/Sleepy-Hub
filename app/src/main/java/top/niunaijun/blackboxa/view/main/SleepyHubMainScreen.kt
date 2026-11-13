@@ -594,7 +594,7 @@ fun SleepyHubMainScreen(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
-                                        if (activeProfile?.googlePlayEnabled == true) GooglePlayBadge(size = 16.dp)
+                                        if (activeProfile?.googlePlayEnabled == true) GooglePlayBadge(userId = activeProfile.userId, size = 16.dp)
                                     }
                                 },
                                 navigationIcon = {
@@ -773,7 +773,7 @@ private fun DrawerHeader(profile: ProfileItem?) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (profile?.googlePlayEnabled == true) GooglePlayBadge(size = 15.dp)
+                if (profile?.googlePlayEnabled == true) GooglePlayBadge(userId = profile.userId, size = 15.dp)
             }
             Text(
                 if (profile == null) "Choose a profile below" else greeting,

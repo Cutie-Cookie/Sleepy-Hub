@@ -263,7 +263,7 @@ private fun ProfileManagerRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (profile.googlePlayEnabled) GooglePlayBadge()
+                    if (profile.googlePlayEnabled) GooglePlayBadge(userId = profile.userId)
                 }
                 Text(
                     buildString {
@@ -354,7 +354,7 @@ fun ProfileDetailScreen(
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(profile.name, style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (profile.googlePlayEnabled) GooglePlayBadge(size = 18.dp)
+                            if (profile.googlePlayEnabled) GooglePlayBadge(userId = profile.userId, size = 18.dp)
                         }
                         Text(
                             if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual Android profile",

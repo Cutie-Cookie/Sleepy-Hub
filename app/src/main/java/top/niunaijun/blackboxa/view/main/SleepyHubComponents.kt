@@ -7,6 +7,9 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.Icons
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.os.Build
+
 import android.widget.ImageView
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -57,6 +60,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import top.niunaijun.blackbox.BlackBoxCore
+
 
 @Composable
 fun CardGroup(
@@ -220,20 +225,37 @@ fun LargeFlexibleTopAppBar(
 
 @Composable
 fun GooglePlayBadge(
+    userId: Int,
     modifier: Modifier = Modifier,
     size: Dp = 16.dp,
 ) {
-    Canvas(modifier = modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val triangle = Path().apply {
-            moveTo(w * 0.16f, h * 0.08f)
-            lineTo(w * 0.88f, h * 0.50f)
-            lineTo(w * 0.16f, h * 0.92f)
-            close()
-        }
-        drawPath(triangle, Color.White)
+    val playStoreIcon = remember(userId) {
+        runCatching {
+            val virtualStore = BlackBoxCore.get().getInstalledApplications(0, userId)
+                .firstOrNull { it.packageName == "com.android.vending" }
+            val icon = if (virtualStore != null) {
+                BlackBoxCore.getPackageManager().getApplicationIcon(virtualStore)
+            } else {
+                BlackBoxCore.getPackageManager().getApplicationIcon("com.android.vending")
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && icon is AdaptiveIconDrawable) {
+                icon.foreground
+            } else {
+                icon
+            }
+        }.getOrNull()
     }
+
+    AndroidView(
+        factory = { context ->
+            ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = "Google Play"
+            }
+        },
+        update = { imageView -> imageView.setImageDrawable(playStoreIcon) },
+        modifier = modifier.size(size),
+    )
 }
 @Composable
 fun RikkaSearchField(

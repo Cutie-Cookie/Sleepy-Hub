@@ -283,7 +283,7 @@ private fun GoogleServicesProfileRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (profile.isInstalledGms) GooglePlayBadge(size = 16.dp)
+                    if (profile.isInstalledGms) GooglePlayBadge(userId = profile.userID, size = 16.dp)
                 }
                 Text(
                     if (profile.isInstalledGms) "Google services enabled" else "Google services disabled",
