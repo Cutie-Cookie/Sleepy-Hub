@@ -59,7 +59,11 @@ The complete approved mapping and acceptance checklist are in [UI_IMPLEMENTATION
 
 ## Current audit checkpoint — 2026-11-13
 
-The feature branch contains the container/profile ownership model and inline profile drawer. Core identity, folder-manager, long-press, original-icon and fake-location hardening passed run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). Commit `e4bb695` now matches the pinned RikkaHub FolderBar pattern in the drawer (Add chip, long-press Rename/Delete and a folder-selection bottom sheet); current-head run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) is pending.
+The feature branch contains the container/profile ownership model and inline profile drawer. Core identity, folder-manager, long-press, original-icon and fake-location hardening passed run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). Commit `e4bb695` adds the targeted RikkaHub-style folder controls needed to correct the reported folder bug (Add chip, long-press Rename/Delete and a folder-selection bottom sheet).
+
+**Phase boundary confirmed by the user:** the full UI overhaul described by this roadmap is reserved for Phase 2. Phase 1 remains focused on core correctness and only the minimum UI wiring required to make broken features functional; broad visual redesign, logo/icon/frame sweeps, spacing/typography changes and animation polish are not part of the current phase.
+
+The first FolderBar candidate build [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch but used by dialogs outside it. Commit `c7b28cd` moves that state to the screen level. The corrected candidate is building in run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407); no APK is available until it passes verification and uploads an artifact.
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the same flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.
