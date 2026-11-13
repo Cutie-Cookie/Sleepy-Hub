@@ -35,14 +35,12 @@ class FakeManagerActivity : BaseActivity() {
                     val longitude = data.getDoubleExtra("longitude", 0.0)
                     val packageName = data.getStringExtra("pkg") ?: return@let
 
-                    viewModel.setPattern(currentUserID(), packageName, BLocationManager.OWN_MODE)
-                    viewModel.setLocation(
+                    viewModel.applyFakeLocation(
                         currentUserID(),
                         packageName,
                         BLocation(latitude, longitude),
                     )
                     toast(getString(top.niunaijun.blackboxa.R.string.set_location, latitude.toString(), longitude.toString()))
-                    loadAppList()
                 }
             }
         }
@@ -92,9 +90,8 @@ class FakeManagerActivity : BaseActivity() {
     }
 
     private fun disableFakeLocation(app: FakeLocationBean) {
-        viewModel.setPattern(currentUserID(), app.packageName, BLocationManager.CLOSE_MODE)
+        viewModel.disableFakeLocation(currentUserID(), app.packageName)
         toast(getString(top.niunaijun.blackboxa.R.string.close_fake_location_success, app.name))
-        loadAppList()
     }
 
     companion object {
