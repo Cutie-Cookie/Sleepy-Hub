@@ -14,13 +14,14 @@ class GmsRepository {
         containerId: String,
         installedLiveData: MutableLiveData<List<GmsBean>>,
     ) {
-        val profiles = BlackBoxCore.get().users
-            .sortedBy { it.id }
+        val sortedUsers = BlackBoxCore.get().users.sortedBy { it.id }
+        val indexByUserId = sortedUsers.withIndex().associate { it.value.id to it.index }
+        val profiles = sortedUsers
             .filter { ProfileAppearance.profileContainer(it.id) == containerId }
-            .mapIndexed { index, user ->
+            .map { user ->
                 GmsBean(
                     userID = user.id,
-                    userName = ProfileAppearance.profileName(user.id, index),
+                    userName = ProfileAppearance.profileName(user.id, indexByUserId[user.id] ?: user.id),
                     isInstalledGms = BlackBoxCore.get().isInstallGms(user.id),
                     avatarUri = ProfileAppearance.profileAvatarUri(user.id),
                 )
