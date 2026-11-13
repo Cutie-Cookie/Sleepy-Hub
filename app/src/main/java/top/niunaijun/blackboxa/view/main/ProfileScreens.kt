@@ -542,7 +542,7 @@ fun SettingsPreferencesScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text("Preferences") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
