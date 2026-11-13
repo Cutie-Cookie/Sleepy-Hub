@@ -232,7 +232,7 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 - Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
 - Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
 - The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
-- Current feature head is 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run 43437776339 passed the ARM64 build, preview identity/signature/ABI checks and artifact upload. Phone testing is still required;
+- Current feature head is 0fea772e8f7acc8e84c1ce244ca1c995f294db02. CI run 43437776339 passed the profile identity/folder/UI changes; run 43439814552 is checking the additional file-backed cross-process auto-stop setting.
 
 ### Outstanding device evidence
 
@@ -240,3 +240,8 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 - Re-test GMS profile scope after the per-profile identifiers change.
 - Verify storage isolation separately from ID uniqueness.
 - Verify idle-stop timing and opt-out, long-press behavior, folder management, monochrome colors, Color mode clipping, loading state and fade-only navigation on the target phone.
+
+### Cross-process auto-stop preference hardening
+
+- The idle-stop lifecycle callback runs in virtual app processes, while the Settings toggle is changed in the Hub process. SharedPreferences can be stale across processes, so commit 0fea772 mirrors the toggle to a small file in the host app's private files directory. Virtual app processes read that file when scheduling and when the 60-second timer fires.
+- This prevents a previously cached true value from ignoring the user's opt-out. The current build run is 43439814552; device verification remains pending.

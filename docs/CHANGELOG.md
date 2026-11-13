@@ -223,3 +223,8 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 - Extracted APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, size 26,077,671 bytes, SHA-256 `9af76f1ceaa4500d2c5a07dedfe9edbe0305f1a0274254b279edd297096d28c6`.
 - Package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`. The preview package is intended to install alongside the regular app.
 - This is build verification only. Test identity uniqueness, storage isolation, GMS scope, folder operations, auto-stop timing, long-press behavior, fake location, theme and navigation on the phone before marking features done.
+
+### 2026-11-13 — Cross-process idle-stop setting hardening
+
+- Commit `0fea772e8f7acc8e84c1ce244ca1c995f294db02` mirrors the auto-stop toggle to a file in the Hub's private files directory. Virtual app processes read the file at schedule time and again before stopping, avoiding stale cross-process SharedPreferences state.
+- Current-head Actions run [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) is in progress. The prior successful APK does not contain this last reliability fix.
