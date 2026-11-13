@@ -243,9 +243,9 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 - The user confirmed profile switching, empty-container naming, both app-install paths and the no-sweep navigation behavior. Remaining failures: Android/GSF IDs and Wi-Fi MAC shared across profiles; folder UI still used a text field; long-press launched on release; fake-location selection crashed. Auto-stop and GMS scope remain uncertain; Settings clipping and animation feel remain open.
 - Identity root cause: the earlier Settings provider hook was inactive, GSF gservices queries were not virtualized, and Wi-Fi MAC was hard-coded. Commits `6492d84` and `f3d12dd` add persisted per-profile Android/GSF IDs, Settings cache clearing and a per-profile virtual Wi-Fi MAC.
 - Folder root cause: data-layer folder CRUD existed, but the user-facing screens were not wired. Commits `30482a1`, `09f2bed` and `b26022f` add a folder manager, create/rename/delete, choice-based move picker and existing-folder chips in profile editing.
-- Commit `dbfc10d` separates app tap/long-press with `combinedClickable` and gives reorder its own handle.
+- Commit `8893dbd` separates app tap/long-press with `combinedClickable` and gives reorder its own handle.
 - Fake-location source hardening adds INTERNET/ACCESS_NETWORK_STATE, an app-private osmdroid cache, explicit user agent and guarded map initialization/lifecycle. The actual crash cause is not confirmed without a trace.
-- Commit `8ac5aef` replaces the hand-drawn white triangle with the real Play Store adaptive-icon foreground from the virtual profile's `com.android.vending` package.
+- Commit `dbfc10d` replaces the hand-drawn white triangle with the real Play Store adaptive-icon foreground from the virtual profile's `com.android.vending` package; `8ac5aef` passes the correct profile ID to every badge instance.
 - Current source head: `f3d12dddc5856019d93b494869bb3938d7898fb6`; current-head Actions run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The prior successful APK does not include these fixes.
 - Phase 0 is complete; Phase 1 is active. Phase 2 is partially implemented but not signed off, and Phase 3 visual/motion polish remains open. `main` remains untouched.
 
