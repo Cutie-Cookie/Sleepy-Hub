@@ -141,3 +141,57 @@ The current `sleepyhub/rikkahub-source-rebuild` branch is **not yet the requeste
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reproduce the source behavior and component structure with original Sleepy Hub code. Do not paste upstream source files or assets into the Apache-2.0 project. Literal source reuse would require an explicit licensing decision and compliance review.
+
+
+## Additional confirmed interaction details — 2026-11-13
+
+### Profile long-press and moving between containers
+
+RikkaHub's exact path is `ConversationList.kt` → `ChatDrawer.kt` → `ChatVM.kt` → `ChatService.kt` → `ConversationRepository.kt` → `ConversationDAO.kt`.
+
+- A normal row tap selects/opens the row; a long press opens a compact dropdown menu.
+- RikkaHub's menu includes Pin/Unpin, Regenerate title, Move to assistant, Move to folder, and Delete.
+- Move to assistant opens a scrollable modal bottom sheet listing assistants. Selecting one moves the existing conversation.
+- The service updates the active session and clears its assistant-scoped folder assignment before persisting the new assistant ID.
+- If the currently open conversation is moved, RikkaHub also switches the selected assistant.
+
+Sleepy Hub equivalent:
+- Long-press a profile row in the inline drawer list.
+- Provide the applicable actions: Move to container, Move to folder, Rename, Delete. Do not add AI-only actions such as Regenerate title.
+- Move to container opens a scrollable sheet listing containers with their small pictures/names and a selected/current indicator.
+- Moving updates only the profile's container membership. Preserve the exact BlackBox user ID, installed apps, app data, and profile name.
+- If the active profile is moved, select the target container and keep that same profile active.
+- Reset the profile's container-scoped folder assignment to the unfiled/default state, following RikkaHub's assistant-scoped folder semantics.
+
+### Dashboard placement and action ownership
+
+- **Add Profile:** a small plus icon on the dashboard beside the inline profile-list heading. It creates one BlackBox user inside the active container. Do not use a large full-width Add button.
+- **Add Container:** in the Container Manager top app bar, following RikkaHub's Assistant Manager top-bar Add action. It creates an empty container and no BlackBox user.
+- **Switch Container:** the compact AssistantPicker-style selector near the bottom of the dashboard drawer; it opens the container picker sheet.
+- **Edit Container:** trailing edit action on a row in the container picker, or selecting a container row in the manager.
+- **Container Manager:** accessible from the dashboard footer (RikkaHub's Assistant drawer action) and Settings home → General Settings → Assistant.
+- **Settings:** keep one Settings shortcut at the dashboard's bottom-right, matching RikkaHub's drawer footer. Theme is under Settings → Preferences → Theme.
+- **Add App:** reuse the top-right action position occupied by RikkaHub's `MessageAdd01` New Message button in `ChatPage.kt` `TopBar`. It opens the Sleepy Hub app picker for the active BlackBox profile.
+- **No top-right dots:** remove Sleepy Hub's MoreVert overflow menu. Its current actions are already owned elsewhere: profile editing through the profile row/manager, container management through the manager, app refresh through the dashboard Refresh shortcut, and global settings through the bottom-right Settings shortcut. Do not replace it with another popup.
+
+### Add-app picker UI
+
+RikkaHub does not have a BlackBox app installer screen. Adapt the app picker using the same page hierarchy rather than copying an AI page:
+- Scaffold + LargeFlexibleTopAppBar, back action, Choose APK action.
+- Rounded search field and compact scrolling app rows.
+- Actual application icon, app name, secondary package name, and trailing Add/Installed status.
+- Already-installed apps are not selectable for duplicate installation.
+- Preserve loading, empty, no-match, APK selection, install progress/result, and selected-profile routing.
+- Avoid a grid of oversized cards, banners, gradients, decorative artwork, or cosmetic-only restyling.
+
+### Storage access popup
+
+- The existing All Files Access request remains required; the Android system Settings page and permission intent remain unchanged.
+- Replace only the old native `MaterialAlertDialogBuilder` explanation with a Compose Material 3 rationale dialog following the hierarchy of RikkaHub's `PermissionRationaleDialog.kt`: rounded dialog surface, icon, clear title and reason, and Cancel/Later + Grant Permission actions.
+- Grant Permission launches the same Android All Files Access Settings intent. Never claim permission succeeded until the activity result confirms `Environment.isExternalStorageManager()`.
+
+### Container deletion
+
+- Deleting a container always opens a confirmation popup with **Cancel** and **Delete**.
+- The dialog must name the container and clearly state what happens to profiles and installed apps/data inside it. Never silently delete BlackBox users or their app data.
+- The final cascade-vs-move policy for a non-empty container must be confirmed before implementing destructive deletion.
