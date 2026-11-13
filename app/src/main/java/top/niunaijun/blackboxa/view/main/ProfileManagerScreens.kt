@@ -17,9 +17,13 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +34,9 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Folder
+
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Person
@@ -74,20 +81,24 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun ProfileManagerScreen(
     profiles: List<ProfileItem>,
+    folders: List<String>,
     onBack: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (Int) -> Unit,
     onClone: (Int) -> Unit,
     onDelete: (Int) -> Unit,
     onReorder: (List<Int>) -> Unit,
+    onCreateFolder: (String) -> Unit,
+    onRenameFolder: (String, String) -> Unit,
+    onDeleteFolder: (String) -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedFolder by rememberSaveable { mutableStateOf("All") }
     var pendingDelete by remember { mutableStateOf<ProfileItem?>(null) }
     var pendingClone by remember { mutableStateOf<ProfileItem?>(null) }
+    var showFolderManager by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val folders = remember(profiles) { profiles.map { it.folder }.distinct().sorted() }
     val filteredProfiles = remember(profiles, query, selectedFolder) {
         profiles.filter { profile ->
             (selectedFolder == "All" || profile.folder == selectedFolder) &&
@@ -117,6 +128,9 @@ fun ProfileManagerScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showFolderManager = true }) {
+                        Icon(Icons.Outlined.Folder, contentDescription = "Manage folders")
+                    }
                     IconButton(onClick = onAdd) {
                         Icon(Icons.Outlined.Add, contentDescription = "Add profile")
                     }
@@ -220,6 +234,22 @@ fun ProfileManagerScreen(
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
+        )
+    }
+
+    if (showFolderManager) {
+        FolderManagerDialog(
+            folders = folders,
+            onDismiss = { showFolderManager = false },
+            onCreate = onCreateFolder,
+            onRename = { oldName, newName ->
+                if (selectedFolder == oldName) selectedFolder = newName
+                onRenameFolder(oldName, newName)
+            },
+            onDelete = { name ->
+                if (selectedFolder == name) selectedFolder = "All"
+                onDeleteFolder(name)
+            },
         )
     }
 }
@@ -421,12 +451,15 @@ fun ProfileDetailScreen(
 @Composable
 fun ProfileBasicScreen(
     profile: ProfileItem,
+    folders: List<String>,
     onBack: () -> Unit,
     onSave: (name: String, folder: String, avatarUri: String?) -> Unit,
 ) {
     val context = LocalContext.current
     var name by remember(profile.userId) { mutableStateOf(profile.name) }
-    var folder by remember(profile.userId) { mutableStateOf(profile.folder) }
+    var selectedFolder by remember(profile.userId, folders) {
+        mutableStateOf(profile.folder.takeIf { it in folders } ?: "General")
+    }
     var avatarUri by remember(profile.userId) { mutableStateOf(profile.avatarUri) }
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -485,20 +518,27 @@ fun ProfileBasicScreen(
                             singleLine = true,
                             label = { Text("Profile name") },
                         )
-                        OutlinedTextField(
-                            value = folder,
-                            onValueChange = { folder = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Folder") },
-                            supportingText = { Text("Folders organize profiles inside this container.") },
+                        Text("Folder", style = MaterialTheme.typography.labelLarge)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(folders) { folderName ->
+                                FilterChip(
+                                    selected = selectedFolder == folderName,
+                                    onClick = { selectedFolder = folderName },
+                                    label = { Text(folderName) },
+                                )
+                            }
+                        }
+                        Text(
+                            "Create, rename or delete folders from the folder manager.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
             item {
                 Button(
-                    onClick = { onSave(name.trim(), folder.trim().ifBlank { "General" }, avatarUri) },
+                    onClick = { onSave(name.trim(), selectedFolder, avatarUri) },
                     enabled = name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Save changes") }
@@ -608,5 +648,130 @@ private fun persistProfileImagePermission(context: Context, uri: Uri) {
     try {
         context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
     } catch (_: Exception) {
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FolderManagerDialog(
+    folders: List<String>,
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    var editingFolder by rememberSaveable { mutableStateOf<String?>(null) }
+    var folderName by rememberSaveable { mutableStateOf("") }
+    var deletingFolder by rememberSaveable { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Manage folders") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 300.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(folders, key = { it }) { folder ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(folder, style = MaterialTheme.typography.bodyLarge)
+                                if (folder == "General") {
+                                    Text(
+                                        "Default folder",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            if (!folder.equals("General", ignoreCase = true)) {
+                                IconButton(onClick = {
+                                    editingFolder = folder
+                                    folderName = folder
+                                }) {
+                                    Icon(Icons.Outlined.Edit, contentDescription = "Rename $folder")
+                                }
+                                IconButton(onClick = { deletingFolder = folder }) {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        contentDescription = "Delete $folder",
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        editingFolder = ""
+                        folderName = ""
+                    },
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Create folder")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Done") }
+        },
+    )
+
+    editingFolder?.let { originalName ->
+        AlertDialog(
+            onDismissRequest = { editingFolder = null },
+            title = { Text(if (originalName.isBlank()) "Create folder" else "Rename folder") },
+            text = {
+                OutlinedTextField(
+                    value = folderName,
+                    onValueChange = { folderName = it },
+                    singleLine = true,
+                    label = { Text("Folder name") },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (originalName.isBlank()) onCreate(folderName)
+                        else onRename(originalName, folderName)
+                        editingFolder = null
+                    },
+                    enabled = folderName.isNotBlank(),
+                ) { Text(if (originalName.isBlank()) "Create" else "Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingFolder = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    deletingFolder?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { deletingFolder = null },
+            title = { Text("Delete $folder?") },
+            text = {
+                Text("Profiles in this folder will be moved to General. Their installed apps and data will stay intact.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete(folder)
+                        deletingFolder = null
+                    },
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingFolder = null }) { Text("Cancel") }
+            },
+        )
     }
 }
