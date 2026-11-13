@@ -117,7 +117,7 @@ object ProfileAppearance {
             }
         }
         val active = preferences.getString(ACTIVE_CONTAINER_KEY, null)
-        if (active !in validIds) saveActiveContainerId(fallbackId)
+        if (active == null || active !in validIds) saveActiveContainerId(fallbackId)
         return items
     }
 
