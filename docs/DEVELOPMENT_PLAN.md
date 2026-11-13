@@ -1,0 +1,148 @@
+# Sleepy Hub — living development plan
+
+Last updated: 2026-11-13
+
+This is the working roadmap and bug register for the RikkaHub-source-led Sleepy Hub rebuild. It is intentionally editable: newly reported bugs are appended, statuses change as evidence arrives, and phases may be reordered when a newly discovered blocker requires it.
+
+## Project guardrails
+
+- Work only on `sleepyhub/bugfix-install-switch-polish` (or a clearly documented successor feature branch).
+- Never merge into or push to `main` without explicit permission. At the time of this update, `main` remains at `89b59836c66f173756a4ae258cf379a957649820`.
+- Keep the known-good baseline `sleepyhub/identity-icons-no-vpn` / `6de07c536a013febe6432148dd23f94eec1bac30` available.
+- Protect existing BlackBox user/profile data. Do not ask the user to uninstall the existing app as a casual workaround.
+- A separate Preview application ID is a test-installation safety measure, not a reduced-feature/demo scope. Preview builds must retain the full app implementation.
+- Keep a persistent preview signing identity so preview APKs can update one another. Verify package ID, label, certificate and ABI in CI before sharing an APK.
+- Treat a successful compile as build verification only. It does not prove runtime behavior, installation success, visual parity, or device compatibility.
+- Follow the pinned RikkaHub source flows and visual language; do not invent unrelated UI. Preserve Sleepy Hub's own identity and respect the source project's license.
+- Keep the workspace black by default. Theme is global. Per-profile name, avatar and workspace background are retained; no per-container/per-profile theme or accent controls.
+- Do not add postponed features such as background-running apps, VPN, or remote log uploads to this milestone.
+
+## Status vocabulary
+
+| Status | Meaning |
+|---|---|
+| Reported | User observed it; cause not yet traced |
+| Investigating | Source/runtime path being inspected |
+| Ready | Root cause understood and fix scoped |
+| Fixing | Source changes are in progress |
+| Build verified | Relevant build/automated checks pass |
+| Device testing | Needs confirmation on a real target device |
+| Done | Expected behavior has been confirmed; a compile alone is insufficient |
+| Blocked | Needs missing evidence, environment access, or a user/device reproduction |
+
+Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mismatch; **P2** = smaller polish or edge case.
+
+## Current working snapshot
+
+- Feature branch: `sleepyhub/bugfix-install-switch-polish`
+- Current feature-branch head at this update: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
+- Current CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — in progress at the time of writing.
+- Previous completed CI run: [43414502981](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43414502981) — successful for commit `9bd8b7b6c0adcaa21f00a51d3efcf12b548ffe70`.
+- Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity.
+- The latest commit adds a stale-ViewPager-callback guard and clearer fake-location instructions. These are source changes awaiting the current CI result and device verification.
+- No claim is made that the app-install failure, all profile switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
+
+## Phase 0 — project safety and repeatable builds
+
+1. Keep feature work isolated from `main`.
+2. Preserve the baseline and user data.
+3. Make the preview package/signing identity reproducible.
+4. Make CI verify package name, app label, signature and ARM64 native libraries.
+5. Record every build's commit, workflow, artifact, size and SHA-256 when available.
+
+**Exit criteria:** a repeatable, verifiable preview APK can be produced without replacing the user's existing installation or touching its data.
+
+## Phase 1 — core behavior and high-priority bug fixes
+
+Work through the P0 bugs first. For each one: reproduce or trace it, identify the owning code path, make the smallest correct fix, build, then test the exact reproduction path.
+
+1. Profile switching and switching back.
+2. Container switching, including empty containers and returning to a previous container.
+3. App installation from the installed-app picker and from an external APK.
+4. Profile creation, cloning, deletion, moving between containers, reordering and persistence.
+5. App launch, uninstall, clear-data/cache and app-info actions.
+6. Google services profile state and app-grid filtering.
+7. Fake-location selection, application, per-profile/per-app scope, and disable/restore behavior.
+
+**Exit criteria:** core operations work across at least two profiles and two containers (including an empty container), with no profile/data mix-up and a confirmed successful app installation.
+
+## Phase 2 — source-led RikkaHub UI reconstruction
+
+Audit and implement one screen/flow at a time against the pinned upstream source, not merely by recoloring the old interface.
+
+1. Main shell, drawer, profile list and bottom container selector.
+2. Compact profile picker and add-profile interaction.
+3. Profile manager: search, folders/tags, sorting, reorder, clone, edit, delete and long-press actions.
+4. Profile detail/basic/background pages.
+5. Global settings and theme navigation.
+6. App picker and app manager.
+7. Google services manager and profile Play indicator.
+8. Fake-location page.
+9. Storage permission rationale and other system-facing UI.
+10. Empty states, dialogs, bottom sheets, menus, loading/error states and accessibility/touch targets.
+
+For every screen compare: hierarchy, top/bottom bars, dimensions, spacing, shapes, typography, icon style, selected/pressed states, scroll behavior, transitions and action placement. Avoid arbitrary decorations, extra header boxes, giant profile cards, or popup behavior that is not in the reference flow.
+
+**Exit criteria:** every relevant screen and interaction has been source-compared and the user has reviewed target-device screenshots.
+
+## Phase 3 — motion, insets and visual finish
+
+1. Use deliberate, smooth RikkaHub-like transitions; avoid near-instant or missing animations.
+2. Animate list placement and state changes consistently.
+3. Make the system navigation bar transparent while preserving safe insets. No content or buttons may be hidden behind system navigation controls.
+4. Verify bottom sheets, dialogs, keyboard/IME behavior, edge-to-edge layout and gesture/three-button navigation.
+5. Refine icons, logos, frames, shapes, spacing and typography consistently across all screens.
+
+**Exit criteria:** transitions feel intentional and all interactive controls remain visible and tappable on the target phone.
+
+## Phase 4 — regression and acceptance
+
+- Re-run every registered bug reproduction after relevant changes.
+- Test profile/container persistence after app restart.
+- Test switching from populated to empty containers and back.
+- Test add/launch/remove app flows and GMS/fake-location interactions.
+- Test system navigation insets with the phone's navigation mode.
+- Compare the drawer, picker, manager, settings, app picker, GMS and fake-location screenshots against RikkaHub.
+- Record device model, Android version, reproduction steps and evidence for any remaining issue.
+
+**Exit criteria:** all P0 bugs are Done; P1 bugs are Done or explicitly accepted as known limitations; no regression is left unrecorded.
+
+## Phase 5 — final delivery
+
+- Produce the intended final package identity and release signing configuration.
+- Verify signature, package ID, version, ABI and APK integrity.
+- Test upgrade/install behavior without data loss.
+- Publish a concise change log, test record, known limitations and APK checksum.
+
+Do not call the app complete or claim 100% parity until the acceptance checks above are actually passed.
+
+## Living bug register
+
+| ID | Priority | Issue / expected behavior | Current status | Evidence, fix and next check |
+|---|---|---|---|---|
+| BUG-001 | P0 | Cannot switch between profiles or reliably switch back. Selecting a profile must select the matching BlackBox page and persist correctly. | Fixing; CI/device check pending | Source audit found a stale ViewPager2 callback risk. Commit `046e04b` ignores callbacks whose position is no longer `viewPager.currentItem`. CI run 43417371053 is pending. Test A→B→A, reorder, add/delete, app restart and container return. |
+| BUG-002 | P0 | Container switching may also be broken; user has not confirmed either way. Empty containers must remain empty and switching back must restore the previous profile. | Reported as uncertain; device testing | Test two populated containers and one empty container; verify active profile ID is scoped to each container and no profile is silently created or moved. |
+| BUG-003 | P0 | Adding apps always reports “Installing Failed”. | Investigating; not fixed/proven | Existing branch adds validation, diagnostic error display and package/install logging, but this is not a root-cause fix. Trace URI permission, source APK access, ABI/native libraries, package parsing, BlackBox install result and the exact error/logcat. Test both picker and external APK. |
+| BUG-004 | P1 | Google services manager still appears old; user does not want Google packages displayed as ordinary installed apps. Show only the small Google Play logo beside the relevant profile name. | Code path updated; device visual check pending | Branch contains a Compose profile-based GMS manager, Google package filtering from the app grid and a Play indicator on profile rows. Compare actual installed screen and ensure no GMS app tile/card is exposed. |
+| BUG-005 | P1 | Navigation bar appears as an opaque bar; user wants transparent but all controls must remain visible and tappable above the system navigation area. | Code-level changes present; device testing | Theme code sets a transparent navigation bar and disables decor fitting; audit every bottom screen for safe insets. Test gesture and three-button navigation; never solve transparency by placing controls behind system buttons. |
+| BUG-006 | P1 | Animations are missing or too fast; transitions should be smooth and deliberate like RikkaHub. | Partially implemented; visual audit pending | Page/list animations exist in source, but coverage, duration and easing need screen-by-screen comparison and device review. |
+| BUG-007 | P1 | UI feels dry and only about 60–70% like RikkaHub; user is unhappy with logos, frames and overall presentation. | Open; broad source audit required | Rebuild screen by screen from pinned RikkaHub source. Compare hierarchy, component shapes, icons, spacing, typography, frames, states and transitions. Do not add decorative elements the reference does not have. |
+| BUG-008 | P1 | Fake location is confusing; user cannot tell what it does or how to use it. | Explanation updated; behavior unverified | Current instructions explain choosing an app, dropping a map pin, applying it, and disabling it later. Verify location override is limited to the chosen virtual app/profile and disabling restores real location. |
+| BUG-009 | P1 | Further UI and functional bugs are expected; initial report is incomplete. | Open intake | Append every new report as the next BUG ID. Do not close or overwrite earlier issues without evidence. |
+
+## Bug intake and update rules
+
+- New screenshots, recordings, logs or reproduction steps are appended to this register with the next available ID.
+- Preserve the user's exact symptom and expected behavior; do not reinterpret a report as fixed because a nearby code path changed.
+- Update status only when supported by source inspection, CI output or device evidence.
+- When one fix touches another feature, add regression checks to both issues.
+- Keep a short implementation note with each code commit and update this plan after meaningful changes.
+- If a user reports more bugs while a phase is underway, record them immediately, triage by severity, and adjust the order without losing the current work.
+- Ask the user for a device reproduction only when source/CI evidence cannot establish the result; do not make them repeat information already supplied.
+
+## Reference and license notes
+
+- RikkaHub upstream: https://github.com/rikkahub/rikkahub
+- Pinned source commit: `b10c168577482abed696669a58c0eb59f1eed270`
+- Detailed source mapping and implementation audit: [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md)
+- Preserve the license obligations of any upstream code used. Where the implementation is independently re-created, use the source as a behavioral/layout reference without copying protected branding/assets.
