@@ -179,3 +179,20 @@ Files added/rewritten so far:
 - `MainActivity.kt` and `ViewPagerAdapter.kt`: virtual-user profile lifecycle and stable profile IDs.
 
 **Validation state:** implementation is in progress. The ARM64 debug workflow has been triggered, but no successful build or device acceptance is claimed at this checkpoint. Resolve compiler/runtime issues before adding more UI features.
+
+
+## Corrected container/profile architecture and audit — 2026-11-13
+
+The user's clarified model supersedes earlier UI notes:
+- RikkaHub Assistant maps to a Sleepy Hub **container**.
+- RikkaHub conversation list maps to the container's inline, scrollable **virtual profile** list.
+- The container picker is the compact assistant-style bottom sheet near the bottom of the drawer.
+- A new container starts empty. It does not create a BlackBox user automatically.
+- Container identity owns name, picture/avatar, and optional workspace background. A missing background means plain black.
+- Theme is **global only**, following RikkaHub. There is no per-container or per-profile theme/accent.
+
+Current rebuild branch: `sleepyhub/rikkahub-source-rebuild`, audited head `2ebae140fcd0c82c03321de648db00accaed5d98`.
+
+Audit findings: the branch currently has a flat BlackBox-user list, no container model, profile-level accent/background storage, a profile picker sheet instead of an inline drawer list, no container avatar, manual string page state, and a default accent gradient. It is not yet the approved design.
+
+Latest ARM64 debug workflow [43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208) failed during Kotlin compilation. No APK was produced. The errors are listed in [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md). The branch has no app unit or instrumentation tests yet. No application code was changed during this audit; only documentation was updated. `main` remains untouched.
