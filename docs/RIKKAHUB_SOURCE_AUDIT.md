@@ -249,3 +249,7 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 ### Pinned RikkaHub FolderBar behavior
 
 - The current drawer folder row now mirrors the pinned `ChatDrawer.kt` pattern: All/General/folder chips, an Add chip, long-press Rename/Delete menus, and a move-to-folder bottom sheet with available choices. The final refinement is waiting on run 43451229123.
+
+### Storage isolation source check
+
+- `BEnvironment.getDataDir(packageName, userId)` and `getExternalDataDir(packageName, userId)` include the virtual user ID in their paths. `IOCore` redirects the virtual `/data/user/...` path to the `ApplicationInfo.dataDir` for the selected user. Source structure is per-profile, but the same-app note/setting test is still required to confirm runtime isolation.
