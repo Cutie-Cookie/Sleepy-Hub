@@ -1,6 +1,8 @@
 package top.niunaijun.blackboxa.view.main
 
 import android.content.Intent
+import android.graphics.Color as AndroidColor
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -11,9 +13,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,34 +26,30 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Sort
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -67,139 +64,148 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.app.AppManager
 import top.niunaijun.blackboxa.app.ProfileAppearance
-import top.niunaijun.blackboxa.view.gms.GmsManagerActivity
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileManagerScreen(
-    profiles: List<ProfileItem>,
-    activeUserId: Int,
+fun ContainerSettingsScreen(
+    container: ContainerItem,
     onBack: () -> Unit,
-    onSelect: (Int) -> Unit,
-    onAdd: () -> Unit,
-    onEdit: (Int) -> Unit,
+    onSave: (ContainerItem) -> Unit,
 ) {
-    var search by remember { mutableStateOf("") }
-    var selectedFolder by remember { mutableStateOf("All") }
-    var sortAlphabetically by remember { mutableStateOf(false) }
-    val folders = remember(profiles) {
-        profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
-    }
-    val filtered = remember(profiles, search, selectedFolder, sortAlphabetically) {
-        val matching = profiles.filter {
-            it.name.contains(search, ignoreCase = true) &&
-                (selectedFolder == "All" || it.folder == selectedFolder)
+    val context = LocalContext.current
+    var name by remember(container.id) { mutableStateOf(container.name) }
+    var avatarUri by remember(container.id) { mutableStateOf(container.avatarUri) }
+    var backgroundUri by remember(container.id) { mutableStateOf(container.backgroundUri) }
+    var opacity by remember(container.id) { mutableStateOf(container.backgroundOpacity) }
+
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            persistReadPermission(context, uri)
+            releaseReadPermission(context, avatarUri)
+            avatarUri = uri.toString()
         }
-        if (sortAlphabetically) matching.sortedBy { it.name.lowercase() } else matching
     }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            persistReadPermission(context, uri)
+            releaseReadPermission(context, backgroundUri)
+            backgroundUri = uri.toString()
+        }
+    }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Profiles") },
+            TopAppBar(
+                title = { Text("Container details") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    IconButton(onClick = onAdd) {
-                        Icon(Icons.Outlined.Add, contentDescription = "Add profile")
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text("Search profiles") },
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                LazyRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(listOf("All") + folders) { folder ->
-                        FilterChip(
-                            selected = selectedFolder == folder,
-                            onClick = { selectedFolder = folder },
-                            label = { Text(folder) },
+            item {
+                SettingsCard(title = "Identity") {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        ContainerAvatar(
+                            container.copy(avatarUri = avatarUri, name = name),
+                            64.dp,
                         )
-                    }
-                }
-                IconButton(onClick = { sortAlphabetically = !sortAlphabetically }) {
-                    Icon(Icons.Outlined.Sort, contentDescription = "Toggle profile sorting")
-                }
-            }
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                state = rememberLazyListState(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(filtered, key = { it.userId }) { profile ->
-                    Card(
-                        onClick = { onEdit(profile.userId) },
-                        modifier = Modifier.animateItemPlacement(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (profile.userId == activeUserId) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
-                            },
-                        ),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            ProfileAvatar(profile.name, profile.accent, 48.dp)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Text(profile.name, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "${profile.folder} · " + if (profile.appCount >= 0) "${profile.appCount} installed apps" else "Virtual profile",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            TextButton(onClick = { onSelect(profile.userId) }) {
-                                Text(if (profile.userId == activeUserId) "Open" else "Switch")
-                            }
-                            IconButton(onClick = { onEdit(profile.userId) }) {
-                                Icon(Icons.Outlined.Settings, contentDescription = "Profile settings")
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(name.ifBlank { "Container" }, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                            Text(
+                                "${container.profileCount} profiles",
+                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row {
+                                TextButton(onClick = { avatarPicker.launch(arrayOf("image/*")) }) {
+                                    Text(if (avatarUri == null) "Choose picture" else "Change picture")
+                                }
+                                if (avatarUri != null) {
+                                    TextButton(onClick = {
+                                        releaseReadPermission(context, avatarUri)
+                                        avatarUri = null
+                                    }) { Text("Remove") }
+                                }
                             }
                         }
                     }
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Container name") },
+                    )
+                }
+            }
+
+            item {
+                SettingsCard(title = "Workspace background") {
+                    Text(
+                        "This picture appears behind the selected container's app workspace. The workspace stays plain black when no picture is chosen.",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ContainerWorkspaceBackground(
+                        container = container.copy(
+                            name = name,
+                            avatarUri = avatarUri,
+                            backgroundUri = backgroundUri,
+                            backgroundOpacity = opacity,
+                        ),
+                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(onClick = { backgroundPicker.launch(arrayOf("image/*")) }) {
+                            Text(if (backgroundUri == null) "Choose background" else "Change background")
+                        }
+                        if (backgroundUri != null) {
+                            TextButton(onClick = {
+                                releaseReadPermission(context, backgroundUri)
+                                backgroundUri = null
+                            }) { Text("Remove") }
+                        }
+                    }
+                    if (backgroundUri != null) {
+                        Text("Visibility · ${(opacity * 100).toInt()}%")
+                        Slider(
+                            value = opacity,
+                            onValueChange = { opacity = it },
+                            valueRange = 0f..1f,
+                        )
+                    }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        onSave(
+                            container.copy(
+                                name = name.trim().ifBlank { container.name },
+                                avatarUri = avatarUri,
+                                backgroundUri = backgroundUri,
+                                backgroundOpacity = opacity.coerceIn(0f, 1f),
+                            )
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = name.isNotBlank(),
+                ) {
+                    Icon(Icons.Outlined.Check, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Save container")
                 }
             }
         }
@@ -210,58 +216,24 @@ fun ProfileManagerScreen(
 @Composable
 fun ProfileSettingsScreen(
     profile: ProfileItem,
-    profileCount: Int,
     onBack: () -> Unit,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
-    onAppearanceChanged: () -> Unit,
+    onSaved: () -> Unit,
 ) {
     val context = LocalContext.current
     var name by remember(profile.userId) { mutableStateOf(profile.name) }
     var folder by remember(profile.userId) { mutableStateOf(profile.folder) }
-    var accent by remember(profile.userId) { mutableIntStateOf(profile.accent) }
-    var backgroundUri by remember(profile.userId) { mutableStateOf(profile.backgroundUri) }
-    var opacity by remember(profile.userId) { mutableStateOf(profile.backgroundOpacity) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-
-    val backgroundPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-    ) { uri ->
-        if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            } catch (_: Exception) {
-            }
-            val previous = ProfileAppearance.backgroundUri(profile.userId)
-            if (!previous.isNullOrBlank() && previous != uri.toString()) {
-                try {
-                    context.contentResolver.releasePersistableUriPermission(
-                        android.net.Uri.parse(previous),
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            backgroundUri = uri.toString()
-            ProfileAppearance.setBackgroundUri(profile.userId, backgroundUri)
-            onAppearanceChanged()
-        }
-    }
-
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val listState = rememberLazyListState()
     val showTitle by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
         }
     }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -269,9 +241,7 @@ fun ProfileSettingsScreen(
                         visible = showTitle,
                         enter = fadeIn() + slideInVertically { it / 2 },
                         exit = fadeOut() + slideOutVertically { it / 2 },
-                    ) {
-                        Text(name.ifBlank { "Profile settings" }, maxLines = 1)
-                    }
+                    ) { Text(name.ifBlank { "Profile" }, maxLines = 1) }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -279,205 +249,55 @@ fun ProfileSettingsScreen(
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { padding ->
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text("Profile", style = MaterialTheme.typography.titleMedium)
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Profile name") },
-                        )
-                        OutlinedTextField(
-                            value = folder,
-                            onValueChange = { folder = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("Folder") },
-                            supportingText = { Text("Group related profiles together in the picker.") },
-                        )
-                        Button(
-                            onClick = {
-                                if (name.isNotBlank()) {
-                                    onRename(name.trim())
-                                    val savedFolder = folder.trim().ifBlank { "General" }
-                                    folder = savedFolder
-                                    ProfileAppearance.setProfileFolder(profile.userId, savedFolder)
-                                    onAppearanceChanged()
-                                    Toast.makeText(context, "Profile saved", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            enabled = name.isNotBlank() &&
-                                (name.trim() != profile.name || folder.trim() != profile.folder),
-                        ) {
-                            Text("Save profile")
-                        }
-                    }
+                SettingsCard(title = "Profile") {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Profile name") },
+                    )
+                    OutlinedTextField(
+                        value = folder,
+                        onValueChange = { folder = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Folder") },
+                        supportingText = { Text("Profiles in the same container can share a folder.") },
+                    )
+                    Button(
+                        onClick = {
+                            onRename(name.trim())
+                            ProfileAppearance.setProfileFolder(profile.userId, folder.trim().ifBlank { "General" })
+                            onSaved()
+                            Toast.makeText(context, "Profile saved", Toast.LENGTH_SHORT).show()
+                        },
+                        enabled = name.isNotBlank() &&
+                            (name.trim() != profile.name || folder.trim() != profile.folder),
+                    ) { Text("Save profile") }
                 }
             }
-
             item {
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Icon(Icons.Outlined.Palette, contentDescription = null)
-                            Text("Profile accent", style = MaterialTheme.typography.titleMedium)
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ProfileAppearance.accentPalette.forEach { color ->
-                                val selected = color == accent
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .background(Color(color), CircleShape)
-                                        .then(
-                                            if (selected) Modifier.padding(2.dp) else Modifier
-                                        )
-                                        .clickable {
-                                            accent = color
-                                            ProfileAppearance.setProfileAccent(profile.userId, color)
-                                            onAppearanceChanged()
-                                        },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                Card(
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Icon(Icons.Outlined.Image, contentDescription = null)
-                            Text("Workspace background", style = MaterialTheme.typography.titleMedium)
-                        }
-                        Text(
-                            "This background belongs to this profile's workspace. It does not appear inside the profile picker.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(132.dp),
-                        ) {
-                            ProfileWorkspaceBackground(
-                                profile = profile.copy(
-                                    accent = accent,
-                                    backgroundUri = backgroundUri,
-                                    backgroundOpacity = opacity,
-                                ),
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                            Text(
-                                "Workspace preview",
-                                modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Button(onClick = { backgroundPicker.launch(arrayOf("image/*")) }) {
-                                Text(if (backgroundUri == null) "Choose image" else "Change image")
-                            }
-                            if (backgroundUri != null) {
-                                TextButton(
-                                    onClick = {
-                                        try {
-                                            context.contentResolver.releasePersistableUriPermission(
-                                                android.net.Uri.parse(backgroundUri),
-                                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                                            )
-                                        } catch (_: Exception) {
-                                        }
-                                        backgroundUri = null
-                                        ProfileAppearance.setBackgroundUri(profile.userId, null)
-                                        onAppearanceChanged()
-                                    },
-                                ) {
-                                    Text("Remove")
-                                }
-                            }
-                        }
-                        if (backgroundUri != null) {
-                            Text(
-                                "Background visibility · ${(opacity * 100).toInt()}%",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                            Slider(
-                                value = opacity,
-                                onValueChange = {
-                                    opacity = it
-                                    ProfileAppearance.setBackgroundOpacity(profile.userId, it)
-                                    onAppearanceChanged()
-                                },
-                                valueRange = 0f..1f,
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (profileCount > 1) {
-                item {
+                SettingsCard(title = "Virtual profile") {
+                    Text(
+                        "This profile is a BlackBox virtual Android user. Moving it to another container keeps its installed apps and data.",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     Button(
                         onClick = { showDeleteConfirm = true },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.error,
                         ),
                     ) {
                         Icon(Icons.Outlined.Delete, contentDescription = null)
@@ -493,43 +313,34 @@ fun ProfileSettingsScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Delete ${profile.name}?") },
-            text = {
-                Text("This permanently removes this virtual profile and its installed apps and data.")
-            },
+            text = { Text("This permanently removes this virtual profile, its installed apps, and all of its app data.") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) { Text("Delete", color = androidx.compose.material3.MaterialTheme.colorScheme.error) }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
-                }
-            },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } },
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
-    val context = LocalContext.current
+fun GlobalSettingsScreen(
+    onBack: () -> Unit,
+    onOpenPreferences: () -> Unit,
+    onOpenContainers: () -> Unit,
+    onOpenFakeLocation: () -> Unit,
+    onOpenGmsManager: () -> Unit,
+    onGridColumnsChanged: () -> Unit,
+) {
     var themeMode by remember { mutableStateOf(ProfileAppearance.globalThemeMode()) }
-    var dynamicColor by remember { mutableStateOf(ProfileAppearance.useDynamicColor()) }
-    var amoled by remember { mutableStateOf(ProfileAppearance.useAmoledDarkMode()) }
-    var accent by remember { mutableIntStateOf(ProfileAppearance.globalAccent()) }
-    var columns by remember { mutableIntStateOf(ProfileAppearance.appGridColumns()) }
     var hideRoot by remember { mutableStateOf(AppManager.mBlackBoxLoader.hideRoot()) }
     var daemonEnabled by remember { mutableStateOf(AppManager.mBlackBoxLoader.daemonEnable()) }
     var disableFlagSecure by remember { mutableStateOf(AppManager.mBlackBoxLoader.disableFlagSecure()) }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
@@ -538,20 +349,16 @@ fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
                         Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SettingsCard(title = "Appearance") {
-                    Text("Theme mode", style = MaterialTheme.typography.labelLarge)
+                SettingsCard(title = "General settings") {
+                    Text("Color mode", style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("system", "light", "dark").forEach { mode ->
                             FilterChip(
@@ -561,60 +368,115 @@ fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
                                     ProfileAppearance.setGlobalThemeMode(mode)
                                     ProfileAppearance.notifyThemeChanged()
                                 },
-                                label = {
-                                    Text(mode.replaceFirstChar { it.uppercase() })
-                                },
+                                label = { Text(mode.replaceFirstChar { it.uppercase() }) },
                             )
                         }
                     }
-                    SettingsSwitch(
-                        title = "Dynamic colors",
-                        subtitle = "Use Android's wallpaper colors on Android 12 and newer.",
-                        checked = dynamicColor,
-                        enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
-                        onCheckedChange = {
-                            dynamicColor = it
-                            ProfileAppearance.setUseDynamicColor(it)
-                            ProfileAppearance.notifyThemeChanged()
-                        },
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Tune, null) },
+                        title = "Preferences",
+                        subtitle = "Theme, app grid, and interface options",
+                        onClick = onOpenPreferences,
                     )
-                    SettingsSwitch(
-                        title = "AMOLED dark mode",
-                        subtitle = "Use a true-black background in dark mode.",
-                        checked = amoled,
-                        onCheckedChange = {
-                            amoled = it
-                            ProfileAppearance.setUseAmoledDarkMode(it)
-                            ProfileAppearance.notifyThemeChanged()
-                        },
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Person, null) },
+                        title = "Containers",
+                        subtitle = "Manage containers and their profiles",
+                        onClick = onOpenContainers,
                     )
-                    Text("Global accent", style = MaterialTheme.typography.labelLarge)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ProfileAppearance.accentPalette.forEach { color ->
-                            val selected = color == accent
-                            Surface(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .clickable {
-                                        accent = color
-                                        ProfileAppearance.setGlobalAccent(color)
-                                        ProfileAppearance.notifyThemeChanged()
-                                    },
-                                shape = CircleShape,
-                                color = Color(color),
-                                border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
-                            ) {}
-                        }
-                    }
                 }
             }
-
             item {
-                SettingsCard(title = "App grid") {
-                    Text("Columns", style = MaterialTheme.typography.labelLarge)
+                SettingsCard(title = "Virtual app behavior") {
+                    SettingsSwitch(
+                        title = "Hide root",
+                        subtitle = "Apply the existing BlackBox root-hiding option.",
+                        checked = hideRoot,
+                        onCheckedChange = {
+                            hideRoot = it
+                            AppManager.mBlackBoxLoader.invalidHideRoot(it)
+                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    SettingsSwitch(
+                        title = "Daemon",
+                        subtitle = "Keep the existing BlackBox daemon behavior.",
+                        checked = daemonEnabled,
+                        onCheckedChange = {
+                            daemonEnabled = it
+                            AppManager.mBlackBoxLoader.invalidDaemonEnable(it)
+                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    SettingsSwitch(
+                        title = "Disable FLAG_SECURE",
+                        subtitle = "Allow screenshots in apps that request secure windows.",
+                        checked = disableFlagSecure,
+                        onCheckedChange = {
+                            disableFlagSecure = it
+                            AppManager.mBlackBoxLoader.invalidDisableFlagSecure(it)
+                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+            }
+            item {
+                SettingsCard(title = "Tools") {
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Settings, null) },
+                        title = "Fake location",
+                        subtitle = "Configure the active virtual profile's location",
+                        onClick = onOpenFakeLocation,
+                    )
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Cloud, null) },
+                        title = "Google services",
+                        subtitle = "Manage supported Google services",
+                        onClick = onOpenGmsManager,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsPreferencesScreen(
+    onBack: () -> Unit,
+    onOpenTheme: () -> Unit,
+    onGridColumnsChanged: () -> Unit,
+) {
+    var columns by remember { mutableIntStateOf(ProfileAppearance.appGridColumns()) }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Preferences") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                SettingsCard(title = "Appearance") {
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Palette, null) },
+                        title = "Theme",
+                        subtitle = "Global colors, dynamic color, and AMOLED mode",
+                        onClick = onOpenTheme,
+                    )
+                }
+            }
+            item {
+                SettingsCard(title = "Interface") {
+                    Text("App grid columns", style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(3, 4, 5).forEach { value ->
                             FilterChip(
@@ -630,82 +492,170 @@ fun GlobalSettingsScreen(onBack: () -> Unit, onGridColumnsChanged: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
 
-            item {
-                SettingsCard(title = "Virtual app behavior") {
-                    SettingsSwitch(
-                        title = "Hide root",
-                        subtitle = "Apply the existing BlackBox root-hiding option.",
-                        checked = hideRoot,
-                        onCheckedChange = {
-                            hideRoot = it
-                            AppManager.mBlackBoxLoader.invalidHideRoot(it)
-                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    SettingsSwitch(
-                        title = "Daemon",
-                        subtitle = "Keep the existing BlackBox daemon behavior.",
-                        checked = daemonEnabled,
-                        onCheckedChange = {
-                            daemonEnabled = it
-                            AppManager.mBlackBoxLoader.invalidDaemonEnable(it)
-                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    SettingsSwitch(
-                        title = "Disable FLAG_SECURE",
-                        subtitle = "Allow screenshots in apps that request secure windows.",
-                        checked = disableFlagSecure,
-                        onCheckedChange = {
-                            disableFlagSecure = it
-                            AppManager.mBlackBoxLoader.invalidDisableFlagSecure(it)
-                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                }
-            }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ThemeSettingsScreen(onBack: () -> Unit) {
+    var dynamicColor by remember { mutableStateOf(ProfileAppearance.useDynamicColor()) }
+    var amoled by remember { mutableStateOf(ProfileAppearance.useAmoledDarkMode()) }
+    var accent by remember { mutableIntStateOf(ProfileAppearance.globalAccent()) }
+    var customHex by remember { mutableStateOf("#%06X".format(0xFFFFFF and accent)) }
+    var showCustom by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-            item {
-                SettingsCard(title = "Google services") {
-                    val supported = BlackBoxCore.get().isSupportGms
-                    Text(
-                        if (supported) "Manage Google services for virtual profiles."
-                        else "Google services are not supported by this build.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Button(
-                        onClick = { GmsManagerActivity.start(context) },
-                        enabled = supported,
-                    ) {
-                        Text("Google services manager")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Theme") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                SettingsCard(title = "Theme color") {
+                    Text(
+                        "The selected theme applies globally to Sleepy Hub. Containers and profiles do not have separate themes.",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        ProfileAppearance.accentPalette.forEach { color ->
+                            val selected = color == accent
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .background(Color(color), CircleShape)
+                                    .clickable {
+                                        accent = color
+                                        ProfileAppearance.setGlobalAccent(color)
+                                        ProfileAppearance.notifyThemeChanged()
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (selected) Icon(Icons.Outlined.Check, null, tint = Color.White)
+                            }
+                        }
+                    }
+                    TextButton(onClick = { showCustom = true }) { Text("Custom color") }
                 }
             }
+            item {
+                SettingsCard(title = "Theme options") {
+                    SettingsSwitch(
+                        title = "Dynamic color",
+                        subtitle = "Use Android wallpaper colors on Android 12 and newer.",
+                        checked = dynamicColor,
+                        enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+                        onCheckedChange = {
+                            dynamicColor = it
+                            ProfileAppearance.setUseDynamicColor(it)
+                            ProfileAppearance.notifyThemeChanged()
+                        },
+                    )
+                    SettingsSwitch(
+                        title = "AMOLED dark mode",
+                        subtitle = "Use true black for dark surfaces.",
+                        checked = amoled,
+                        onCheckedChange = {
+                            amoled = it
+                            ProfileAppearance.setUseAmoledDarkMode(it)
+                            ProfileAppearance.notifyThemeChanged()
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showCustom) {
+        AlertDialog(
+            onDismissRequest = { showCustom = false },
+            title = { Text("Custom theme color") },
+            text = {
+                OutlinedTextField(
+                    value = customHex,
+                    onValueChange = { customHex = it },
+                    singleLine = true,
+                    label = { Text("Hex color") },
+                    placeholder = { Text("#BDBDBD") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    try {
+                        val parsed = AndroidColor.parseColor(customHex.trim())
+                        accent = parsed
+                        ProfileAppearance.setGlobalAccent(parsed)
+                        ProfileAppearance.notifyThemeChanged()
+                        showCustom = false
+                    } catch (_: Exception) {
+                        Toast.makeText(context, "Enter a valid color such as #BDBDBD", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Apply") }
+            },
+            dismissButton = { TextButton(onClick = { showCustom = false }) { Text("Cancel") } },
+        )
+    }
+}
+
+@Composable
+private fun SettingsCard(title: String, content: @Composable () -> Unit) {
+    Card(
+        shape = androidx.compose.material3.MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+            content()
         }
     }
 }
 
 @Composable
-private fun SettingsCard(
+private fun SettingsActionRow(
+    icon: @Composable () -> Unit,
     title: String,
-    content: @Composable () -> Unit,
+    subtitle: String,
+    onClick: () -> Unit,
 ) {
-    Card(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-        ),
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        color = Color.Transparent,
+        shape = androidx.compose.material3.MaterialTheme.shapes.medium,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            content()
+            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { icon() }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
+                Text(
+                    subtitle,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -724,17 +674,34 @@ private fun SettingsSwitch(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(title, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
             Text(
                 subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+    }
+}
+
+@Composable
+private fun contextForSettings(): android.content.Context = LocalContext.current
+
+private fun persistReadPermission(context: android.content.Context, uri: Uri) {
+    try {
+        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    } catch (_: Exception) {
+    }
+}
+
+private fun releaseReadPermission(context: android.content.Context, value: String?) {
+    if (value.isNullOrBlank()) return
+    try {
+        context.contentResolver.releasePersistableUriPermission(
+            Uri.parse(value),
+            Intent.FLAG_GRANT_READ_URI_PERMISSION,
         )
+    } catch (_: Exception) {
     }
 }
