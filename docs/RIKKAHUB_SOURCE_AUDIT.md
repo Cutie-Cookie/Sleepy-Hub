@@ -7,7 +7,7 @@ Reviewed 2026-11-13.
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected head: `dae5f468ad1fdf52dee22d3572de37f7a9af619c`
+- Latest inspected head: `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`
 - Living roadmap and bug register: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 - Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
@@ -20,9 +20,9 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="success">ARM64 debug build succeeded</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature commit: `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
+- Latest inspected feature commit: `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3` (new drawer-row change; CI status not yet retrieved).
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Latest successful build: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
+- Latest successful build: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`. The newer commit `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3` has not yet been build-verified.
 - Latest artifact: `sleepy-hub-arm64-preview-debug` (ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (archive digest, not APK file checksum); expires 2026-11-20 11:47:43 UTC.
 - The latest workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
@@ -34,6 +34,7 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 - Persistent container membership, an empty-container flow, and a last-active-profile ID per container.
 - A ViewPager2 stale-callback guard (commit `046e04b`) so a delayed event for an old page cannot silently select a different active profile; the CI build passes, while device verification remains pending.
 - A list-height fix (commit `dae5f46`) replaces `fillMaxSize()` with `weight(1f)` for the profile-manager list/empty state, fake-location list/empty state, and Google-services list/empty state inside their parent Columns. The latest CI build passes; runtime scrolling and empty-state layout still need phone verification.
+- Drawer profile rows (commit `6a11fed`) now follow the pinned `ConversationList.kt` pattern: one text line, no profile image or app-count subtitle, compact 6dp vertical padding, and an elevated selected surface. CI and phone screenshot review are still pending for this newest change.
 - Inline, independently scrollable profile rows in the drawer, folder filtering, profile sorting, a small Add Profile action, and a separate bottom container selector.
 - Profile manager search, compact rows, reorder handles, detail/basic/background pages, and per-profile workspace wallpapers.
 - Container settings now cover container name and picture only. Legacy container wallpaper data is migrated to profiles when needed; no per-container theme or accent controls remain.
