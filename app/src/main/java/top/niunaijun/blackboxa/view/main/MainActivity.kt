@@ -296,9 +296,14 @@ class MainActivity : BaseActivity() {
         activeUserId = userId
         ProfileAppearance.saveLastProfileId(activeContainerId, userId)
         refreshProfiles()
+        // Switch immediately on the UI thread; keep a posted sync as a guard for
+        // the rare case where FragmentStateAdapter is still completing a layout pass.
+        viewPager.setCurrentItem(index, true)
         viewPager.post {
             val currentIndex = pagerAdapter.indexOfUserId(userId)
-            if (currentIndex >= 0) viewPager.setCurrentItem(currentIndex, true)
+            if (currentIndex >= 0 && viewPager.currentItem != currentIndex) {
+                viewPager.setCurrentItem(currentIndex, true)
+            }
         }
     }
 
