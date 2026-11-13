@@ -120,20 +120,6 @@ fun ContainerSettingsScreen(
                     )
                 }
             }
-            item {
-                SettingsCard(title = "Workspace") {
-                    SettingsActionRow(
-                        icon = { Icon(Icons.Outlined.Image, null) },
-                        title = "Background",
-                        subtitle = if (container.backgroundUri == null) {
-                            "No background selected"
-                        } else {
-                            "Change or remove the workspace background"
-                        },
-                        onClick = onOpenBackground,
-                    )
-                }
-            }
         }
     }
 }
