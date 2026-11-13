@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityInstallPickerBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
 import top.niunaijun.blackboxa.util.inflate
@@ -58,6 +59,7 @@ class ListActivity : BaseActivity() {
                 val loading by viewModel.loadingLiveData.observeAsState(true)
                 InstalledAppPickerScreen(
                     apps = apps,
+                    profileName = ProfileAppearance.profileName(userId, userId),
                     loading = loading || copyingApk,
                     onBack = { finish() },
                     onChooseApk = {
