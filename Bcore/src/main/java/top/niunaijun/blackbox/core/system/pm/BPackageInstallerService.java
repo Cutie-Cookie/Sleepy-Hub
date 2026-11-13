@@ -26,12 +26,24 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
     @Override
     public int installPackageAsUser(BPackageSettings ps, int userId) {
         List<Executor> executors = new ArrayList<>();
-        
         executors.add(new CreateUserExecutor());
-        
-        executors.add(new CreatePackageExecutor());
-        
-        executors.add(new CopyExecutor());
+
+        // Package code is shared by all virtual users. If another profile already
+        // has this package, do not delete and recopy its shared APK/lib directory:
+        // the source path may point inside that very directory (notably for APK imports).
+        boolean packageFilesAlreadyAvailable = false;
+        for (Integer installedUserId : ps.getUserIds()) {
+            if (installedUserId != userId && ps.getInstalled(installedUserId)) {
+                packageFilesAlreadyAvailable = true;
+                break;
+            }
+        }
+
+        if (!packageFilesAlreadyAvailable) {
+            executors.add(new CreatePackageExecutor());
+            executors.add(new CopyExecutor());
+        }
+
         InstallOption option = ps.installOption;
         for (Executor executor : executors) {
             int exec = executor.exec(ps, option, userId);
