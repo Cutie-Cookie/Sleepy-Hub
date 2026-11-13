@@ -165,3 +165,13 @@ Files added/rewritten so far:
 - Audited `sleepyhub/rikkahub-source-rebuild`: the Compose foundation and app grid are present, but the current shell still uses manual string-based page state and custom drawer/profile-list/detail styling. Those are recorded as gaps to correct against the upstream component hierarchy, not as a finished implementation.
 - Added `docs/RIKKAHUB_SOURCE_AUDIT.md` and indexed it in `docs/README.md`.
 - No application source files were changed in this documentation update. `main` remains untouched.
+
+
+### 2026-11-13 — Strict RikkaHub fidelity clarified
+
+- User explicitly instructed that RikkaHub's actual source code is the UI specification and that no UI/features should be invented beyond the agreed Sleepy Hub plan.
+- Confirmed the app-manager workspace remains plain black by default. No added header box, banner, hero card, decorative artwork, or logo decoration above the app grid.
+- Optional profile wallpaper is only behind the active profile workspace when deliberately selected; removing it restores plain black. No wallpaper thumbnails in the drawer or profile lists.
+- Rejected the earlier custom wide/tall profile-card interpretation. Use RikkaHub's compact picker and management-list component patterns.
+- Updated `UI_ROADMAP.md`, `UI_IMPLEMENTATION_PLAN.md`, and `RIKKAHUB_SOURCE_AUDIT.md` to make these hard requirements explicit.
+- Documentation-only change; no application source code changed. `main` remains untouched.
