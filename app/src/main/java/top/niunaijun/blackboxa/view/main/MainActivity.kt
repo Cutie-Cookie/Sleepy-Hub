@@ -177,7 +177,7 @@ class MainActivity : BaseActivity() {
                     super.onPageSelected(position)
                     val fragment = fragmentList.getOrNull(position) ?: return
                     activeUserId = fragment.userID
-                    ProfileAppearance.saveLastProfileId(activeUserId)
+                    ProfileAppearance.saveLastProfileId(activeContainerId, activeUserId)
                     refreshProfiles()
                 }
             }
@@ -195,6 +195,7 @@ class MainActivity : BaseActivity() {
         pagerAdapter.replaceData(fragmentList)
 
         val selected = preferredUserId?.takeIf { id -> members.any { it.id == id } }
+            ?: ProfileAppearance.lastProfileId(containerId).takeIf { id -> members.any { it.id == id } }
             ?: ProfileAppearance.lastProfileId().takeIf { id -> members.any { it.id == id } }
             ?: members.firstOrNull()?.id
         activeUserId = selected ?: -1
@@ -254,7 +255,7 @@ class MainActivity : BaseActivity() {
         if (index >= 0) {
             viewPager.setCurrentItem(index, true)
             activeUserId = userId
-            ProfileAppearance.saveLastProfileId(userId)
+            ProfileAppearance.saveLastProfileId(activeContainerId, userId)
             refreshProfiles()
         }
     }
