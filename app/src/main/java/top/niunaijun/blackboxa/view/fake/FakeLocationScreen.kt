@@ -154,13 +154,13 @@ fun FakeLocationScreen(
 
             when {
                 loading && filteredApps.isEmpty() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
                 filteredApps.isEmpty() -> {
                     Box(
-                        Modifier.fillMaxSize().padding(24.dp),
+                        Modifier.weight(1f).fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -172,7 +172,7 @@ fun FakeLocationScreen(
                 }
                 else -> {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(filteredApps, key = { it.packageName }) { app ->

@@ -190,7 +190,7 @@ private fun GoogleServicesScreen(
                     }
                 }
                 profiles.isEmpty() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
                             "There are no profiles in this container yet.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

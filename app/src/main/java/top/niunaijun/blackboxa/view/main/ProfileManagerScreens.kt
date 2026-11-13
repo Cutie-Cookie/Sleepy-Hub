@@ -156,7 +156,7 @@ fun ProfileManagerScreen(
             }
             if (filteredProfiles.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -167,7 +167,7 @@ fun ProfileManagerScreen(
             } else {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     itemsIndexed(filteredProfiles, key = { _, profile -> profile.userId }) { _, profile ->
