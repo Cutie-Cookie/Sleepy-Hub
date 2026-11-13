@@ -151,3 +151,17 @@ Files added/rewritten so far:
 - `MainActivity.kt` and `ViewPagerAdapter.kt`: virtual-user profile lifecycle and stable profile IDs.
 
 **Validation state:** implementation is in progress. The ARM64 debug workflow has been triggered, but no successful build or device acceptance is claimed at this checkpoint. Resolve compiler/runtime issues before adding more UI features.
+
+
+### 2026-11-13 — Detailed source-level UI audit
+
+- Pinned the RikkaHub reference at commit `b10c168577482abed696669a58c0eb59f1eed270` and inspected `ChatPage.kt`, `ChatDrawer.kt`, `AssistantPicker.kt`, `AssistantPage.kt`, `AssistantDetailPage.kt`, `AssistantBasicPage.kt`, `Background.kt`, `BackgroundPicker.kt`, `Theme.kt`, and `SettingThemePage.kt`.
+- Confirmed the phone drawer uses `ModalNavigationDrawer`, while large screens use `PermanentNavigationDrawer`; the drawer sheet is 300dp with compact 8dp spacing and an independently scrolling center list.
+- Confirmed the active assistant selector is a compact drawer item that opens an approximately 80%-height `ModalBottomSheet`; picker rows use a 32dp avatar and trailing edit action.
+- Confirmed assistant management uses `LargeFlexibleTopAppBar`, rounded search, tag filters, a reorderable list, and compact 20dp cards with 48dp avatars and 12dp vertical padding.
+- Confirmed assistant details use a pinned top bar, animated title reveal, and grouped `CardGroup` sections.
+- Confirmed assistant wallpaper is rendered behind the workspace with configurable opacity and a readability overlay; the picker supports preview, gallery selection, URL entry, and removal.
+- Confirmed global theme behavior includes System/Light/Dark, dynamic color, preset/custom themes, and optional AMOLED black.
+- Audited `sleepyhub/rikkahub-source-rebuild`: the Compose foundation and app grid are present, but the current shell still uses manual string-based page state and custom drawer/profile-list/detail styling. Those are recorded as gaps to correct against the upstream component hierarchy, not as a finished implementation.
+- Added `docs/RIKKAHUB_SOURCE_AUDIT.md` and indexed it in `docs/README.md`.
+- No application source files were changed in this documentation update. `main` remains untouched.
