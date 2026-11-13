@@ -462,8 +462,12 @@ class MainActivity : BaseActivity() {
                 .map { it.id }
 
             userIds.forEach { userId ->
+                val oldAvatar = ProfileAppearance.profileAvatarUri(userId)
+                val oldBackground = ProfileAppearance.profileBackgroundUri(userId)
                 BlackBoxCore.get().deleteUser(userId)
                 ProfileAppearance.clearProfile(userId)
+                releaseProfileUriIfUnused(oldAvatar, userId)
+                releaseProfileUriIfUnused(oldBackground, userId)
                 profileAppCounts.remove(userId)
             }
 
