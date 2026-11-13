@@ -1,9 +1,12 @@
 package top.niunaijun.blackboxa.view.main
 
 import android.app.Activity
+import android.graphics.Color as AndroidColor
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -21,6 +24,7 @@ import androidx.core.view.WindowCompat
 import androidx.compose.foundation.shape.RoundedCornerShape
 import top.niunaijun.blackboxa.app.ProfileAppearance
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SleepyHubTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -85,17 +89,23 @@ fun SleepyHubTheme(content: @Composable () -> Unit) {
     SideEffect {
         val activity = context as? Activity
         if (activity != null && !view.isInEditMode) {
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
             activity.window.statusBarColor = colorScheme.surface.toArgb()
-            activity.window.navigationBarColor = colorScheme.surface.toArgb()
+            activity.window.navigationBarColor = AndroidColor.TRANSPARENT
+            activity.window.navigationBarDividerColor = AndroidColor.TRANSPARENT
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                activity.window.isNavigationBarContrastEnforced = false
+            }
             val controller = WindowCompat.getInsetsController(activity.window, view)
             controller.isAppearanceLightStatusBars = !darkTheme
             controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = colorScheme,
         shapes = shapes,
+        motionScheme = MotionScheme.expressive(),
         content = content,
     )
 }
