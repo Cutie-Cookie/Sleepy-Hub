@@ -588,7 +588,10 @@ class MainActivity : BaseActivity() {
     }
 
     fun openFakeLocation() {
-        if (activeUserId < 0) return
+        if (activeUserId < 0) {
+            Toast.makeText(this, "Select a profile before setting a fake location", Toast.LENGTH_SHORT).show()
+            return
+        }
         startActivity(Intent(this, FakeManagerActivity::class.java).putExtra("userID", activeUserId))
     }
 
