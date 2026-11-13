@@ -1,6 +1,10 @@
 package top.niunaijun.blackboxa.view.apps
 
 import android.widget.ImageView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -122,7 +126,7 @@ fun AppGridScreen(
                 start = 12.dp,
                 top = 12.dp,
                 end = 12.dp,
-                bottom = 104.dp,
+                bottom = 20.dp,
             ),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -130,6 +134,7 @@ fun AppGridScreen(
             items(apps, key = { it.packageName }) { app ->
                 Column(
                     modifier = Modifier
+                        .animateItem()
                         .fillMaxWidth()
                         .combinedClickable(
                             onClick = { onLaunch(app) },
@@ -190,7 +195,11 @@ fun AppGridScreen(
             }
         }
     }
-    if (loading && apps.isNotEmpty()) {
+    AnimatedVisibility(
+        visible = loading && apps.isNotEmpty(),
+        enter = fadeIn(animationSpec = tween(220)),
+        exit = fadeOut(animationSpec = tween(180)),
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
