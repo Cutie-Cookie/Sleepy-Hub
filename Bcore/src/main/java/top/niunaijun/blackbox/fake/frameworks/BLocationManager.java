@@ -45,6 +45,20 @@ public class BLocationManager extends BlackManager<IBLocationManagerService> {
         }
     }
 
+    /**
+     * Sets the per-app fake-location mode and reports whether the Binder call completed.
+     * Existing callers can keep using setPattern when they do not need an outcome.
+     */
+    public boolean trySetPattern(int userId, String pkg, int pattern) {
+        try {
+            getService().setPattern(userId, pkg, pattern);
+            return true;
+        } catch (RemoteException | RuntimeException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public int getPattern(int userId, String pkg) {
         try {
             return getService().getPattern(userId, pkg);
@@ -143,6 +157,19 @@ public class BLocationManager extends BlackManager<IBLocationManagerService> {
             getService().setLocation(userId, pkg, location);
         } catch (RemoteException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Stores a per-app fake location and reports whether the Binder call completed.
+     */
+    public boolean trySetLocation(int userId, String pkg, BLocation location) {
+        try {
+            getService().setLocation(userId, pkg, location);
+            return true;
+        } catch (RemoteException | RuntimeException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
