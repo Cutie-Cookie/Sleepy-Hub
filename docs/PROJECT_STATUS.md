@@ -23,7 +23,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | Branch | Purpose | Baseline |
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
-| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `e4bb695` — latest candidate; CI run `43451229123` pending |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `c7b28cd` — latest candidate; CI run `43452740407` in progress |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -61,11 +61,12 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 
 ## Latest verified build and current candidate
 
-- Latest successful prior feature build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552), source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`.
-- Last verified prior artifact: ID `14046061691` from run `43439814552`; historical only for this retest.
+- Latest successful prior core build: [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130), source head `81599d812db623a5f744d64ff69664b4507f8363`; it compiled the identity, app gesture, Play icon and fake-location hardening changes.
+- Older verified artifact: ID `14046061691` from run `43439814552`; historical only and not suitable for the current retest.
 - Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Current candidate: source head `e4bb695838b47677cdc41628f7e3999b0f7ea3b2`; Actions run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) is pending. Core fixes passed in run 43449856130.
-- Current-head APK: not available until run `43451229123` succeeds. The previous APK does not contain the final RikkaHub-style drawer FolderBar.
+- Current candidate: source head `c7b28cda67535e5ffd4fea497196aec8340b07fe`; Actions run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) is in progress.
+- Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because the folder-selection state was scoped inside the drawer branch but referenced by dialogs outside it. Commit `c7b28cd` moves that state to the screen-level scope.
+- Current-head APK: not available until run `43452740407` passes package/signature/ABI verification and uploads its artifact. Do not install an older APK for this retest.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
@@ -73,7 +74,7 @@ A successful CI build proves compilation and artifact upload only. It does not p
 1. **Device smoke testing:** record Android version/device class and test installation, first launch, app cloning, permissions, notifications, and normal network access. Do not write private device identifiers.
 2. **Documentation drift:** root `README.md`, `Docs.md`, and `RELEASE_NOTES.md` still contain upstream BlackBox/NewBlackbox names and/or old VPN and log-upload descriptions. Review and replace them deliberately.
 3. **Target SDK review:** target SDK is currently 28. Evaluate a target-SDK upgrade separately, with a compatibility and permission test plan; do not mix it into the UI redesign.
-4. **UI redesign:** active implementation and bug fixes are on `sleepyhub/bugfix-install-switch-polish`. Follow [the living development plan](DEVELOPMENT_PLAN.md), [UI roadmap](UI_ROADMAP.md), and [RikkaHub source audit](RIKKAHUB_SOURCE_AUDIT.md).
+4. **UI redesign:** the full screen-by-screen RikkaHub parity overhaul is explicitly reserved for Phase 2. Phase 1 stays focused on core correctness and only the minimum UI wiring needed to fix functional bugs (for example, working folder controls); no broad visual redesign or polish sweep during Phase 1. Follow [the living development plan](DEVELOPMENT_PLAN.md), [UI roadmap](UI_ROADMAP.md), and [RikkaHub source audit](RIKKAHUB_SOURCE_AUDIT.md).
 5. **Release readiness:** the current verified artifact is a debug build, not a signed production/release package.
 
 ## Source-of-truth order
