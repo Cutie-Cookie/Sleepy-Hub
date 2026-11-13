@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Edit
@@ -863,8 +864,7 @@ private fun ContainerManagerScreen(
                 title = { Text("Containers") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowForward, contentDescription = "Back", modifier = Modifier.size(0.dp))
-                        Icon(Icons.Outlined.Apps, contentDescription = "Containers")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -984,7 +984,7 @@ private fun ContainerManagerScreen(
 }
 
 @Composable
-private fun ContainerAvatar(container: ContainerItem?, size: androidx.compose.ui.unit.Dp) {
+internal fun ContainerAvatar(container: ContainerItem?, size: androidx.compose.ui.unit.Dp) {
     val image = rememberUriImage(container?.avatarUri)
     Surface(
         modifier = Modifier.size(size),
@@ -1032,7 +1032,7 @@ private fun rememberUriImage(uriString: String?): ImageBitmap? {
 }
 
 @Composable
-private fun ContainerWorkspaceBackground(
+internal fun ContainerWorkspaceBackground(
     container: ContainerItem?,
     modifier: Modifier = Modifier,
 ) {
