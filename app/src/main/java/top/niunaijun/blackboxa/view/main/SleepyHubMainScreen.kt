@@ -74,6 +74,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -825,7 +826,11 @@ private fun ProfileDrawerRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val rowColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
+        } else {
+            Color.Transparent
+        },
         animationSpec = tween(280),
         label = "profile-row-selection",
     )
@@ -841,37 +846,25 @@ private fun ProfileDrawerRow(
             color = rowColor,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ProfileAvatar(profile.name, profile.avatarUri, 34.dp)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text(
-                            profile.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (profile.googlePlayEnabled) GooglePlayBadge(size = 14.dp)
-                    }
-                    if (profile.appCount >= 0) {
-                        Text(
-                            "${profile.appCount} apps",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
-                }
+                Text(
+                    profile.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (profile.googlePlayEnabled) GooglePlayBadge(size = 14.dp)
                 if (profile.pinned) {
                     Icon(
                         Icons.Outlined.PushPin,
                         contentDescription = "Pinned profile",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(12.dp),
                     )
                 }
             }
@@ -886,6 +879,7 @@ private fun ProfileDrawerRow(
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContainerPickerSheet(
