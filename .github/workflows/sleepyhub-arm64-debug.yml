@@ -1,5 +1,5 @@
-run-name: Sleepy Hub ARM64 debug build
-name: Sleepy Hub ARM64 debug
+run-name: Sleepy Hub ARM64 preview debug build
+name: Sleepy Hub ARM64 preview debug
 
 concurrency:
   group: sleepyhub-debug-${{ github.ref }}
@@ -34,7 +34,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: sleepy-hub-arm64-debug
+          name: sleepy-hub-arm64-preview-debug
           path: app/build/outputs/apk/debug/**/*.apk
           if-no-files-found: error
           retention-days: 7

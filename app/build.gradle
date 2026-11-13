@@ -34,7 +34,22 @@ android {
         }
     }
 
+    signingConfigs {
+        previewDebug {
+            storeFile file("sleepyhub-preview-debug.keystore")
+            storePassword "sleepyhub-preview"
+            keyAlias "sleepyhub-preview"
+            keyPassword "sleepyhub-preview"
+        }
+    }
+
     buildTypes {
+        debug {
+            applicationIdSuffix ".preview"
+            versionNameSuffix "-preview"
+            signingConfig signingConfigs.previewDebug
+            resValue "string", "app_name", "Sleepy Hub Preview"
+        }
         release {
             signingConfig signingConfigs.debug
             minifyEnabled true
