@@ -33,21 +33,37 @@ class GmsRepository {
         userID: Int,
         updateLiveData: MutableLiveData<GmsInstallBean>,
     ) {
-        val installResult = BlackBoxCore.get().installGms(userID)
-        val message = if (installResult.success) {
+        val result = try {
+            BlackBoxCore.get().installGms(userID)
+        } catch (error: Exception) {
+            val detail = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
+            updateLiveData.postValue(
+                GmsInstallBean(userID, false, getString(R.string.install_fail, detail)),
+            )
+            return
+        }
+        val message = if (result.success) {
             getString(R.string.install_success)
         } else {
-            getString(R.string.install_fail, installResult.msg)
+            getString(R.string.install_fail, result.msg)
         }
-        updateLiveData.postValue(GmsInstallBean(userID, installResult.success, message))
+        updateLiveData.postValue(GmsInstallBean(userID, result.success, message))
     }
 
     fun uninstallGms(
         userID: Int,
         updateLiveData: MutableLiveData<GmsInstallBean>,
     ) {
-        val success = BlackBoxCore.get().isInstallGms(userID) &&
-            BlackBoxCore.get().uninstallGms(userID)
+        val success = try {
+            BlackBoxCore.get().isInstallGms(userID) &&
+                BlackBoxCore.get().uninstallGms(userID)
+        } catch (error: Exception) {
+            val detail = error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
+            updateLiveData.postValue(
+                GmsInstallBean(userID, false, "${getString(R.string.uninstall_fail)}: $detail"),
+            )
+            return
+        }
         val message = if (success) {
             getString(R.string.uninstall_success)
         } else {
