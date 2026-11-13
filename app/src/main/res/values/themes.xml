@@ -18,6 +18,31 @@
         <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 
+    <style name="Theme.BlackBox.Dark" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#FFBDBDBD</item>
+        <item name="colorPrimaryVariant">#FF424242</item>
+        <item name="colorOnPrimary">#FF111111</item>
+        <item name="colorSecondary">#FFBDBDBD</item>
+        <item name="colorSecondaryVariant">#FF757575</item>
+        <item name="colorOnSecondary">#FF111111</item>
+        <item name="colorSurface">#FF1C1C1E</item>
+        <item name="colorOnSurface">#FFF2F2F2</item>
+        <item name="colorBackground">#FF121212</item>
+        <item name="colorOnBackground">#FFF2F2F2</item>
+        <item name="android:windowBackground">#FF121212</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="Theme.BlackBox.Amoled" parent="Theme.BlackBox.Dark">
+        <item name="colorSurface">#FF000000</item>
+        <item name="colorBackground">#FF000000</item>
+        <item name="android:windowBackground">#FF000000</item>
+    </style>
+
     <style name="ToolBarColorStyle" parent="ThemeOverlay.AppCompat.ActionBar">
         <item name="actionMenuTextColor">@color/white</item>
         <item name="colorControlNormal">@color/white</item>

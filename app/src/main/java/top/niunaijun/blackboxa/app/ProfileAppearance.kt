@@ -126,23 +126,29 @@ object ProfileAppearance {
             }
         }
 
-        // The previous test build stored one workspace image on each container. Preserve it
-        // by assigning it to that container's first profile once, without deleting the old
-        // value or revoking its URI permission.
-        if (!preferences.getBoolean("container_background_to_profile_migrated", false)) {
-            items.forEach { container ->
-                val firstProfile = existingUserIds.firstOrNull {
-                    profileContainer(it) == container.id
+        // Migrate the previous test build's container-owned wallpaper to every profile
+        // in that container. A profile that already has its own image keeps it.
+        // Container wallpaper is then cleared; workspace backgrounds are profile-owned.
+        if (!preferences.getBoolean("container_background_to_profiles_v2_migrated", false)) {
+            val migratedItems = items.map { container ->
+                val legacyUri = container.backgroundUri?.takeIf { it.isNotBlank() }
+                if (legacyUri != null) {
+                    existingUserIds
+                        .filter { profileContainer(it) == container.id }
+                        .forEach { userId ->
+                            if (profileBackgroundUri(userId).isNullOrBlank()) {
+                                setProfileBackgroundUri(userId, legacyUri)
+                                setProfileBackgroundOpacity(userId, container.backgroundOpacity)
+                            }
+                        }
                 }
-                if (firstProfile != null &&
-                    profileBackgroundUri(firstProfile).isNullOrBlank() &&
-                    !container.backgroundUri.isNullOrBlank()
-                ) {
-                    setProfileBackgroundUri(firstProfile, container.backgroundUri)
-                    setProfileBackgroundOpacity(firstProfile, container.backgroundOpacity)
-                }
+                container.copy(backgroundUri = null, backgroundOpacity = 0.32f)
             }
-            preferences.edit { putBoolean("container_background_to_profile_migrated", true) }
+            if (migratedItems != items) {
+                saveContainers(migratedItems)
+                items = migratedItems
+            }
+            preferences.edit { putBoolean("container_background_to_profiles_v2_migrated", true) }
         }
 
         // Repair or initialize each container's explicit profile order.

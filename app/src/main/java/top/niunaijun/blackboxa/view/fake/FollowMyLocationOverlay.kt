@@ -1,6 +1,7 @@
 package top.niunaijun.blackboxa.view.fake
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -18,16 +19,33 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import top.niunaijun.blackbox.entity.location.BLocation
+import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityOsmdroidBinding
 import top.niunaijun.blackboxa.util.inflate
 
 class FollowMyLocationOverlay : AppCompatActivity() {
 
     private val binding: ActivityOsmdroidBinding by inflate()
-    private lateinit var selectedPoint: GeoPoint
+    private var selectedPoint: GeoPoint? = null
+    private var marker: Marker? = null
     private var resultSent = false
+    private var darkTheme = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val systemNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        darkTheme = when (ProfileAppearance.globalThemeMode()) {
+            "dark" -> true
+            "light" -> false
+            else -> systemNight
+        }
+        setTheme(
+            when {
+                !darkTheme -> top.niunaijun.blackboxa.R.style.Theme_BlackBox
+                ProfileAppearance.useAmoledDarkMode() -> top.niunaijun.blackboxa.R.style.Theme_BlackBox_Amoled
+                else -> top.niunaijun.blackboxa.R.style.Theme_BlackBox_Dark
+            }
+        )
         super.onCreate(savedInstanceState)
 
         Configuration.getInstance().load(
@@ -38,31 +56,45 @@ class FollowMyLocationOverlay : AppCompatActivity() {
         configureSystemBars()
 
         val savedLocation: BLocation? = intent.getParcelableExtra("location")
-        selectedPoint = savedLocation?.let {
-            GeoPoint(it.latitude, it.longitude)
-        } ?: GeoPoint(20.0, 0.0)
+        selectedPoint = savedLocation?.let { GeoPoint(it.latitude, it.longitude) }
 
         val appName = intent.getStringExtra("appName").orEmpty()
         binding.toolbar.title = "Choose location"
         binding.toolbar.subtitle = appName.takeIf { it.isNotBlank() }
         binding.toolbar.setNavigationOnClickListener { cancelSelection() }
-        binding.useLocation.setOnClickListener { finishWithResult(selectedPoint) }
-
-        val marker = Marker(binding.map).apply {
-            position = selectedPoint
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            title = "Selected location"
+        binding.useLocation.isEnabled = selectedPoint != null
+        binding.useLocation.setOnClickListener {
+            selectedPoint?.let(::finishWithResult)
         }
-        binding.map.overlays.add(marker)
+        binding.instruction.text = if (savedLocation == null) {
+            "Tap the map to place a pin. Nothing changes until you press Use this location."
+        } else {
+            "Move the pin if needed, then press Use this location to apply it."
+        }
+
+        marker = savedLocation?.let { location ->
+            Marker(binding.map).apply {
+                position = GeoPoint(location.latitude, location.longitude)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                title = "Selected location"
+            }
+        }
+        marker?.let(binding.map.overlays::add)
 
         val mapEvents = object : MapEventsReceiver {
             override fun singleTapConfirmedHelper(point: GeoPoint): Boolean {
                 selectedPoint = point
-                marker.position = point
-                marker.title = "Selected location"
+                val activeMarker = marker ?: Marker(binding.map).apply {
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    title = "Selected location"
+                    marker = this
+                    binding.map.overlays.add(this)
+                }
+                activeMarker.position = point
+                binding.useLocation.isEnabled = true
                 binding.map.invalidate()
                 binding.instruction.text =
-                    "Selected: ${point.latitude}, ${point.longitude}. Tap again to move the pin, then press Use this location."
+                    "Selected: ${point.latitude}, ${point.longitude}. Press Use this location to apply it."
                 return true
             }
 
@@ -72,7 +104,7 @@ class FollowMyLocationOverlay : AppCompatActivity() {
         binding.map.setTileSource(TileSourceFactory.MAPNIK)
         binding.map.setMultiTouchControls(true)
         binding.map.controller.setZoom(if (savedLocation == null) 2.5 else 12.5)
-        binding.map.controller.setCenter(selectedPoint)
+        binding.map.controller.setCenter(selectedPoint ?: GeoPoint(20.0, 0.0))
     }
 
     private fun configureSystemBars() {
@@ -83,8 +115,8 @@ class FollowMyLocationOverlay : AppCompatActivity() {
             window.isNavigationBarContrastEnforced = false
         }
         WindowInsetsControllerCompat(window, binding.root).apply {
-            isAppearanceLightStatusBars = true
-            isAppearanceLightNavigationBars = true
+            isAppearanceLightStatusBars = !darkTheme
+            isAppearanceLightNavigationBars = !darkTheme
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
