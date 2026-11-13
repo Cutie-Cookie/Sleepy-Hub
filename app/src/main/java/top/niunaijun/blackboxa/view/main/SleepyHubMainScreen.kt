@@ -724,9 +724,6 @@ private fun ProfileDrawerRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Outlined.MoreHoriz, contentDescription = "Profile actions")
-                }
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
