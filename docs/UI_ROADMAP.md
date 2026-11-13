@@ -59,7 +59,7 @@ The complete approved mapping and acceptance checklist are in [UI_IMPLEMENTATION
 
 ## Current audit checkpoint — 2026-11-13
 
-The feature branch now contains the container/profile ownership model and inline profile drawer structure. The latest user phone test confirms profile switching and container list separation work, but exposed shared virtual device identifiers, incomplete folder management, a long-press click leak, a fake-location crash, and several theme/transition details. Source fixes for identifiers, folder management, auto-stop, loading and navigation polish are committed at 6df0bbcc031bace16bb2461c4963ea23520277ea. CI run [43437776339](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43437776339) is in progress; see RIKKAHUB_SOURCE_AUDIT.md for remaining evidence.
+The feature branch contains the container/profile ownership model and inline profile drawer. The latest user tests confirm switching and container list separation, but report shared Android/GSF IDs and Wi-Fi MAC, a folder UI that had not actually been wired, long-press launch leakage, and a fake-location crash on app selection. Follow-up source commits `30482a1`, `09f2bed`, `b26022f`, `dbfc10d`, `6492d84`, `8ac5aef` and `f3d12dd` address these paths. Current-head CI run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress; see DEVELOPMENT_PLAN.md for the test order.
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the same flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.

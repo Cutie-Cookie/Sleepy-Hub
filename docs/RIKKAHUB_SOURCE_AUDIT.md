@@ -20,9 +20,9 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="success">Current feature head build verified</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature commit: `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` (drawer-row, clone-container, profile-ID allocation, pager selection, fake-location feedback, Google-services error handling, and localized resource-format corrections). The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during resource merging; corrected current-head run [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176) **passed** all build, preview identity/signature/ABI, and artifact-upload steps.
+- Latest inspected feature head: `f3d12dddc5856019d93b494869bb3938d7898fb6`; current-head CI run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The previous verified run 43439814552 is historical and does not include these follow-up changes.
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Current successful build: [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176) for exact head `cd917c58c7d4f8baa521f6839eafdb318cb40fa7`. All ten feature commits and three resource-correction commits are build-verified; physical-device behavior remains unverified.
+- Last successful prior build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) for source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`; do not use its artifact for the current changes.
 - Current-head artifact: `sleepy-hub-arm64-preview-debug` (ID `14036965394`), archive size 24,220,845 bytes, GitHub artifact SHA-256 `2f2bb35f5a798b0844a2609955b89f6cb2849a1cfaa6bee218ec779d19b1bdae` (archive digest); expires 2026-11-20 12:22:41 UTC. Extracted APK is 26,039,396 bytes with SHA-256 `4f3bbdc528a24797eb0b8654776155c40a68c7e1c463a1e2e35668510998e2d0`.
 - Current-head workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
@@ -213,33 +213,33 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 ### Folder behavior mapped to RikkaHub
 
 - Pinned RikkaHub's ChatDrawer folder row and ConversationList long-press menu. The drawer owns the folder filter; profile/conversation actions use a picker rather than asking the user to type a folder name.
-- Sleepy Hub now stores folder names per container, keeps General as the reserved default folder, and supports creating, renaming and deleting folders. Drawer folder chips expose rename/delete on long press; moving a profile opens a folder-selection bottom sheet. The profile editor also uses a dropdown of existing folders.
+- The folder registry and CRUD repository functions existed, but the user correctly reported that the tested UI still exposed a free-text field and no folder manager/picker. The latest source now wires a folder manager into Profile Manager (create/rename/delete), uses available-folder chips in profile editing, and replaces the typed move field with a radio-choice picker. Deleting a folder returns its profiles to General without touching app data. CI/device verification is pending.
 - Deleting a folder moves its profiles to General; it does not delete BlackBox users, installed apps or app data.
 
 ### Virtual device identifiers versus app storage
 
-- Device testing showed matching identifiers across profiles and containers. Source tracing found that AndroidIdProxy passed through the host Android ID whenever valid; ITelephonyManagerProxy returned an MD5 of the host package for device ID/IMEI, MEID and subscriber ID; device-ID fallback and serial hooks also used shared values.
-- Commit 28443fd adds BUserIdentifiers, keyed by BlackBox user ID and persisted under that virtual user's directory. Android ID, IMEI, MEID, subscriber ID, SIM serial and device serial are now generated per virtual profile and remain stable across app launches/processes. This is source-level implementation only until the current CI build and device checks pass.
+- The latest report showed identical Android ID, GSF Android ID and Wi-Fi MAC in Profile A/B, while IMEI, hardware serial and App Set ID differed. Source tracing found the Settings provider Android-ID hook was not active, the GSF gservices query was passed through, and Wi-Fi MAC was hard-coded.
+- Commits `6492d84` and `f3d12dd` now intercept `Settings.Secure` reads and `com.google.android.gsf.gservices` queries using persisted values keyed by BlackBox user ID, clear the framework's cached `android_id`, and return a locally administered per-profile Wi-Fi MAC. This remains source-level until current-head CI and device checks pass.
 - Storage has a separate source-level boundary: BEnvironment.getDataDir(packageName, userId), getUserDir(userId), getExternalUserDir(userId) and getExternalDataDir(packageName, userId) include the BlackBox user ID in their paths. This supports per-profile storage separation, but a device test is still required: write local app data in one profile and verify it is absent in another.
 - GMS install/uninstall paths call the selected BlackBox user ID. The apparent global GMS effect may be related to Google apps seeing the same virtual device identifiers; re-test after the new identifiers are installed.
 
 ### Current feedback-driven UI/lifecycle changes
 
-- The Google Play profile badge is now a plain white triangle at the existing size/position.
+- The Google Play badge now loads the original icon foreground from the virtual profile's actual `com.android.vending` package, preserving its existing size/position and avoiding a hand-drawn triangle.
 - The default unsaved profile name is New Profile, independent of the global BlackBox user ID.
-- App long-press now suppresses the click-on-release event; the action sheet should open without launching the app.
+- App long-press now uses `combinedClickable` for tap versus action-sheet behavior and a dedicated drag handle for reordering; build/device verification is pending.
 - The nonfunctional Stop menu action was removed. A virtual app that leaves the foreground is scheduled to stop after 60 seconds; a global Settings toggle disables this behavior.
 - Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
 - Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
 - The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
-- Current feature head is 0fea772e8f7acc8e84c1ce244ca1c995f294db02. CI run 43439814552 passed the ARM64 build, preview identity/signature/ABI checks and artifact upload. Device testing is still required.
+- Current feature head is `f3d12dddc5856019d93b494869bb3938d7898fb6`; run `43449035599` is in progress. The previous artifact is not suitable for testing these fixes.
 
 ### Outstanding device evidence
 
-- The fake-location test crashed. No source change should be guessed until the exact failing step (open screen, select app, open map, apply, disable) or a crash trace is available.
+- The fake-location test crashed when selecting an app. The map now declares INTERNET/ACCESS_NETWORK_STATE, uses an app-private osmdroid cache and explicit user agent, and guards initialization/lifecycle. This is a plausible source fix, not a confirmed runtime diagnosis; collect the crash dialog/logcat if it persists.
 - Re-test GMS profile scope after the per-profile identifiers change.
 - Verify storage isolation separately from ID uniqueness.
-- Verify idle-stop timing and opt-out, long-press behavior, folder management, monochrome colors, Color mode clipping, loading state and fade-only navigation on the target phone.
+- Verify Android/GSF ID and Wi-Fi MAC uniqueness/stability, storage isolation, GMS scope, idle-stop timing/opt-out, folder manager/picker, long-press, fake-location selection/map/apply/disable, original Play icon, Settings clipping and motion on the target phone.
 
 ### Cross-process auto-stop preference hardening
 

@@ -35,20 +35,20 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: 0fea772e8f7acc8e84c1ce244ca1c995f294db02.
-- Current-head CI run: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) — **passed**. ARM64 debug build, preview identity/signature/ABI verification and artifact upload all succeeded.
-- Current verified artifact: sleepy-hub-arm64-preview-debug, artifact ID 14046061691, created 2026-11-13 14:12:29 UTC; expires 2026-11-20 14:12:27 UTC. Archive size: 24,229,676 bytes. Archive SHA-256: 8f5e4914278612dafb35ffd531548bb1500b3f852b809058eb6c37a8ea4f973b.
-- Current extracted APK: SleepyHub_4.0.0-preview_arm64-v8a-debug.apk, 26,050,469 bytes. APK SHA-256: a14390801ff923333e0414d11c569a4c46308613a41cda7b454cb6299bea08cf.
+- Current feature-branch head: `f3d12dddc5856019d93b494869bb3938d7898fb6`.
+- Current-head CI run: [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) — **in progress** for the identity, folder-manager, long-press and fake-location follow-up fixes.
+- Last verified prior artifact: ID `14046061691` from run `43439814552`; it does **not** contain the current fixes and must not be used for this retest.
+- Current-head APK: not available yet. Wait for run `43449035599` to pass and upload its artifact.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
 - The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. Commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea passed run 43437776339. The cross-process auto-stop opt-out hardening in commit 0fea772e8f7acc8e84c1ce244ca1c995f294db02 passed run 43439814552.
 - Earlier successful builds remain historical only: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for `dae5f468ad1fdf52dee22d3572de37f7a9af619c`, and [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for `046e04bb15ab328f531427a6ea64b9d9dba896fb`. Do not use their APKs for current-head testing.
-- Current source head 0fea772e8f7acc8e84c1ce244ca1c995f294db02 is build-verified by run 43439814552. Device behavior, storage isolation, GMS scope, fake-location stability and visual parity still require phone testing.
+- Current source head `f3d12dddc5856019d93b494869bb3938d7898fb6` is awaiting run `43449035599`. The previous successful APK is historical only and does not contain the latest fixes.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ## Next phone test session — current candidate
 
-**Use only the current Preview APK from run 43439814552**, built from source head 0fea772e8f7acc8e84c1ce244ca1c995f294db02. It includes the file-backed auto-stop opt-out fix. Install it alongside the regular app; do not uninstall the regular app, clear its data, or use valuable profiles for destructive tests.
+**Do not install the previous APK for this retest.** Wait for run `43449035599` to pass, then use only its artifact. Install Preview alongside the regular app; do not uninstall the regular app or clear existing data.
 
 ### Before testing
 - [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.
@@ -102,6 +102,8 @@ For each failed step, report the step number, what you tapped, what you expected
 
 **Exit criteria:** a repeatable, verifiable preview APK can be produced without replacing the user's existing installation or touching its data.
 
+**Status: Complete.** The protected branches, preview package/signing identity, and repeatable CI verification are in place.
+
 ## Phase 1 — core behavior and high-priority bug fixes
 
 Work through the P0 bugs first. For each one: reproduce or trace it, identify the owning code path, make the smallest correct fix, build, then test the exact reproduction path.
@@ -116,7 +118,11 @@ Work through the P0 bugs first. For each one: reproduce or trace it, identify th
 
 **Exit criteria:** core operations work across at least two profiles and two containers (including an empty container), with no profile/data mix-up and a confirmed successful app installation.
 
+**Status: Active.** The user's latest tests exposed shared Android/GSF IDs, unchanged folder UX, a long-press launch leak, and a fake-location selection crash. Source fixes are committed and awaiting CI/device verification.
+
 ## Phase 2 — source-led RikkaHub UI reconstruction
+
+**Status: Partially implemented, not signed off.** The main shell and major screens exist, but folder interaction and visual details are still being corrected against the pinned source.
 
 Audit and implement one screen/flow at a time against the pinned upstream source, not merely by recoloring the old interface.
 
@@ -157,6 +163,8 @@ This matrix separates source-code presence from actual visual acceptance. A scre
 
 ## Phase 3 — motion, insets and visual finish
 
+**Status: Pending final pass.** Profile/container sweeping has been removed, but the user still wants more natural motion and reports some settings clipping.
+
 1. Use deliberate, smooth RikkaHub-like transitions; avoid near-instant or missing animations.
 2. Animate list placement and state changes consistently.
 3. Make the system navigation bar transparent while preserving safe insets. No content or buttons may be hidden behind system navigation controls.
@@ -190,14 +198,14 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 
 | ID | Priority | Issue / expected behavior | Current status | Evidence, fix and next check |
 |---|---|---|---|---|
-| BUG-001 | P0 | Profile switching must select the matching BlackBox page and persist correctly. | Core switching passed; identity isolation open | User confirmed A→B→A switching works and app lists do not combine. The same device identifiers still appear in different profiles; see BUG-018. Retest switching with identifier and storage isolation after the current candidate builds. |
+| BUG-001 | P0 | Profile switching must select the matching BlackBox page and persist correctly, while each profile exposes its own virtual identifiers and data. | Switching/list separation passed; identity isolation failed | User confirms A↔B switching works and app lists do not combine. Mantle Verify shows identical Android ID, GSF ID and Wi-Fi MAC in A/B; IMEI, hardware serial and App Set ID differ. New Settings-provider/GSF-provider interception, cache clearing and per-profile Wi-Fi MAC are committed at `6492d84` + `f3d12dd`; CI/device verification pending. App-data isolation still needs its own test. |
 | BUG-002 | P0 | Container switching must keep profile lists scoped and restore the previous selection. | Container/list behavior passed; naming fix pending build | User confirmed the empty container remained empty and profile lists did not combine. Its first profile was incorrectly named Profile 3; see BUG-020. |
 | BUG-003 | P0 | Adding apps must work through both the installed-app picker and external APK chooser. | Device test passed; regression check pending | User reports both installed-app picker and external APK paths PASS. Retest after the current core changes. |
-| BUG-004 | P1 | Google services must remain scoped to the selected profile and not appear as ordinary app tiles. | UI passed; profile scope needs retest | User marked the GMS UI PASS but said the effect appears global. Source calls install/uninstall with the selected BlackBox user ID; the shared identifiers in BUG-018 may have made Google apps recognize profiles as the same device. Re-test after identity isolation. |
+| BUG-004 | P1 | Google services must remain scoped to the selected profile and not appear as ordinary app tiles. | UI passed; profile scope needs retest | User is unsure whether GMS enablement is truly profile-scoped. Source calls install/uninstall with the selected BlackBox user ID; repeat the A-only/B-off test after the identifier fixes are installed. |
 | BUG-005 | P1 | Navigation bar appears as an opaque bar; user wants transparent but all controls must remain visible and tappable above the system navigation area. | Code-level changes present; device testing | Theme code sets a transparent navigation bar and disables decor fitting; audit every bottom screen for safe insets. Test gesture and three-button navigation; never solve transparency by placing controls behind system buttons. |
 | BUG-006 | P1 | Animations should be smooth and restrained, with no sweeping profile/container transitions. | Source polish committed; device review pending | Current candidate replaces page slides with a short fade and adds a labeled initial app-loading state. Profile selection now snaps. Verify on device. |
 | BUG-007 | P1 | UI should follow the pinned RikkaHub source rather than an approximate preview. | User reports major improvement; final polish remains | User now describes the UI as amazing. Remaining concrete concerns are color leakage, clipped Color mode text and white transition flashes; see BUG-024. Do not claim 100% parity. |
-| BUG-008 | P1 | Fake location must apply only to the selected virtual app/profile and restore real location when disabled. | Device test crashed; reproduction detail needed | User reports the fake-location test crashed. The exact sub-step and crash trace are not yet known; see BUG-023. Earlier source result handling is not sufficient to close this issue. |
+| BUG-008 | P1 | Fake location must apply only to the selected virtual app/profile and restore real location when disabled. | Selecting an app crashes; source hardening committed, device retest pending | User narrowed the crash to selecting an app in the fake-location list. The map path now declares INTERNET/ACCESS_NETWORK_STATE, uses an app-private osmdroid tile cache and user agent, guards initialization and detaches the map safely. The exact crash trace is still unknown; verify on device and collect the Android crash dialog/logcat if it persists. |
 | BUG-009 | P1 | Further UI and functional bugs are expected; initial report is incomplete. | Open intake | Append every new report as the next BUG ID. Do not close or overwrite earlier issues without evidence. |
 | BUG-010 | P1 | Profile manager and fake-location lists, plus the Google-services empty state, can request the full screen height underneath earlier content in a Column. | Build verified; device testing | Static audit found `fillMaxSize()` used for vertically stacked children. Commit `dae5f46` changes those children to consume only the remaining height with `weight(1f)`. CI run 43419141589 passed build, APK identity/signature/ABI verification and upload. Source review confirms the affected list/empty-state branches are direct children of Columns. Test scrolling, keyboard/search behavior, and empty states on device. |
 | BUG-011 | P1 | Drawer profile rows are too tall and show a profile picture plus an app-count subtitle; RikkaHub's conversation rows are compact, text-only, single-line rows. | Build verified; device testing | Compared against pinned upstream `ConversationList.kt` at `b10c168`. Commit `6a11fed` removes the row avatar and app-count subtitle, reduces vertical padding to 6dp, uses the source's elevated selected surface, and keeps only the small Play/pin indicators. Verify the new commit builds and compare the drawer on the target phone. |
@@ -206,42 +214,43 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-014 | P1 | A delayed `loadContainerProfiles` callback unconditionally clears `pendingPagerUserId`; if a newer profile selection happens before that callback runs, the older refresh can erase the newer selection guard. | Build verified; device testing | Commit `168d15b` clears the pending ID only when it still matches that refresh's selected profile. Verify rapid container/profile switching and swipe-back behavior on device. |
 | BUG-015 | P1 | Fake-location apply/disable must report the real Binder result, not optimistic success. | Source fix on prior head; latest device flow crashed | Earlier changes wait for Binder completion and verify stored mode/coordinates. Latest device test crashed somewhere in the fake-location flow; see BUG-023 and keep this open until the failing step is known. |
 | BUG-016 | P1 | Google-services failures must produce an explicit result and refresh the selected profile state. | Source fix on prior head; device scope retest pending | Exception reporting is implemented. User reports the UI PASS but questions whether it is truly profile-scoped; verify after BUG-018. |
-| BUG-017 | P0 | ARM64 preview build must pass resource merge, identity/signature/ABI verification and artifact upload. | Previous head passed; current candidate building | Exact head cd917c5 passed run 43424012176. New candidate 6df0bbc is being checked by run 43437776339; no APK is ready for these fixes until it succeeds. |
+| BUG-017 | P0 | ARM64 preview build must pass resource merge, identity/signature/ABI verification and artifact upload. | Prior head passed; current head building | Previous head `0fea772` passed run `43439814552`. Current head `f3d12ddd` is being checked by run `43449035599`; no APK for the latest fixes is ready until that run succeeds. |
 
 ## Device test report — 2026-11-13
 
 | Test | User result | Recorded observation |
 |---|---|---|
-| 1. Drawer appearance | PASS | Compact drawer/profile appearance accepted. Requested only a plain white Google Play triangle at the same position/size; implemented in current candidate. |
-| 2. Profile switching and folders | UNSURE | A↔B switching works and app lists do not combine. Folder filtering works but management/move selection needed improvement; see BUG-019. Device identifiers appear shared; see BUG-018. Storage isolation is not yet proven. |
+| 1. Drawer appearance | PASS with icon correction pending | Compact drawer/profile appearance accepted. User clarified the badge must be the original multicolour Play triangle, not a white hand-drawn triangle; source now loads the real Play Store adaptive foreground. |
+| 2. Profile switching and folders | FAIL for folders; switching PASS | A↔B switching works and app lists do not combine. The folder UI was still a text field with no manager/picker; new manager and selection picker are committed under BUG-019. Android/GSF IDs and Wi-Fi MAC were shared; see BUG-018. Storage isolation is not yet proven. |
 | 3. Empty container and first profile | PASS with issue | Empty container behavior is correct, but its first profile was named Profile 3; see BUG-020. |
 | 4. Clone/container ownership | UNSURE | Clone stayed with its own container after switching away. Same identifiers appear across profiles/containers; storage still needs a separate test. |
 | 5. Rapid profile creation/cloning | UNSURE | User cannot give a clean pass while identity isolation is unresolved; keep concurrency/unique-ID regression coverage. |
-| 6. App installation | PASS | Installed-app picker and external APK paths both passed. Long-press still launched on release; see BUG-021. |
+| 6. App installation | PASS with long-press failure | Installed-app picker and external APK paths both passed. Long-press still launched on release; a separate gesture and reorder-handle fix is committed under BUG-021. |
 | 7. Google services | PASS with scope concern | UI flow passed, but it appeared to affect every profile. Source targets a specific user ID; re-test after BUG-018. |
-| 8. Fake location | CRASHED | Exact failing sub-step and crash trace not yet known; see BUG-023. |
-| 9. Scrolling/search/navigation | UNSURE | Color mode text was clipped and page changes flashed white. Current candidate adds a scroll-safe mode row and fade/background transition; verify after build. |
+| 8. Fake location | CRASHED when selecting an app | The failing action is now known. Map/network/cache hardening is committed, but no crash trace is available yet; see BUG-023. |
+| 9. Scrolling/search/navigation | PASS with polish remaining | User accepts the navigation behavior and no longer reports the sweeping transition. Some Settings content is still clipped and animations feel slightly off; keep visual polish open under BUG-024/025. |
 
 ## Next device retest order
 
-1. Wait for the current candidate CI run to pass before installing its APK; install Preview alongside the regular app and do not clear existing data.
-2. Create profiles in different containers. Compare Android/device identifiers in the same test app if available; each profile must differ and remain stable after closing/reopening the Hub.
-3. Save a local note or setting in the same app in Profile A; Profile B must start with independent app data. This is separate from identifier uniqueness.
-4. Create, rename, move between and delete a folder. Deleting a folder must move its profiles to General without deleting apps/data.
+1. Wait for run `43449035599` to pass. Install only its Preview artifact alongside the regular app; do not uninstall the regular app or clear data.
+2. Compare Android ID, GSF Android ID and Wi-Fi MAC across profiles. Each must differ between profiles and remain stable after closing/reopening the Hub. The same SSID and access-point BSSID are expected on the same Wi-Fi network.
+3. Save a note/setting in the same test app in Profile A. Profile B must not see it; this separately verifies app-data isolation.
+4. Open Profile Manager → folder icon. Create, rename and delete a folder. Move a profile using the folder picker, not typed text. Deleting a folder should return its profiles to General without deleting apps/data.
 5. Create the first profile in an empty container and confirm its label is New Profile.
-6. Long-press an app: the action sheet should open without launching the app. A normal tap should still launch it.
-7. With auto-stop enabled, return to Hub and reopen before 60 seconds; the app should still be available. Wait over 60 seconds and confirm it stops. Turn the setting off and verify it remains running.
+6. Long-press an app: the action sheet should open without launching it. A normal tap should launch it; use the small grip to reorder.
+7. With auto-stop enabled, return to Hub and reopen before 60 seconds; it should remain running. Wait over 60 seconds and confirm it stops. Turn the setting off and verify it remains running.
 8. Enable GMS only for Profile A, then inspect Profile B and another container; verify package state and switch are independent.
-9. Recheck monochrome theme, Color mode text, initial loading, and profile/container transitions.
+9. Open Fake Location and select an app. Confirm the map opens, apply a test point, then disable it. If selecting the app still crashes, capture the Android crash dialog or logcat instead of repeatedly retrying.
+10. Check the original multicolour Play triangle, remaining Settings clipping, monochrome theme and the feel of profile/container/page animations.
 
-| BUG-018 | P0 | Different virtual profiles and containers expose the same Android/device identifiers. | Root cause found; fix committed, CI/device verification pending | Android ID previously passed through the host value; telephony hooks returned the same host-package hash for device ID/IMEI/MEID/subscriber ID; serial hooks were shared too. Commit 28443fd adds persistent per-BlackBox-user Android ID, IMEI, MEID, subscriber ID, SIM serial and device serial. Retest uniqueness and stability. |
-| BUG-019 | P1 | Folder organization needs create/delete/rename and a picker for moving profiles instead of typed names. | Implemented in source; current CI/device verification pending | Commit 6df0bbc adds a per-container folder registry, New Folder action, long-press rename/delete, a move-to-folder bottom sheet and a folder dropdown in profile editing. Deleting a folder returns its profiles to General without touching apps/data. |
+| BUG-018 | P0 | Different virtual profiles and containers expose the same Android ID, GSF Android ID and Wi-Fi MAC. | Root cause traced; fix committed, CI/device verification pending | The Settings provider path was returning the host Android ID because the earlier hook was not active; the GSF `gservices` provider query passed through unchanged; Wi-Fi MAC was hard-coded. Commits `6492d84` and `f3d12dd` add per-user persisted Android/GSF IDs, intercept both provider paths, clear the framework's cached `android_id`, and return a per-profile locally administered Wi-Fi MAC. Re-test uniqueness and stability. |
+| BUG-019 | P1 | Folder organization needs create/delete/rename and a picker for moving profiles instead of typed names. | UI fix committed; current CI/device verification pending | The user's latest test correctly found the previous UI still had a free-text folder field; the earlier implementation only had repository methods. Commits `30482a1`, `09f2bed` and `b26022f` wire a container-scoped folder manager with create/rename/delete, a selection-based move picker and existing-folder chips in profile editing. Deleting a folder returns its profiles to General without touching apps/data. |
 | BUG-020 | P2 | First profile in an empty container is named Profile 3 because numbering is global. | Implemented in source; current CI/device verification pending | Commit 28443fd changes the unsaved/default profile label to New Profile; user-defined names remain unchanged. |
-| BUG-021 | P1 | Long-pressing an app opens it on release instead of only opening its action sheet. | Fix committed; current CI/device verification pending | Commit 28443fd suppresses the click generated after the long-press/reorder gesture. Test long-press without dragging and normal tap separately. |
+| BUG-021 | P1 | Long-pressing an app opens it on release instead of only opening its action sheet. | Gesture redesign committed; current CI/device verification pending | Commit `dbfc10d` separates `combinedClickable` tap/long-press from a dedicated small reorder handle. Long press should open actions without launching; normal tap should still launch. |
 | BUG-022 | P1 | Manual Stop action does nothing; inactive apps should stop after one minute, with an option to disable auto-stop. | Build verified; device testing pending | Commit 28443fd removes the ineffective Stop action and adds a 60-second background idle-stop hook. Commit 0fea772 mirrors the toggle to a file so virtual processes see changes immediately rather than relying on stale SharedPreferences caches. Run 43439814552 passed; test timeout, resume-before-timeout and toggle-off behavior on device. |
-| BUG-023 | P1 | Fake-location flow crashes during device testing. | Blocked; exact failing sub-step and crash trace needed | User reports test 8 crashed but has not identified whether it occurs opening Fake Location, selecting an app, opening the map, applying or disabling. Ask for the single failing step and, if possible, the Android crash dialog or logcat before changing this path. |
-| BUG-024 | P1 | Monochrome theme leaks purple/other colors; Color mode is clipped; page navigation flashes white. | Source polish committed; current CI/device verification pending | Commit 28443fd explicitly sets neutral Material 3 container/error roles, makes Color mode chips horizontally scrollable, disables dynamic wallpaper colors when a fixed accent is selected, and fades pages over the theme background. |
-| BUG-025 | P2 | Profile/container switching sweeps across the screen, especially noticeable with separate backgrounds. | Source polish committed; current CI/device verification pending | Commit 28443fd disables ViewPager2 touch swiping and uses non-animated profile selection. Page navigation uses a short fade rather than horizontal slides. |
+| BUG-023 | P1 | Fake-location flow crashes during device testing. | Crash occurs when selecting an app; map hardening committed, trace pending | The user identified the failing action as selecting an app. Missing osmdroid network permissions and use of its default external cache were found during source review; the picker now uses network permissions, app-private cache, explicit user agent and guarded map lifecycle. This is a plausible source fix, not a confirmed runtime diagnosis. |
+| BUG-024 | P1 | Settings still has some clipped content; theme/animation polish feels slightly off. | Open; targeted screenshot/retest needed | User now marks scrolling/navigation PASS and says the UI is great overall, but still notices some clipping in Settings and wants more natural animations. Keep this open; ask for the exact clipped control/screenshot if it remains after the current build. |
+| BUG-025 | P2 | Profile/container switching sweeps across the screen, especially noticeable with separate backgrounds. | Sweep removed; visual polish remains | User confirms the sweep issue is now PASS. Keep only the remaining subtle motion/transition feel as Phase 3 polish; do not reintroduce horizontal sweeps. |
 
 ## Bug intake and update rules
 
@@ -259,3 +268,5 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 - Pinned source commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Detailed source mapping and implementation audit: [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md)
 - Preserve the license obligations of any upstream code used. Where the implementation is independently re-created, use the source as a behavioral/layout reference without copying protected branding/assets.
+
+| BUG-026 | P1 | The profile Google Play badge must use the original multicolour Play triangle, not a hand-drawn white approximation. | Original asset loader committed; current CI/device verification pending | The badge now loads the foreground drawable from the real `com.android.vending` package installed in that virtual profile and extracts the adaptive-icon foreground when available. It preserves the badge's existing position and size; no triangle is drawn in Sleepy Hub code. |

@@ -23,7 +23,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | Branch | Purpose | Baseline |
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
-| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `6df0bbc` — current candidate |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `f3d12dd` — current candidate; CI run `43449035599` in progress |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -61,11 +61,11 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 
 ## Latest verified build and current candidate
 
-- Latest successful current-feature build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552), exact source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`.
-- Artifact: `sleepy-hub-arm64-preview-debug`, artifact ID `14046061691`; extracted APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`.
+- Latest successful prior feature build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552), source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`.
+- Last verified prior artifact: ID `14046061691` from run `43439814552`; historical only for this retest.
 - Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Current candidate: feature head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`; Actions run [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) passed. Artifact ID `14046061691`; archive SHA-256 `8f5e4914278612dafb35ffd531548bb1500b3f852b809058eb6c37a8ea4f973b`; extracted APK SHA-256 `a14390801ff923333e0414d11c569a4c46308613a41cda7b454cb6299bea08cf`.
-- This is the current build candidate and includes the file-backed cross-process idle-stop opt-out. CI verification does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
+- Current candidate: source head `f3d12dddc5856019d93b494869bb3938d7898fb6`; Actions run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The previous successful APK does not contain these fixes.
+- Current-head APK: not available until run `43449035599` succeeds. The previous APK is not suitable for testing the new identity, folder, gesture, icon and map fixes.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
@@ -109,7 +109,7 @@ Implemented in source so far (still awaiting a successful final CI build and phy
 - Profile rename, delete confirmation, per-profile accent, and per-profile wallpaper selection/removal/opacity.
 - App-manager profile header with wallpaper and installed-app count.
 - Global theme/accent and app-grid preferences.
-- App long-press actions including App Info, Clear Cache, Clear Data, Stop, Uninstall, and Shortcut.
+- App long-press actions including App Info, Clear Cache, Clear Data, Uninstall, and Shortcut. The ineffective Stop action is removed; inactive apps use the separate one-minute idle-stop policy with a Settings opt-out.
 - Bounded app-icon drawable cache and removal of forced-GC calls from scrolling/list loading.
 - Debug-first acceptance checklist is in `UI_IMPLEMENTATION_PLAN.md`.
 
@@ -217,14 +217,21 @@ Only documentation changed in this audit. Application source remains unchanged a
 
 The user tested the previous successful preview APK and reported:
 
-- Drawer/profile presentation: PASS, with a request for a plain white Google Play triangle.
+- Drawer/profile presentation: PASS. The user clarified that the badge must use the original multicolour Play triangle; the source now loads the Play Store package's own adaptive-icon foreground.
 - Profile switching and container list separation: switching works and app lists do not combine. Device identifiers appeared shared across profiles/containers; app-data isolation still needs a separate test.
 - Empty container behavior: PASS; first profile name incorrectly used global numbering.
 - Clone/container targeting: clone remained in its source container after switching away.
 - Installed-app and external-APK installation: both PASS.
-- App long-press: app also launched on release; fix committed.
+- App long-press: still launched on release in the tested build; gesture handling has now been separated from reorder drag.
 - GMS UI: PASS, but profile scope appeared global; source calls install/uninstall with a user ID, so retest after identifier isolation.
 - Fake location: CRASHED; exact failing step and trace still needed.
-- Navigation/settings: Color mode text clipped and page transitions flashed white.
+- Navigation/settings: sweeping transition is now gone and navigation passed; some Settings clipping and animation feel remain.
 
-The latest source candidate adds persistent profile-scoped virtual identifiers, folder create/rename/delete and selection, New Profile defaults, long-press click suppression, one-minute idle auto-stop with an opt-out, neutral theme roles, fade-only transitions and an initial loading state. These changes are on the feature branch, not main, and remain build/device-unverified until run 43437776339 and phone retesting complete.
+The latest source candidate adds Settings/GSF provider interception and cache clearing for profile-scoped Android/GSF IDs, per-profile Wi-Fi MAC, a wired folder manager and selection picker, original Play Store icon loading, a true long-press/action gesture with a dedicated reorder handle, and fake-location map permission/cache hardening. These changes are on the feature branch, not main. Current-head CI run 43449035599 is in progress; device verification remains pending.
+
+### Latest user retest and follow-up source work
+
+- Android ID, GSF Android ID and Wi-Fi MAC were identical across Profile A/B; IMEI, hardware serial and App Set ID differed. The new source intercepts the Settings secure read and GSF gservices query, clears the framework Android-ID cache, and generates a per-profile virtual Wi-Fi MAC.
+- The user confirmed the previous folder UI was unchanged. The folder registry existed but the UI still exposed a free-text field; new source wires create/rename/delete UI, folder chips, and a choice-based move picker.
+- Fake-location crash is narrowed to selecting an app. The map path now has network permissions, private tile-cache storage, an explicit user agent and guarded lifecycle; device confirmation is still required.
+- Phase 0 is complete. Phase 1 remains active. Phase 2 is partially implemented but not signed off; Phase 3 motion/inset polish remains open.
