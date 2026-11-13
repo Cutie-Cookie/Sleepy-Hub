@@ -11,8 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.ViewModelProvider
+import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.entity.location.BLocation
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager
+import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.bean.FakeLocationBean
 import top.niunaijun.blackboxa.databinding.ActivityFakeLocationBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
@@ -61,11 +63,16 @@ class FakeManagerActivity : BaseActivity() {
         viewBinding.composeView.setViewCompositionStrategy(
             ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
         )
+        val userId = currentUserID()
+        val profileIndex = BlackBoxCore.get().users.sortedBy { it.id }.indexOfFirst { it.id == userId }
+            .coerceAtLeast(0)
+
         viewBinding.composeView.setContent {
             SleepyHubTheme {
                 val apps by viewModel.appsLiveData.observeAsState(emptyList())
                 FakeLocationScreen(
                     apps = apps,
+                    profileName = ProfileAppearance.profileName(userId, profileIndex),
                     loading = isLoading,
                     onBack = { finish() },
                     onSelect = ::openLocationPicker,
