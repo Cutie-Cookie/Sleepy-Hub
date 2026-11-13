@@ -25,29 +25,6 @@ class AppsViewModel(private val repo: AppsRepository) : BaseViewModel() {
     }
     
     
-    fun getInstalledAppsWithRetry(userId: Int, maxRetries: Int = 3) {
-        var retryCount = 0
-        
-        fun attemptLoad() {
-            launchOnUI {
-                repo.getVmInstallList(userId, appsLiveData)
-                
-                
-                val currentApps = appsLiveData.value
-                if (currentApps == null && retryCount < maxRetries) {
-                    retryCount++
-                    Log.d("AppsViewModel", "No apps loaded, retrying... (${retryCount}/${maxRetries})")
-                    
-                    
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        attemptLoad()
-                    }, 1000) 
-                }
-            }
-        }
-        
-        attemptLoad()
-    }
 
     fun install(source: String, userID: Int) {
         launchOnUI {
@@ -79,9 +56,10 @@ class AppsViewModel(private val repo: AppsRepository) : BaseViewModel() {
         }
     }
 
-    fun updateApkOrder(userID: Int,dataList:List<AppInfo>){
+    fun updateApkOrder(userID: Int, dataList: List<AppInfo>) {
         launchOnUI {
-            repo.updateApkOrder(userID,dataList)
+            repo.updateApkOrder(userID, dataList)
+            appsLiveData.postValue(dataList)
         }
     }
 }

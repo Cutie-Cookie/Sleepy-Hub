@@ -196,6 +196,7 @@ class MainActivity : BaseActivity() {
                     super.onPageSelected(position)
                     val fragment = pagerAdapter.fragmentAt(position) ?: return
                     activeUserId = fragment.userID
+                    workspaceScrolled = fragment.isWorkspaceScrolled
                     ProfileAppearance.saveLastProfileId(activeContainerId, activeUserId)
                     refreshProfiles()
                 }
@@ -207,7 +208,18 @@ class MainActivity : BaseActivity() {
     private fun loadContainerProfiles(containerId: String, preferredUserId: Int? = null) {
         val users = BlackBoxCore.get().users.sortedBy { it.id }
         ProfileAppearance.ensureContainers(users.map { it.id })
-        val members = users.filter { ProfileAppearance.profileContainer(it.id) == containerId }
+        val orderIndex = ProfileAppearance.profileOrder(containerId)
+            .withIndex()
+            .associate { it.value to it.index }
+        val members = users
+            .filter { ProfileAppearance.profileContainer(it.id) == containerId }
+            .sortedWith(
+                compareBy(
+                    { if (ProfileAppearance.isProfilePinned(it.id)) 0 else 1 },
+                    { orderIndex[it.id] ?: Int.MAX_VALUE },
+                    { it.id },
+                )
+            )
 
         pagerAdapter.replaceData(members.map { AppsFragment.newInstance(it.id) })
 
@@ -218,11 +230,18 @@ class MainActivity : BaseActivity() {
         activeUserId = selected ?: -1
         if (selected != null) ProfileAppearance.saveLastProfileId(containerId, selected)
         refreshProfiles()
+        val selectedIndex = selected?.let(pagerAdapter::indexOfUserId) ?: -1
+        workspaceScrolled = pagerAdapter.fragmentAt(selectedIndex)?.isWorkspaceScrolled ?: false
 
         // Wait until FragmentStateAdapter has observed the new item ids before selecting.
         viewPager.post {
             val index = selected?.let(pagerAdapter::indexOfUserId) ?: -1
-            if (index >= 0 && viewPager.adapter === pagerAdapter) {
+            if (selected != null &&
+                activeContainerId == containerId &&
+                activeUserId == selected &&
+                index >= 0 &&
+                viewPager.adapter === pagerAdapter
+            ) {
                 viewPager.setCurrentItem(index, false)
             }
         }
@@ -276,8 +295,10 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    fun onWorkspaceScrollChanged(scrolled: Boolean) {
-        workspaceScrolled = scrolled
+    fun onWorkspaceScrollChanged(userId: Int, scrolled: Boolean) {
+        // Offscreen ViewPager pages stay composed; only the visible profile may
+        // control the dashboard's collapsing header.
+        if (userId == activeUserId) workspaceScrolled = scrolled
     }
 
     fun onProfileAppCountChanged(userId: Int, count: Int) {
@@ -294,6 +315,7 @@ class MainActivity : BaseActivity() {
             return
         }
         activeUserId = userId
+        workspaceScrolled = pagerAdapter.fragmentAt(index)?.isWorkspaceScrolled ?: false
         ProfileAppearance.saveLastProfileId(activeContainerId, userId)
         refreshProfiles()
         // Switch immediately on the UI thread; keep a posted sync as a guard for
@@ -301,7 +323,7 @@ class MainActivity : BaseActivity() {
         viewPager.setCurrentItem(index, true)
         viewPager.post {
             val currentIndex = pagerAdapter.indexOfUserId(userId)
-            if (currentIndex >= 0 && viewPager.currentItem != currentIndex) {
+            if (activeUserId == userId && currentIndex >= 0 && viewPager.currentItem != currentIndex) {
                 viewPager.setCurrentItem(currentIndex, true)
             }
         }
@@ -346,7 +368,7 @@ class MainActivity : BaseActivity() {
 
     fun toggleProfilePinned(userId: Int, pinned: Boolean) {
         ProfileAppearance.setProfilePinned(userId, pinned)
-        refreshProfiles()
+        loadContainerProfiles(activeContainerId, activeUserId)
     }
 
     fun reorderProfiles(userIds: List<Int>) {
@@ -354,7 +376,7 @@ class MainActivity : BaseActivity() {
         val ordered = userIds.filter { it in validIds }.distinct() +
             profiles.map { it.userId }.filterNot { it in userIds }
         ProfileAppearance.setProfileOrder(activeContainerId, ordered)
-        refreshProfiles()
+        loadContainerProfiles(activeContainerId, activeUserId)
     }
 
     fun updateProfileAvatar(userId: Int, uri: String?) {
@@ -378,7 +400,10 @@ class MainActivity : BaseActivity() {
             try {
                 val result = withContext(Dispatchers.IO) {
                     val core = BlackBoxCore.get()
-                    val sourceUser = core.users.firstOrNull { it.id == sourceUserId }
+                    val orderedUsers = core.users.sortedBy { it.id }
+                    val sourceProfileIndex = orderedUsers.indexOfFirst { it.id == sourceUserId }
+                        .coerceAtLeast(0)
+                    val sourceUser = orderedUsers.firstOrNull { it.id == sourceUserId }
                         ?: throw IllegalStateException("The source profile no longer exists.")
                     val newUserId = (core.users.maxOfOrNull { it.id } ?: -1) + 1
                     core.createUser(newUserId)
@@ -386,7 +411,7 @@ class MainActivity : BaseActivity() {
                         ProfileAppearance.setProfileContainer(newUserId, activeContainerId)
                         ProfileAppearance.setProfileName(
                             newUserId,
-                            "${ProfileAppearance.profileName(sourceUserId, sourceUserId)} copy",
+                            "${ProfileAppearance.profileName(sourceUserId, sourceProfileIndex)} copy",
                         )
                         ProfileAppearance.setProfileFolder(newUserId, ProfileAppearance.profileFolder(sourceUserId))
                         ProfileAppearance.setProfileAvatarUri(newUserId, ProfileAppearance.profileAvatarUri(sourceUserId))
@@ -596,6 +621,10 @@ class MainActivity : BaseActivity() {
     }
 
     fun openGmsManager() {
+        if (activeUserId < 0) {
+            Toast.makeText(this, "Create or select a profile first", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (BlackBoxCore.get().isSupportGms) {
             GmsManagerActivity.start(this, activeContainerId)
         } else {

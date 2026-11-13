@@ -27,6 +27,8 @@ class AppsFragment : Fragment() {
 
     var userID: Int = 0
         private set
+    var isWorkspaceScrolled: Boolean = false
+        private set
 
     private lateinit var viewModel: AppsViewModel
     private var gridColumns by mutableIntStateOf(4)
@@ -36,7 +38,7 @@ class AppsFragment : Fragment() {
     private val serviceAvailableCallback = Runnable {
         Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
         if (isAdded && ::viewModel.isInitialized) {
-            viewModel.getInstalledAppsWithRetry(userID)
+            viewModel.getInstalledApps(userID)
         }
     }
 
@@ -80,7 +82,11 @@ class AppsFragment : Fragment() {
                         loading = isLoading,
                         onLaunch = ::launchApp,
                         onAction = ::handleAppAction,
-                        onScrollChange = { (activity as? MainActivity)?.onWorkspaceScrollChanged(it) },
+                        onReorder = { viewModel.updateApkOrder(userID, it) },
+                        onScrollChange = {
+                            isWorkspaceScrolled = it
+                            (activity as? MainActivity)?.onWorkspaceScrollChanged(userID, it)
+                        },
                     )
                 }
             }
@@ -127,7 +133,7 @@ class AppsFragment : Fragment() {
             }
         }
         isLoading = true
-        viewModel.getInstalledAppsWithRetry(userID)
+        viewModel.getInstalledApps(userID)
     }
 
     override fun onStop() {
@@ -149,7 +155,7 @@ class AppsFragment : Fragment() {
     fun refreshApps() {
         if (::viewModel.isInitialized) {
             isLoading = true
-            viewModel.getInstalledAppsWithRetry(userID)
+            viewModel.getInstalledApps(userID)
         }
     }
 

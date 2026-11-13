@@ -7,7 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +58,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
+import sh.calvin.reorderable.reorderable
 import top.niunaijun.blackboxa.bean.AppInfo
 
 enum class AppAction {
@@ -76,20 +80,32 @@ fun AppGridScreen(
     loading: Boolean,
     onLaunch: (AppInfo) -> Unit,
     onAction: (AppInfo, AppAction) -> Unit,
+    onReorder: (List<AppInfo>) -> Unit,
     onScrollChange: (Boolean) -> Unit,
 ) {
     var selectedApp by remember { mutableStateOf<AppInfo?>(null) }
+    var displayedApps by remember(apps) { mutableStateOf(apps) }
+    var didReorder by remember { mutableStateOf(false) }
     var confirmingApp by remember { mutableStateOf<AppInfo?>(null) }
     var confirmingAction by remember { mutableStateOf<AppAction?>(null) }
     var infoApp by remember { mutableStateOf<AppInfo?>(null) }
     val gridState = rememberLazyGridState()
+    val reorderableState = rememberReorderableLazyGridState(gridState) { from, to ->
+        if (from.index in displayedApps.indices && to.index in displayedApps.indices) {
+            val updated = displayedApps.toMutableList()
+            val moved = updated.removeAt(from.index)
+            updated.add(to.index, moved)
+            displayedApps = updated
+            didReorder = true
+        }
+    }
     val isScrolled by remember {
         derivedStateOf { gridState.firstVisibleItemIndex > 0 || gridState.firstVisibleItemScrollOffset > 0 }
     }
     LaunchedEffect(isScrolled) { onScrollChange(isScrolled) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-    if (apps.isEmpty()) {
+    if (displayedApps.isEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -121,7 +137,7 @@ fun AppGridScreen(
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns.coerceIn(3, 5)),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().reorderable(reorderableState),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 start = 12.dp,
                 top = 12.dp,
@@ -131,19 +147,28 @@ fun AppGridScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            items(apps, key = { it.packageName }) { app ->
-                Column(
-                    modifier = Modifier
-                        .animateItem()
-                        .fillMaxWidth()
-                        .combinedClickable(
-                            onClick = { onLaunch(app) },
-                            onLongClick = { selectedApp = app },
-                        )
-                        .padding(vertical = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
+            items(displayedApps, key = { it.packageName }) { app ->
+                ReorderableItem(reorderableState, key = app.packageName) { isDragging ->
+                    Column(
+                        modifier = Modifier
+                            .animateItem()
+                            .fillMaxWidth()
+                            .longPressDraggableHandle(
+                                onDragStarted = { didReorder = false },
+                                onDragStopped = {
+                                    if (didReorder) {
+                                        onReorder(displayedApps)
+                                    } else {
+                                        selectedApp = app
+                                    }
+                                },
+                            )
+                            .clickable { onLaunch(app) }
+                            .scale(if (isDragging) 1.04f else 1f)
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                     Box(
                         modifier = Modifier.size(56.dp),
                         contentAlignment = Alignment.Center,
@@ -182,21 +207,22 @@ fun AppGridScreen(
                             }
                         }
                     }
-                    Text(
-                        text = app.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        maxLines = 2,
-                        minLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        color = Color.White,
-                    )
+                        Text(
+                            text = app.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 2,
+                            minLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            color = Color.White,
+                        )
+                    }
                 }
             }
         }
     }
     AnimatedVisibility(
-        visible = loading && apps.isNotEmpty(),
+        visible = loading && displayedApps.isNotEmpty(),
         enter = fadeIn(animationSpec = tween(220)),
         exit = fadeOut(animationSpec = tween(180)),
     ) {
