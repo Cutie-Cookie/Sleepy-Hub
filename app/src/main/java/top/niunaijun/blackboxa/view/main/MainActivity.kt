@@ -124,6 +124,7 @@ class MainActivity : BaseActivity() {
                         onDeleteProfile = ::deleteProfile,
                         onMoveProfile = ::moveProfile,
                         onSetProfileFolder = ::setProfileFolder,
+                        onToggleProfilePinned = ::toggleProfilePinned,
                         onCreateContainer = ::createContainer,
                         onSelectContainer = ::switchContainer,
                         onUpdateContainer = ::updateContainer,
@@ -213,6 +214,7 @@ class MainActivity : BaseActivity() {
                     name = ProfileAppearance.profileName(user.id, index),
                     folder = ProfileAppearance.profileFolder(user.id),
                     appCount = profileAppCounts[user.id] ?: -1,
+                    pinned = ProfileAppearance.isProfilePinned(user.id),
                 )
             }
             profiles = allProfiles.filter {
@@ -294,6 +296,11 @@ class MainActivity : BaseActivity() {
 
     fun setProfileFolder(userId: Int, folder: String) {
         ProfileAppearance.setProfileFolder(userId, folder)
+        refreshProfiles()
+    }
+
+    fun toggleProfilePinned(userId: Int, pinned: Boolean) {
+        ProfileAppearance.setProfilePinned(userId, pinned)
         refreshProfiles()
     }
 
