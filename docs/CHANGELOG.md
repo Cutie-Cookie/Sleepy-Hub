@@ -175,3 +175,18 @@ Files added/rewritten so far:
 - Rejected the earlier custom wide/tall profile-card interpretation. Use RikkaHub's compact picker and management-list component patterns.
 - Updated `UI_ROADMAP.md`, `UI_IMPLEMENTATION_PLAN.md`, and `RIKKAHUB_SOURCE_AUDIT.md` to make these hard requirements explicit.
 - Documentation-only change; no application source code changed. `main` remains untouched.
+
+
+### 2026-11-13 — Corrected container/profile ownership after user clarification
+
+- Confirmed the intended mapping: RikkaHub Assistant = Sleepy Hub container; RikkaHub conversation = a BlackBox virtual Android profile inside that container.
+- The profile list belongs inline in the drawer and scrolls independently. The compact assistant/container selector belongs near the bottom and opens the assistant-style bottom sheet.
+- A new container starts empty. Switching containers filters the profile list and restores that container's last selected profile when returning. Add Profile creates a BlackBox user assigned to the selected container.
+- Container identity settings are name, picture/avatar, and optional workspace background/opacity. The background is shown only behind the app-manager workspace; no image means plain black.
+- Theme ownership is global only, following RikkaHub. Removed per-container/per-profile theme and accent from the approved plan. Profiles do not own pictures or wallpapers.
+- Audited current rebuild branch head `2ebae140fcd0c82c03321de648db00accaed5d98`: it has no container entity, stores appearance by BlackBox user ID, puts profiles in a bottom sheet instead of inline in the drawer, and adds a default accent gradient. These are structural mismatches to correct before visual polish.
+- Checked the latest ARM64 build [run 43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208): failed during Kotlin compilation; no APK artifact was produced. Errors include missing Compose imports, the wrong view-binding type in `ListActivity`, and a Compose call-context error there.
+- Checked app-management callbacks: cache clearing targets the selected BlackBox user's internal and external cache directories; clear-data/uninstall use the selected user ID. No app tests currently exist under `app/src/test` or `app/src/androidTest`.
+- Inspected RikkaHub's `Assistant.kt`, `ConversationRepository`, `ChatDrawerVM`, `AssistantPicker`, `AssistantPage`, `AssistantBasicPage`, and global theme source. The Assistant model has avatar/background fields but no theme field; global theme settings are stored separately.
+- Updated `RIKKAHUB_RESEARCH.md`, `RIKKAHUB_SOURCE_AUDIT.md`, `UI_IMPLEMENTATION_PLAN.md`, and `UI_ROADMAP.md` to supersede the earlier incorrect flat-profile mapping.
+- Documentation-only changes on `sleepyhub/docs-project-notes`. No app source code was changed; `main` remains untouched.
