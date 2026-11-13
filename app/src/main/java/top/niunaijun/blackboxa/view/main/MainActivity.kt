@@ -300,6 +300,9 @@ class MainActivity : BaseActivity() {
         if (containers.none { it.id == targetContainerId }) return
         if (ProfileAppearance.profileContainer(userId) == targetContainerId) return
         ProfileAppearance.setProfileContainer(userId, targetContainerId)
+        // Folder assignments belong to the old container, just as RikkaHub clears
+        // assistant-scoped folders when moving a conversation.
+        ProfileAppearance.setProfileFolder(userId, "General")
         if (activeUserId == userId) {
             switchContainer(targetContainerId, userId)
         } else {
@@ -315,6 +318,8 @@ class MainActivity : BaseActivity() {
 
     fun updateContainer(updated: ContainerItem) {
         val current = ProfileAppearance.containers().firstOrNull { it.id == updated.id } ?: return
+        if (current.avatarUri != updated.avatarUri) releaseContainerUri(current.avatarUri)
+        if (current.backgroundUri != updated.backgroundUri) releaseContainerUri(current.backgroundUri)
         ProfileAppearance.updateContainer(
             HubContainer(
                 id = current.id,
@@ -333,7 +338,7 @@ class MainActivity : BaseActivity() {
             Toast.makeText(this, "Keep at least one container", Toast.LENGTH_SHORT).show()
             return
         }
-        val target = allContainers.firstOrNull { it.id != containerId } ?: return
+        val existingTarget = allContainers.firstOrNull { it.id != containerId }
         try {
             val userIds = BlackBoxCore.get().users
                 .filter { ProfileAppearance.profileContainer(it.id) == containerId }
@@ -349,8 +354,10 @@ class MainActivity : BaseActivity() {
             releaseContainerUri(removed?.avatarUri)
             releaseContainerUri(removed?.backgroundUri)
             ProfileAppearance.removeContainer(containerId)
+            val target = existingTarget ?: ProfileAppearance.createContainer("Default")
 
             if (activeContainerId == containerId) {
+                refreshProfiles()
                 switchContainer(target.id)
             } else {
                 refreshProfiles()
