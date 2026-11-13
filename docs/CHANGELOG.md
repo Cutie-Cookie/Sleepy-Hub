@@ -253,3 +253,9 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 
 - Commit `81599d8` fixes the BLocation parcel read order to match its write order, carries the originating virtual user ID through the location-picker result, and catches immediate map-launch failures with a user-visible message and log entry.
 - Current source head `81599d812db623a5f744d64ff69664b4507f8363` is being checked by Actions run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). Device confirmation is still required.
+
+### 2026-11-13 — RikkaHub-style folder bar refinement
+
+- Inspected the pinned upstream `ChatDrawer.kt` FolderBar and move-to-folder bottom sheet.
+- Commit `e4bb695` adds the same interaction pattern to Sleepy Hub: All/General/folder chips, an Add chip, long-press Rename/Delete menus on user folders, and a selection bottom sheet when moving a profile. The previous typed folder field is gone.
+- The core identity/folder-manager/gesture/icon/fake-location source passed CI in run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). The final FolderBar head `e4bb695838b47677cdc41628f7e3999b0f7ea3b2` is pending run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123).

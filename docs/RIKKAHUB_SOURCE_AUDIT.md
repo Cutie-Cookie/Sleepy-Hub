@@ -20,7 +20,7 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="success">Current feature head build verified</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature head: `81599d812db623a5f744d64ff69664b4507f8363`; current-head CI run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130) is in progress. The previous verified run 43439814552 is historical and does not include these follow-up changes.
+- Latest inspected feature head: `e4bb695838b47677cdc41628f7e3999b0f7ea3b2`; run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) is pending. Previous head `81599d8` passed run 43449856130.
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
 - Last successful prior build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) for source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`; do not use its artifact for the current changes.
 - Current-head artifact: `sleepy-hub-arm64-preview-debug` (ID `14036965394`), archive size 24,220,845 bytes, GitHub artifact SHA-256 `2f2bb35f5a798b0844a2609955b89f6cb2849a1cfaa6bee218ec779d19b1bdae` (archive digest); expires 2026-11-20 12:22:41 UTC. Extracted APK is 26,039,396 bytes with SHA-256 `4f3bbdc528a24797eb0b8654776155c40a68c7e1c463a1e2e35668510998e2d0`.
@@ -232,7 +232,7 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 - Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
 - Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
 - The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
-- Current feature head is `81599d812db623a5f744d64ff69664b4507f8363`; run `43449856130` is in progress.
+- Current feature head is `e4bb695838b47677cdc41628f7e3999b0f7ea3b2`; run `43451229123` is pending. Core fixes compiled in run 43449856130.
 
 ### Outstanding device evidence
 
@@ -245,3 +245,7 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 
 - The idle-stop lifecycle callback runs in virtual app processes, while the Settings toggle is changed in the Hub process. SharedPreferences can be stale across processes, so commit 0fea772 mirrors the toggle to a small file in the host app's private files directory. Virtual app processes read that file when scheduling and when the 60-second timer fires.
 - This prevents a previously cached true value from ignoring the user's opt-out. The change is build-verified by run 43439814552; device verification remains pending.
+
+### Pinned RikkaHub FolderBar behavior
+
+- The current drawer folder row now mirrors the pinned `ChatDrawer.kt` pattern: All/General/folder chips, an Add chip, long-press Rename/Delete menus, and a move-to-folder bottom sheet with available choices. The final refinement is waiting on run 43451229123.

@@ -35,15 +35,15 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: `81599d812db623a5f744d64ff69664b4507f8363`.
-- Current-head CI run: [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130) — **in progress** for the full follow-up set, including fake-location profile-context and parcel fixes.
+- Current feature-branch head: `e4bb695838b47677cdc41628f7e3999b0f7ea3b2`.
+- Current-head CI run: [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) — **pending** behind run 43451108107 for the RikkaHub-style drawer FolderBar refinement.
 - Last verified prior artifact: ID `14046061691` from run `43439814552`; it does **not** contain the current fixes and must not be used for this retest.
-- Current-head APK: not available yet. Wait for run `43449035599` to pass and upload its artifact.
+- Current-head APK: not available yet. Wait for run `43451229123` to pass and upload its artifact.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
 - The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. Commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea passed run 43437776339. The cross-process auto-stop opt-out hardening in commit 0fea772e8f7acc8e84c1ce244ca1c995f294db02 passed run 43439814552.
 - Earlier successful builds remain historical only: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for `dae5f468ad1fdf52dee22d3572de37f7a9af619c`, and [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for `046e04bb15ab328f531427a6ea64b9d9dba896fb`. Do not use their APKs for current-head testing.
-- Current source head `81599d812db623a5f744d64ff69664b4507f8363` is awaiting run `43449856130`. The previous successful APK is historical only and does not contain the latest fixes.
+- Previous head `81599d812db623a5f744d64ff69664b4507f8363` passed run `43449856130`. Current source head `e4bb695838b47677cdc41628f7e3999b0f7ea3b2` is pending run `43451229123`.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ## Next phone test session — current candidate
@@ -270,3 +270,8 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 - Preserve the license obligations of any upstream code used. Where the implementation is independently re-created, use the source as a behavioral/layout reference without copying protected branding/assets.
 
 | BUG-026 | P1 | The profile Google Play badge must use the original multicolour Play triangle, not a hand-drawn white approximation. | Original asset loader committed; current CI/device verification pending | The badge now loads the foreground drawable from the real `com.android.vending` package installed in that virtual profile and extracts the adaptive-icon foreground when available. It preserves the badge's existing position and size; no triangle is drawn in Sleepy Hub code. |
+
+### RikkaHub FolderBar alignment
+
+- Inspected the pinned upstream `ChatDrawer.kt` implementation. Commit `e4bb695` adds an Add chip, long-press Rename/Delete menus on folder chips, and a folder-selection bottom sheet for moving profiles. This is the same interaction pattern rather than a separate hidden folder settings screen.
+- Core identity, folder-manager, gesture, original-icon and fake-location source passed CI in run `43449856130`; the final drawer refinement is pending run `43451229123`.
