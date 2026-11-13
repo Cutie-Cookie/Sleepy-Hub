@@ -109,7 +109,6 @@ fun AppGridScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.72f),
                         textAlign = TextAlign.Center,
-                        color = Color.White.copy(alpha = 0.72f),
                     )
                 }
             }
@@ -185,6 +184,7 @@ fun AppGridScreen(
                         minLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center,
+                        color = Color.White,
                     )
                 }
             }
