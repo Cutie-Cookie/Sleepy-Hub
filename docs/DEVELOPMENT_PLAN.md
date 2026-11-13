@@ -35,11 +35,11 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: `c7b28cda67535e5ffd4fea497196aec8340b07fe`.
-- Current-head CI run: [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) — **success**; ARM64 debug build, package identity, APK signature, ABI check and artifact upload all passed.
+- Current feature-branch head: `2905dac7b5800d4e374f41863bb03e5c3903d394`.
+- Current-head CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) — **in progress**; the user has tested the previous successful APK and reported a new P0 app-launch failure plus UI/location issues. Do not hand out the previous artifact as the new candidate.
 - Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope; corrected build is green.
-- Current artifact: `sleepy-hub-arm64-preview-debug`, ID `14052746172`, from run `43452740407`; ZIP SHA-256 `61d62844bca5561c6a0e55a43eb889ca68ab8cdc164301d720a0c03ee88baefb`.
-- APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, 26,095,735 bytes; package `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, version `4.0.0-preview`, ARM64-v8a. APK SHA-256: `4403b84b08118d95e7cc45160ce9d87aa2ad30f78f66fb8a4773f64f29532468`.
+- Previous successful artifact (the APK just tested by the user): `sleepy-hub-arm64-preview-debug`, ID `14052746172`, from run `43452740407`; ZIP SHA-256 `61d62844bca5561c6a0e55a43eb889ca68ab8cdc164301d720a0c03ee88baefb`.
+- Tested APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, 26,095,735 bytes; package `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, version `4.0.0-preview`, ARM64-v8a. APK SHA-256: `4403b84b08118d95e7cc45160ce9d87aa2ad30f78f66fb8a4773f64f29532468`. This is not the candidate for the next test; run `43459349834` is building commit `2905dac`.
 - The APK archive passed ZIP integrity validation after download. CI verified APK v1/v2 signing, preview package/label and the `arm64-v8a/libblackbox.so` library. This is a debug preview build, not a production release.
 - The older artifact ID `14046061691` is historical only; use artifact `14052746172` for this test session.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
@@ -51,7 +51,7 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 ## Next phone test session — current candidate
 
-**Use the verified APK from run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407), artifact `14052746172`.** It is labelled **Sleepy Hub Preview** with package ID `com.cutiecookie.sleepyhub.preview`. Install alongside the regular app; do not uninstall the regular app or clear its data.
+**The user has already tested the APK from run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407), artifact `14052746172`.** The next candidate is being built from commit `2905dac` in run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834). Wait for that run to pass and use its artifact; do not reinstall the old candidate. Keep the regular app and its data untouched.
 
 ### Test in this order
 
@@ -243,11 +243,13 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-018 | P0 | Different virtual profiles and containers expose the same Android ID, GSF Android ID and Wi-Fi MAC. | Root cause traced; fix committed, CI/device verification pending | The Settings provider path was returning the host Android ID because the earlier hook was not active; the GSF `gservices` provider query passed through unchanged; Wi-Fi MAC was hard-coded. Commits `6492d84` and `f3d12dd` add per-user persisted Android/GSF IDs, intercept both provider paths, clear the framework's cached `android_id`, and return a per-profile locally administered Wi-Fi MAC. Re-test uniqueness and stability. |
 | BUG-019 | P1 | Folder organization needs create/delete/rename and a picker for moving profiles instead of typed names. | UI fix committed; current CI/device verification pending | The user's latest test correctly found the previous UI still had a free-text folder field; the earlier implementation only had repository methods. Commits `30482a1`, `09f2bed` and `b26022f` wire a container-scoped folder manager with create/rename/delete, a selection-based move picker and existing-folder chips in profile editing. Deleting a folder returns its profiles to General without touching apps/data. |
 | BUG-020 | P2 | First profile in an empty container is named Profile 3 because numbering is global. | Implemented in source; current CI/device verification pending | Commit 28443fd changes the unsaved/default profile label to New Profile; user-defined names remain unchanged. |
-| BUG-021 | P1 | Long-pressing an app opens it on release instead of only opening its action sheet. | Gesture redesign committed; current CI/device verification pending | Commit `8893dbd` separates `combinedClickable` tap/long-press from a dedicated small reorder handle. Long press should open actions without launching; normal tap should still launch. |
+| BUG-021 | P1 | Long-pressing an app must open its action menu without launching; apps must remain reorderable. | First retest partial fail; follow-up source fix committed, CI/device retest pending | User confirms release no longer launches the app, but the long-press menu did not appear and the small grip did not permit reorder. Commit `2905dac` adds explicit click/long-click handlers to the AndroidView icon and enlarges the separate grip to 24dp. Re-test tap, long-press menu, and drag from the grip. |
 | BUG-022 | P1 | Manual Stop action does nothing; inactive apps should stop after one minute, with an option to disable auto-stop. | Build verified; device testing pending | Commit 28443fd removes the ineffective Stop action and adds a 60-second background idle-stop hook. Commit 0fea772 mirrors the toggle to a file so virtual processes see changes immediately rather than relying on stale SharedPreferences caches. Run 43439814552 passed; test timeout, resume-before-timeout and toggle-off behavior on device. |
-| BUG-023 | P1 | Fake-location flow crashes during device testing. | Crash occurs when selecting an app; map hardening committed, trace pending | The user identified the failing action as selecting an app. Missing osmdroid network permissions and use of its default external cache were found during source review; the picker now uses network permissions, app-private cache, explicit user agent and guarded map lifecycle. A follow-up also fixes BLocation parcel read order, carries the originating profile ID through the picker result, and catches launch errors. This is a plausible source fix, not a confirmed runtime diagnosis. |
-| BUG-024 | P1 | Settings still has some clipped content; theme/animation polish feels slightly off. | Open; targeted screenshot/retest needed | User now marks scrolling/navigation PASS and says the UI is great overall, but still notices some clipping in Settings and wants more natural animations. Keep this open; ask for the exact clipped control/screenshot if it remains after the current build. |
+| BUG-023 | P1 | Fake location must work when the device GPS toggle is off, while remaining scoped to the selected virtual app/profile; the earlier app-selection crash must also stay covered. | Android 13 API gap addressed in source; CI/device retest pending | The latest device report says target apps only see the fake location when device GPS is on. Android 13 exposes `isLocationEnabledForUser` and `registerLocationListener`; the previous proxy did not intercept either. Commit `2905dac` adds those hooks plus unregister/provider-state coverage and fixes a duplicate `getProviderProperties` call. Keep Fake Location; test with GPS both off and on. Timezone handling is a separate later task and must not replace this feature. |
+| BUG-024 | P1 | Settings text must not be clipped, and folder controls must have a small visible gap before the profile rows. | Targeted spacing fixes committed; CI/device retest pending | The latest screenshot shows the Color mode label clipped at the left edge and the folder-chip row touching the first profile row. Commit `2905dac` adds 14dp horizontal padding to the Color mode label/chips and a restrained 6dp gap below the folder row. Recheck the exact screenshot after the new build; keep broad animation polish in Phase 3. |
 | BUG-025 | P2 | Profile/container switching sweeps across the screen, especially noticeable with separate backgrounds. | Sweep removed; visual polish remains | User confirms the sweep issue is now PASS. Keep only the remaining subtle motion/transition feel as Phase 3 polish; do not reintroduce horizontal sweeps. |
+
+| BUG-027 | P0 | Tapping an installed virtual app opens a black screen instead of the app. | Source hypothesis addressed; CI/device retest pending | The latest device test reports that apps do not open. The optional `LauncherActivity` splash wrapper is an extra asynchronous hand-off; commit `2905dac` bypasses it and moves the direct BlackBox launch request to a background thread with package/profile logging. This is a targeted hypothesis, not a confirmed runtime root cause. Test several harmless apps; if the screen remains black, capture the exact app and any visible error so the activity/process path can be traced further. |
 
 ## Bug intake and update rules
 
@@ -266,9 +268,30 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 - Detailed source mapping and implementation audit: [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md)
 - Preserve the license obligations of any upstream code used. Where the implementation is independently re-created, use the source as a behavioral/layout reference without copying protected branding/assets.
 
-| BUG-026 | P1 | The profile Google Play badge must use the original multicolour Play triangle, not a hand-drawn white approximation. | Original asset loader committed; current CI/device verification pending | The badge now loads the foreground drawable from the real `com.android.vending` package installed in that virtual profile and extracts the adaptive-icon foreground when available. It preserves the badge's existing position and size; no triangle is drawn in Sleepy Hub code. |
+| BUG-026 | P1 | The profile Google Play badge must show only the multicolour Play triangle, on transparency, aligned and filling its allowed space. | White-square regression confirmed; transparent vector fix committed, CI/device retest pending | The latest screenshot shows the loaded Play Store icon still has a white square with a tiny triangle. Commit `2905dac` replaces that package-icon rendering with a transparent Canvas vector using the four Play colours, sized to fill the existing badge bounds. Verify alignment and scale on device. |
 
 ### RikkaHub FolderBar alignment
 
 - Inspected the pinned upstream `ChatDrawer.kt` implementation. Commit `e4bb695` adds an Add chip, long-press Rename/Delete menus on folder chips, and a folder-selection bottom sheet for moving profiles. This is the same interaction pattern rather than a separate hidden folder settings screen.
 - Core identity, folder-manager, gesture, original-icon and fake-location source passed CI in run `43449856130`; the final drawer refinement is pending run `43451229123`.
+
+
+### 2026-11-13 — First device retest of the 43452740407 APK and follow-up fixes
+
+The user tested the successful build from run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) and reported:
+
+- **P0 app launch failure:** tapping installed apps opens a black screen. Tracked as BUG-027.
+- **App action/reorder partial failure:** long-press no longer launches on release (improvement), but the action menu is missing and the reorder grip was not usable. Updated BUG-021.
+- **Spacing/clipping:** the Color mode label is clipped and the folder chips touch the first profile row. Updated BUG-024.
+- **Play badge:** the actual package icon still has a white square with a tiny triangle. Updated BUG-026.
+- **Fake location:** apps only see the fake point while the device GPS toggle is on. Preserve the feature; Android 13 API coverage is being improved. Timezone handling is a separate later investigation. Updated BUG-023.
+
+Follow-up source commit: 2905dac7b5800d4e374f41863bb03e5c3903d394.
+
+- Bypasses the optional LauncherActivity splash wrapper and runs the direct launch request off the UI thread.
+- Adds explicit icon tap/long-press handlers and enlarges the separate reorder grip to 24dp.
+- Adds 14dp horizontal padding to the Color mode label/chips and a restrained 6dp gap below the folder chips.
+- Replaces the package-icon square with a transparent multicolour Play triangle vector.
+- Adds Android 13 isLocationEnabledForUser and registerLocationListener/unregister handling, makes provider state conditional on fake mode, and fixes the duplicate provider-properties call.
+
+CI run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) is building this commit. No runtime fix is claimed until the build passes and the user retests on the phone. Phase 2 remains deferred; these are targeted Phase 1 corrections only. Main remains untouched.

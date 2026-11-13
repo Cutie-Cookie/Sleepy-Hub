@@ -259,3 +259,10 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 - Inspected the pinned upstream `ChatDrawer.kt` FolderBar and move-to-folder bottom sheet.
 - Commit `e4bb695` adds the same interaction pattern to Sleepy Hub: All/General/folder chips, an Add chip, long-press Rename/Delete menus on user folders, and a selection bottom sheet when moving a profile. The previous typed folder field is gone.
 - The core identity/folder-manager/gesture/icon/fake-location source passed CI in run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). The final FolderBar head `e4bb695838b47677cdc41628f7e3999b0f7ea3b2` is pending run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123).
+
+
+### 2026-11-13 — Follow-up to first device retest
+
+The first test of preview artifact 14052746172 found a P0 black-screen app-launch failure, missing app long-press menu/reorder behavior, clipped Color mode text, no gap between folder chips and profile rows, a white-square Play badge, and fake location that only appeared with device GPS enabled.
+
+Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: direct/background app launch, explicit icon click/long-press plus a larger reorder grip, small targeted spacing fixes, a transparent multicolour Play triangle, and Android 13 location-enabled/listener hooks. CI run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) is pending. These fixes are not marked runtime-complete until the next phone test.

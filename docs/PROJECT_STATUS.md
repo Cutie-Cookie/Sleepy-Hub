@@ -240,3 +240,17 @@ The latest source candidate adds Settings/GSF provider interception and cache cl
 ### RikkaHub folder interaction
 
 - The drawer now has an All/General/folder chip row and an Add chip. Long-press a user folder to Rename/Delete. Moving a profile opens a bottom sheet listing the existing folders. This follows the pinned RikkaHub FolderBar interaction.
+
+
+## Latest phone test report — 2026-11-13
+
+The user tested preview artifact 14052746172 from run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407). New findings: app taps show a black screen (P0); long-press release no longer launches but the action menu and reorder grip did not work; Color mode text is clipped; folder chips touch the first profile row; the Play badge still has a white square; and fake location is visible only when the device GPS toggle is on.
+
+Follow-up source commit 2905dac7b5800d4e374f41863bb03e5c3903d394:
+- Bypasses the optional launcher splash and moves the direct app-launch request to a worker thread.
+- Adds explicit AndroidView icon click/long-press handlers and a larger 24dp reorder grip.
+- Adds 14dp Color mode padding and a 6dp folder/profile gap.
+- Draws the multicolour Play triangle on a transparent Canvas.
+- Adds Android 13 location-enabled/listener hooks and fixes the provider-properties double call.
+
+Current CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834), still in progress at documentation time. The previously supplied APK is not the new candidate. Main remains untouched. Phase 2 UI overhaul remains deferred; only targeted Phase 1 corrections are in this batch.
