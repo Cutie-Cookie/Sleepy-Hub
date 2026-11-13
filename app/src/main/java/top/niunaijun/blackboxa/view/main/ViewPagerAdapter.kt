@@ -9,10 +9,25 @@ class ViewPagerAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activ
 
     private var fragmentList = mutableListOf<AppsFragment>()
 
-    fun replaceData(list: MutableList<AppsFragment>) {
-        fragmentList = list.toMutableList()
+    /**
+     * Keep the existing Fragment instance for any profile that remains in this pager.
+     * FragmentStateAdapter keeps fragments by stable item id, so MainActivity must use
+     * this same canonical list when it looks up a profile's live fragment.
+     */
+    fun replaceData(list: List<AppsFragment>) {
+        val existingByUserId = fragmentList.associateBy { it.userID }
+        fragmentList = list.map { requested ->
+            existingByUserId[requested.userID] ?: requested
+        }.toMutableList()
         notifyDataSetChanged()
     }
+
+    fun fragments(): List<AppsFragment> = fragmentList.toList()
+
+    fun fragmentAt(position: Int): AppsFragment? = fragmentList.getOrNull(position)
+
+    fun indexOfUserId(userId: Int): Int =
+        fragmentList.indexOfFirst { it.userID == userId }
 
     override fun getItemCount(): Int = fragmentList.size
 
