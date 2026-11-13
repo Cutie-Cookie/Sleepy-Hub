@@ -1,6 +1,7 @@
 package top.niunaijun.blackboxa.app
 
 import android.content.Context
+import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -398,10 +399,28 @@ object ProfileAppearance {
         preferences.edit { putBoolean("amoled_dark_mode", enabled) }
     }
 
-    fun autoStopIdleApps(): Boolean = preferences.getBoolean("auto_stop_idle_apps", true)
+    private fun autoStopIdleFile() = File(App.getContext().filesDir, "sleepyhub-auto-stop-idle")
+
+    fun autoStopIdleApps(): Boolean {
+        val sharedFile = autoStopIdleFile()
+        if (sharedFile.isFile) {
+            return runCatching { sharedFile.readText().trim().equals("true", ignoreCase = true) }
+                .getOrDefault(preferences.getBoolean("auto_stop_idle_apps", true))
+        }
+        return preferences.getBoolean("auto_stop_idle_apps", true)
+    }
 
     fun setAutoStopIdleApps(enabled: Boolean) {
         preferences.edit { putBoolean("auto_stop_idle_apps", enabled) }
+        runCatching {
+            val target = autoStopIdleFile()
+            val temporary = File(target.parentFile, target.name + ".tmp")
+            temporary.writeText(enabled.toString())
+            if (!temporary.renameTo(target)) {
+                target.writeText(enabled.toString())
+                temporary.delete()
+            }
+        }
     }
 
     fun appGridColumns(): Int = preferences.getInt("app_grid_columns", 4).coerceIn(3, 5)

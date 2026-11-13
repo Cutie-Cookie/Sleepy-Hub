@@ -30,7 +30,6 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Person
@@ -54,7 +53,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,14 +74,12 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun ProfileManagerScreen(
     profiles: List<ProfileItem>,
-    folders: List<String>,
     onBack: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (Int) -> Unit,
     onClone: (Int) -> Unit,
     onDelete: (Int) -> Unit,
     onReorder: (List<Int>) -> Unit,
-    onMoveToFolder: (Int) -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedFolder by rememberSaveable { mutableStateOf("All") }
@@ -91,9 +87,7 @@ fun ProfileManagerScreen(
     var pendingClone by remember { mutableStateOf<ProfileItem?>(null) }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    LaunchedEffect(folders) {
-        if (selectedFolder != "All" && selectedFolder !in folders) selectedFolder = "All"
-    }
+    val folders = remember(profiles) { profiles.map { it.folder }.distinct().sorted() }
     val filteredProfiles = remember(profiles, query, selectedFolder) {
         profiles.filter { profile ->
             (selectedFolder == "All" || profile.folder == selectedFolder) &&
@@ -185,7 +179,6 @@ fun ProfileManagerScreen(
                                 onEdit = { onEdit(profile.userId) },
                                 onClone = { pendingClone = profile },
                                 onDelete = { pendingDelete = profile },
-                                onMoveToFolder = { onMoveToFolder(profile.userId) },
                                 modifier = Modifier
                                     .animateItem()
                                     .then(dragModifier)
@@ -238,7 +231,6 @@ private fun ProfileManagerRow(
     onEdit: () -> Unit,
     onClone: () -> Unit,
     onDelete: () -> Unit,
-    onMoveToFolder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -292,11 +284,6 @@ private fun ProfileManagerRow(
                 DropdownMenuItem(
                     text = { Text("Edit profile") },
                     onClick = { menuExpanded = false; onEdit() },
-                )
-                DropdownMenuItem(
-                    text = { Text("Move to folder") },
-                    leadingIcon = { Icon(Icons.Outlined.Folder, null) },
-                    onClick = { menuExpanded = false; onMoveToFolder() },
                 )
                 DropdownMenuItem(
                     text = { Text("Clone profile") },
@@ -434,14 +421,12 @@ fun ProfileDetailScreen(
 @Composable
 fun ProfileBasicScreen(
     profile: ProfileItem,
-    folders: List<String>,
     onBack: () -> Unit,
     onSave: (name: String, folder: String, avatarUri: String?) -> Unit,
 ) {
     val context = LocalContext.current
     var name by remember(profile.userId) { mutableStateOf(profile.name) }
     var folder by remember(profile.userId) { mutableStateOf(profile.folder) }
-    var folderMenuExpanded by remember(profile.userId) { mutableStateOf(false) }
     var avatarUri by remember(profile.userId) { mutableStateOf(profile.avatarUri) }
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -500,36 +485,14 @@ fun ProfileBasicScreen(
                             singleLine = true,
                             label = { Text("Profile name") },
                         )
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = folder,
-                                onValueChange = {},
-                                readOnly = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                label = { Text("Folder") },
-                                trailingIcon = {
-                                    TextButton(onClick = { folderMenuExpanded = true }) {
-                                        Text("Choose")
-                                    }
-                                },
-                                supportingText = { Text("Choose an existing folder. Create or delete folders from the profile drawer.") },
-                            )
-                            DropdownMenu(
-                                expanded = folderMenuExpanded,
-                                onDismissRequest = { folderMenuExpanded = false },
-                            ) {
-                                folders.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option) },
-                                        onClick = {
-                                            folder = option
-                                            folderMenuExpanded = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
+                        OutlinedTextField(
+                            value = folder,
+                            onValueChange = { folder = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("Folder") },
+                            supportingText = { Text("Folders organize profiles inside this container.") },
+                        )
                     }
                 }
             }
