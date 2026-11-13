@@ -193,6 +193,21 @@ object ProfileAppearance {
         preferences.edit { putString(ACTIVE_CONTAINER_KEY, containerId) }
     }
 
+    /** Keep the last active profile independently for each container. */
+    fun lastProfileId(containerId: String): Int =
+        preferences.getInt("last_profile_id_$containerId", -1)
+
+    /** The global key is retained as a migration fallback for existing installs. */
+    fun lastProfileId(): Int =
+        preferences.getInt("last_profile_id", -1)
+
+    fun saveLastProfileId(containerId: String, userId: Int) {
+        preferences.edit {
+            putInt("last_profile_id_$containerId", userId)
+            putInt("last_profile_id", userId)
+        }
+    }
+
     fun profileName(userId: Int, index: Int = userId): String {
         return AppManager.mRemarkSharedPreferences.getString("Remark$userId", null)
             ?.takeIf { it.isNotBlank() }
