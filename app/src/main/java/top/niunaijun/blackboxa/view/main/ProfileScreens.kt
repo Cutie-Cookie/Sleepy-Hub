@@ -74,27 +74,9 @@ import top.niunaijun.blackboxa.app.ProfileAppearance
 fun ContainerSettingsScreen(
     container: ContainerItem,
     onBack: () -> Unit,
-    onSave: (ContainerItem) -> Unit,
+    onOpenBasic: () -> Unit,
+    onOpenBackground: () -> Unit,
 ) {
-    val context = LocalContext.current
-    var name by remember(container.id) { mutableStateOf(container.name) }
-    var avatarUri by remember(container.id) { mutableStateOf(container.avatarUri) }
-    var backgroundUri by remember(container.id) { mutableStateOf(container.backgroundUri) }
-    var opacity by remember(container.id) { mutableStateOf(container.backgroundOpacity) }
-
-    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            persistReadPermission(context, uri)
-            avatarUri = uri.toString()
-        }
-    }
-    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            persistReadPermission(context, uri)
-            backgroundUri = uri.toString()
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -112,16 +94,93 @@ fun ContainerSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SettingsCard(title = "Identity") {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ContainerAvatar(
-                            container.copy(avatarUri = avatarUri, name = name),
-                            64.dp,
-                        )
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        container.name,
+                        style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                    )
+                    Text(
+                        "${container.profileCount} profiles",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            item {
+                SettingsCard(title = "Basic information") {
+                    SettingsActionRow(
+                        icon = { ContainerAvatar(container, 48.dp) },
+                        title = "Name and picture",
+                        subtitle = "Change this container's name and avatar",
+                        onClick = onOpenBasic,
+                    )
+                }
+            }
+            item {
+                SettingsCard(title = "Workspace") {
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Image, null) },
+                        title = "Background",
+                        subtitle = if (container.backgroundUri == null) {
+                            "No background selected"
+                        } else {
+                            "Change or remove the workspace background"
+                        },
+                        onClick = onOpenBackground,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContainerBasicScreen(
+    container: ContainerItem,
+    onBack: () -> Unit,
+    onSave: (ContainerItem) -> Unit,
+) {
+    val context = LocalContext.current
+    var name by remember(container.id) { mutableStateOf(container.name) }
+    var avatarUri by remember(container.id) { mutableStateOf(container.avatarUri) }
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            persistReadPermission(context, uri)
+            avatarUri = uri.toString()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Basic information") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                SettingsCard(title = "Container identity") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        ContainerAvatar(container.copy(name = name, avatarUri = avatarUri), 64.dp)
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(name.ifBlank { "Container" }, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
                             Text(
-                                "${container.profileCount} profiles",
+                                "Container picture",
                                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -130,9 +189,7 @@ fun ContainerSettingsScreen(
                                     Text(if (avatarUri == null) "Choose picture" else "Change picture")
                                 }
                                 if (avatarUri != null) {
-                                    TextButton(onClick = {
-                                        avatarUri = null
-                                    }) { Text("Remove") }
+                                    TextButton(onClick = { avatarUri = null }) { Text("Remove") }
                                 }
                             }
                         }
@@ -146,31 +203,76 @@ fun ContainerSettingsScreen(
                     )
                 }
             }
-
             item {
-                SettingsCard(title = "Workspace background") {
+                Button(
+                    onClick = {
+                        onSave(container.copy(
+                            name = name.trim().ifBlank { container.name },
+                            avatarUri = avatarUri,
+                        ))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = name.isNotBlank(),
+                ) {
+                    Icon(Icons.Outlined.Check, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Save")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContainerBackgroundScreen(
+    container: ContainerItem,
+    onBack: () -> Unit,
+    onSave: (ContainerItem) -> Unit,
+) {
+    val context = LocalContext.current
+    var backgroundUri by remember(container.id) { mutableStateOf(container.backgroundUri) }
+    var opacity by remember(container.id) { mutableStateOf(container.backgroundOpacity) }
+    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            persistReadPermission(context, uri)
+            backgroundUri = uri.toString()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Workspace background") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                SettingsCard(title = "Preview") {
                     Text(
-                        "This picture appears behind the selected container's app workspace. The workspace stays plain black when no picture is chosen.",
+                        "The background appears only behind the app workspace for this container. It is not shown in the dashboard list or container picker.",
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                         color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     ContainerWorkspaceBackground(
-                        container = container.copy(
-                            name = name,
-                            avatarUri = avatarUri,
-                            backgroundUri = backgroundUri,
-                            backgroundOpacity = opacity,
-                        ),
-                        modifier = Modifier.fillMaxWidth().height(150.dp),
+                        container.copy(backgroundUri = backgroundUri, backgroundOpacity = opacity),
+                        modifier = Modifier.fillMaxWidth().height(170.dp),
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(onClick = { backgroundPicker.launch(arrayOf("image/*")) }) {
-                            Text(if (backgroundUri == null) "Choose background" else "Change background")
+                            Text(if (backgroundUri == null) "Choose image" else "Change image")
                         }
                         if (backgroundUri != null) {
-                            TextButton(onClick = {
-                                backgroundUri = null
-                            }) { Text("Remove") }
+                            TextButton(onClick = { backgroundUri = null }) { Text("Remove") }
                         }
                     }
                     if (backgroundUri != null) {
@@ -183,25 +285,19 @@ fun ContainerSettingsScreen(
                     }
                 }
             }
-
             item {
                 Button(
                     onClick = {
-                        onSave(
-                            container.copy(
-                                name = name.trim().ifBlank { container.name },
-                                avatarUri = avatarUri,
-                                backgroundUri = backgroundUri,
-                                backgroundOpacity = opacity.coerceIn(0f, 1f),
-                            )
-                        )
+                        onSave(container.copy(
+                            backgroundUri = backgroundUri,
+                            backgroundOpacity = opacity.coerceIn(0f, 1f),
+                        ))
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = name.isNotBlank(),
                 ) {
                     Icon(Icons.Outlined.Check, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
-                    Text("Save container")
+                    Text("Save background")
                 }
             }
         }
