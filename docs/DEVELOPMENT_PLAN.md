@@ -35,10 +35,11 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: `e4bb695838b47677cdc41628f7e3999b0f7ea3b2`.
-- Current-head CI run: [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) — **pending** behind run 43451108107 for the RikkaHub-style drawer FolderBar refinement.
+- Current feature-branch head: `c7b28cda67535e5ffd4fea497196aec8340b07fe`.
+- Current-head CI run: [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) — **in progress** for the folder-selection state-scope compile fix.
+- Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope.
 - Last verified prior artifact: ID `14046061691` from run `43439814552`; it does **not** contain the current fixes and must not be used for this retest.
-- Current-head APK: not available yet. Wait for run `43451229123` to pass and upload its artifact.
+- Current-head APK: not available yet. Wait for run `43452740407` to pass its package/signature/ABI checks and upload its artifact.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
 - The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. Commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea passed run 43437776339. The cross-process auto-stop opt-out hardening in commit 0fea772e8f7acc8e84c1ce244ca1c995f294db02 passed run 43439814552.
@@ -48,49 +49,43 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 ## Next phone test session — current candidate
 
-**Do not install the previous APK for this retest.** Wait for run `43449856130` to pass, then use only its artifact.
-
-### Before testing
-- [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.
-- [ ] Install it alongside the normal Sleepy Hub app. Do not uninstall the normal app, clear its data, or use valuable profiles for destructive tests.
-- [ ] Record the phone model, Android version, and whether gesture or three-button navigation is enabled.
+**Do not install an older preview for this retest.** Wait for run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) to pass and upload the APK. Confirm it is labelled **Sleepy Hub Preview** with package ID `com.cutiecookie.sleepyhub.preview`. Install alongside the regular app; do not uninstall the regular app or clear its data.
 
 ### Test in this order
-1. **Launch and drawer appearance**
-   - [ ] Open the Preview app and confirm it reaches the workspace.
-   - [ ] Open the drawer. Profile rows should be compact, one line, and text-only (no profile image or app-count subtitle).
-   - [ ] Confirm the selected profile is visibly selected and the container selector remains at the bottom.
-2. **Profile switching**
-   - [ ] In a disposable container with two profiles, tap A, then B, then A again.
-   - [ ] Repeat with quick consecutive taps and, if available, swipe between profiles.
-   - [ ] Confirm each profile shows its own app grid and the selected profile name matches the visible grid.
-   - [ ] Close and reopen Preview; confirm the last selected profile is restored.
-3. **Container switching**
-   - [ ] Create/use two disposable populated containers and one empty container.
-   - [ ] Switch populated A → populated B → A. Confirm each container restores its own last profile.
-   - [ ] Switch to the empty container. It must remain empty; no profile should be created automatically.
-   - [ ] Switch back to A and confirm its previous profile and apps are still there.
-4. **Clone destination and profile IDs**
-   - [ ] In container A, clone a disposable profile that has several apps.
-   - [ ] While cloning is still running, switch to container B.
-   - [ ] When cloning finishes, check that the new profile appears in A, not B, and that the original profile is unchanged.
-   - [ ] Create two disposable profiles quickly, then make two separate clone requests. Confirm each result is a distinct profile and neither replaces another.
-5. **App installation**
-   - [ ] Install a harmless app from the installed-app picker into a disposable virtual profile.
-   - [ ] Install a second harmless APK obtained from its developer's official source.
-   - [ ] Launch each installed app. If either fails, note which route failed and capture the full error dialog.
-6. **Google services and fake location**
-   - [ ] Toggle Google services for a disposable profile. Confirm only the small Play indicator appears beside the profile name; Google service packages must not appear as ordinary app tiles.
-   - [ ] Apply a non-sensitive test location to one test app, verify that app sees it, then disable fake location and verify the override is removed.
-7. **Scrolling, keyboard and system navigation**
-   - [ ] Scroll the profile manager and fake-location list to the bottom.
-   - [ ] Search while the keyboard is open; confirm the list resizes and remains scrollable.
-   - [ ] Check the Google-services empty state.
-   - [ ] Confirm bottom controls remain visible and tappable above the transparent navigation area.
+
+1. **Profile identity isolation**
+   - [ ] In Mantle Verify, compare Profile A and Profile B: Android ID, GSF Android ID and Wi-Fi MAC should all differ.
+   - [ ] Restart Preview and check each profile keeps its own three values.
+   - [ ] Shared Wi-Fi SSID/BSSID is expected and is not a failure.
+2. **App-data isolation**
+   - [ ] Use the same harmless test app in A and B. Save a different harmless note/setting in each profile.
+   - [ ] Switch A → B → A and restart Preview. Each profile must retain only its own value.
+3. **Folder controls**
+   - [ ] Confirm All, General and custom-folder chips appear in the drawer.
+   - [ ] Use Add to create a folder; long-press a custom folder chip to rename it or delete it.
+   - [ ] Move a disposable profile using the folder bottom sheet. The selected folder should show a checkmark.
+   - [ ] Delete a test folder and confirm its profiles move to General while their apps/data remain intact.
+4. **App tap, long-press and reorder**
+   - [ ] A normal tap launches the app.
+   - [ ] A long-press opens the app action flow and must not launch the app when released.
+   - [ ] Use the separate grip to reorder; confirm the order remains after leaving and reopening the workspace.
+5. **Fake location**
+   - [ ] Open Fake Location, choose a harmless test app, open the map and select a location.
+   - [ ] Apply it, verify the intended app/profile receives it, then disable it and confirm the override is removed.
+   - [ ] If it crashes, stop there and send the exact step plus a screenshot/error dialog; do not keep retrying.
+6. **Google services scope**
+   - [ ] Enable Google services for A only. B should remain disabled.
+   - [ ] Switch between profiles and restart Preview to confirm the state stays separate.
+7. **Idle auto-stop**
+   - [ ] With the setting enabled, leave a virtual app and wait about one minute; check that it stops.
+   - [ ] Turn the setting off and repeat once; the app should not be auto-stopped by this policy.
+8. **Quick visual regression**
+   - [ ] Check the Play badge is the original multicolour Play icon.
+   - [ ] Check whether any Settings controls are still clipped. A screenshot of the exact page is most useful.
 
 ### Feedback format
-For each failed step, report the step number, what you tapped, what you expected, what happened, and the exact error text. A screenshot is helpful; hide personal app names, account details, and precise location information. Mark untested steps as **Not tested** rather than guessing.
 
+Report each result as **Pass**, **Fail**, or **Not tested**. For a failure, include the step number, what you tapped, what you expected, what happened, and the exact error text. Hide personal app names, account details and precise location information in screenshots.
 
 ## Phase 0 — project safety and repeatable builds
 
@@ -118,11 +113,11 @@ Work through the P0 bugs first. For each one: reproduce or trace it, identify th
 
 **Exit criteria:** core operations work across at least two profiles and two containers (including an empty container), with no profile/data mix-up and a confirmed successful app installation.
 
-**Status: Active.** The user's latest tests exposed shared Android/GSF IDs, unchanged folder UX, a long-press launch leak, and a fake-location selection crash. Source fixes are committed and awaiting CI/device verification.
+**Status: Active.** Identity interception/cache clearing, per-profile Wi-Fi MAC, folder controls, long-press/reorder separation, original Play icon loading and fake-location hardening are committed. The current ARM64 build is [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407); all runtime behavior still requires device retesting.
 
 ## Phase 2 — source-led RikkaHub UI reconstruction
 
-**Status: Partially implemented, not signed off.** The main shell and major screens exist, but folder interaction and visual details are still being corrected against the pinned source.
+**Status: Deferred for the dedicated Phase 2 pass; not signed off.** The user has explicitly asked to keep the full UI overhaul in Phase 2. Phase 1 may include only the smallest UI wiring needed to correct a functional bug (such as real folder create/rename/delete/move controls); do not expand into broad screen redesign, logo/icon/frame replacement, spacing/typography sweeps, or animation polish during Phase 1.
 
 Audit and implement one screen/flow at a time against the pinned upstream source, not merely by recoloring the old interface.
 
