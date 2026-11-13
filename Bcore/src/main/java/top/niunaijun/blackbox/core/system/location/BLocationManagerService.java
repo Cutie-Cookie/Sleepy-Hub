@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -37,7 +38,7 @@ public class BLocationManagerService extends IBLocationManagerService.Stub imple
     private static final BLocationManagerService sService = new BLocationManagerService();
     private final SparseArray<HashMap<String, BLocationConfig>> mLocationConfigs = new SparseArray<>();
     private final BLocationConfig mGlobalConfig = new BLocationConfig();
-    private final Map<IBinder, LocationRecord> mLocationListeners = new HashMap<>();
+    private final Map<IBinder, LocationRecord> mLocationListeners = new ConcurrentHashMap<>();
     private final Executor mThreadPool = Executors.newCachedThreadPool();
 
     public static BLocationManagerService get() {
@@ -208,52 +209,77 @@ public class BLocationManagerService extends IBLocationManagerService.Stub imple
         if (listener == null || !listener.pingBinder()) {
             return;
         }
-        if (mLocationListeners.containsKey(listener))
-            return;
-        listener.linkToDeath(new DeathRecipient() {
-            @Override
-            public void binderDied() {
-                listener.unlinkToDeath(this, 0);
-                mLocationListeners.remove(listener);
-            }
-        }, 0);
         LocationRecord record = new LocationRecord(packageName, userId);
-        mLocationListeners.put(listener, record);
+        if (mLocationListeners.putIfAbsent(listener, record) != null) {
+            return;
+        }
+        try {
+            listener.linkToDeath(new DeathRecipient() {
+                @Override
+                public void binderDied() {
+                    listener.unlinkToDeath(this, 0);
+                    mLocationListeners.remove(listener, record);
+                }
+            }, 0);
+        } catch (RemoteException error) {
+            mLocationListeners.remove(listener, record);
+            throw error;
+        }
         addTask(listener);
     }
 
     @Override
     public void removeUpdates(IBinder listener) throws RemoteException {
-        if (listener == null || !listener.pingBinder()) {
-            return;
+        if (listener != null) {
+            mLocationListeners.remove(listener);
         }
-        mLocationListeners.remove(listener);
     }
 
     private void addTask(IBinder locationListener) {
         mThreadPool.execute(() -> {
             BLocation lastLocation = null;
-            long l = System.currentTimeMillis();
-            while (locationListener.pingBinder()) {
-                IInterface iInterface = BRILocationListenerStub.get().asInterface(locationListener);
+            long lastDispatchTime = 0L;
+            while (!Thread.currentThread().isInterrupted() && locationListener.pingBinder()) {
                 LocationRecord locationRecord = mLocationListeners.get(locationListener);
-                if (locationRecord == null)
-                    continue;
+                // removeUpdates() removes the record; stop this worker instead of spinning forever.
+                if (locationRecord == null) {
+                    return;
+                }
+
                 BLocation location = getLocation(locationRecord.userId, locationRecord.packageName);
-                if (location == null)
-                    continue;
-                if (location.equals(lastLocation) && (System.currentTimeMillis() - l) < 3000) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ignored) {
-                    }
+                // CLOSE_MODE intentionally returns null. Poll slowly so enabling spoofing later
+                // is picked up without burning a CPU core while location spoofing is disabled.
+                if (location == null) {
+                    if (!sleepForLocationPoll()) return;
                     continue;
                 }
+
+                long now = System.currentTimeMillis();
+                if (location.equals(lastLocation) && (now - lastDispatchTime) < 3000L) {
+                    if (!sleepForLocationPoll()) return;
+                    continue;
+                }
+
                 lastLocation = location;
-                l = System.currentTimeMillis();
-                BlackBoxCore.get().getHandler().post(() -> BRILocationListener.get(iInterface).onLocationChanged(location.convert2SystemLocation()));
+                lastDispatchTime = now;
+                IInterface iInterface = BRILocationListenerStub.get().asInterface(locationListener);
+                if (iInterface == null) {
+                    return;
+                }
+                BlackBoxCore.get().getHandler().post(() ->
+                        BRILocationListener.get(iInterface).onLocationChanged(location.convert2SystemLocation()));
             }
         });
+    }
+
+    private boolean sleepForLocationPoll() {
+        try {
+            Thread.sleep(1000L);
+            return true;
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     public void save() {
