@@ -103,3 +103,53 @@ There are currently no files under `app/src/test` or `app/src/androidTest`. Add 
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Match the source flow with original Sleepy Hub code. Do not paste upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.
+
+
+## Deeper interaction and screen-placement audit — 2026-11-13
+
+### Conversation/profile long-press move flow
+
+Confirmed directly in the pinned source:
+- `ConversationList.kt`: `ConversationItem` uses `combinedClickable`; long press opens a dropdown containing Pin/Unpin, Regenerate title, Move to assistant, Move to folder, Delete.
+- `ChatDrawer.kt`: Move to assistant opens a `ModalBottomSheet` with a `LazyColumn` of assistant rows. The current assistant is marked.
+- `ChatVM.kt`: `moveConversationToAssistant` delegates to `ChatService`; if the moved row is the currently open conversation, the selected assistant is updated too.
+- `ChatService.kt`: moves the active session to the new assistant and clears the folder ID.
+- `ConversationRepository.kt` and `ConversationDAO.kt`: persist the assistant ID and clear folder assignment.
+- `ChatDrawerVM.kt`: folders and conversations are assistant-scoped; changing assistant resets the selected folder filter.
+
+Sleepy Hub must reproduce this interaction as Move Profile to Container. Update only container membership; preserve the same BlackBox user ID and all app data. If the active profile moves, switch to the target container and keep it active. Reset its old container-scoped folder assignment.
+
+### Assistant/container and settings entry points
+
+- `ChatDrawer.kt`: compact `AssistantPicker` appears below the scrollable conversation list. Its trailing drawer action opens the Assistant manager. The footer's bottom-right Settings action opens Settings home.
+- `AssistantPicker.kt`: tap the compact selector to open the assistant picker sheet (~80% height). Rows have 32dp avatar, name, selected treatment, and trailing edit action. The trailing edit action opens that assistant's detail screen.
+- `AssistantPage.kt`: Assistant manager has a LargeFlexibleTopAppBar Add icon; Add opens `AssistantCreationSheet`. It has rounded search, filter row, reorderable list, compact rows/cards, and deletion confirmation.
+- `SettingPage.kt`: Settings home General Settings contains Color Mode, Preferences, Assistant manager, and Extensions. This is the second entry point to Assistant manager.
+- `SettingPreferencesPage.kt`: Preferences links Theme, Notifications, General, UI, and Network.
+- `SettingPreferencesThemePage.kt`: Dynamic Color, Theme Settings, AMOLED Dark Mode.
+- `SettingThemePage.kt`: preset and custom theme list, create/edit/delete, import/export.
+- `RouteActivity.kt`: typed routes and `NavDisplay` entries; includes Assistant manager/detail/basic and Settings routes.
+
+Sleepy Hub placement:
+- Add Profile is a small plus beside the inline profile-list heading.
+- Add Container is in the Container Manager top app bar.
+- Container switcher is the compact AssistantPicker-style drawer selector.
+- Container manager is available from the dashboard footer and Settings home.
+- Settings remains bottom-right in the dashboard footer.
+- Workspace top-right action replaces RikkaHub New Message with Add App.
+- Remove the top-right MoreVert popup entirely; use dashboard Settings, profile actions, Container Manager, and Refresh shortcut.
+
+### Sleepy Hub's own UI issues to fix
+
+- `SleepyHubMainScreen.kt`: current drawer has a Manage profiles row and profile-picker bottom sheet. Replace with inline independently scrolling profile list; move container switching into the assistant-style sheet. Add the small profile plus beside the list heading.
+- `SleepyHubMainScreen.kt`: top bar already has an Add/Install action, but it also has a MoreVert menu with Profile settings, Manage profiles, and Refresh apps. Keep the Add/Install action in the New Message position; remove MoreVert. Keep Settings at dashboard bottom-right and Refresh in dashboard footer.
+- `SleepyHubMainScreen.kt`: current drawer also contains an Install app quick action. Prefer the top-right Add App action as the primary entry point rather than duplicating it.
+- `ProfileScreens.kt`: current profile settings store per-profile accent/background. Move picture/background to container settings and remove all profile/container theme controls. Profile name/folder remain profile-owned.
+- `MainActivity.kt`: storage rationale uses `MaterialAlertDialogBuilder`; replace the explanation popup with a Compose Material 3 rationale dialog while keeping the same Android All Files Access permission intent/result check.
+- `InstalledAppPickerScreen.kt`: current screen uses a basic small TopAppBar, OutlinedTextField, and separate cards per app. Rework its hierarchy and row interactions, not just colors: LargeFlexibleTopAppBar, rounded search, compact icon/name/package rows, clear Add/Installed state, APK chooser, and proper loading/empty states.
+- `ListActivity.kt`: import says `ActivityInstallPickerBinding` while the property uses `ActivityListBinding`; fix this build blocker.
+- Current branch still has the previously recorded missing Compose imports and default accent gradient. The failed workflow has not produced an APK.
+
+### Source-map document
+
+Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upstream file paths and functions for drawer, row long-press, move-to-assistant service/repository/DAO, picker, manager/add, detail/avatar/background, Settings, global theme, route registration, and permission-dialog patterns.
