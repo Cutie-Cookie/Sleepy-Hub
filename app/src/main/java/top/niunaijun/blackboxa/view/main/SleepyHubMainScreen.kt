@@ -1,7 +1,14 @@
 package top.niunaijun.blackboxa.view.main
 
-import android.graphics.BitmapFactory
-import android.net.Uri
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
+import android.os.Build
+import android.graphics.Color as AndroidColor
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,10 +19,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -65,7 +70,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -79,7 +83,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,9 +90,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,9 +98,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.viewpager2.widget.ViewPager2
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.niunaijun.blackboxa.app.ProfileAppearance
 
 data class ProfileItem(
@@ -119,8 +117,6 @@ data class ContainerItem(
     val id: String,
     val name: String,
     val avatarUri: String?,
-    val backgroundUri: String?,
-    val backgroundOpacity: Float,
     val profileCount: Int,
 )
 
@@ -161,6 +157,7 @@ fun SleepyHubMainScreen(
     var page by rememberSaveable { mutableStateOf("workspace") }
     var returnToPage by rememberSaveable { mutableStateOf("workspace") }
     var containerSettingsReturnPage by rememberSaveable { mutableStateOf("workspace") }
+    var profileSettingsReturnPage by rememberSaveable { mutableStateOf("workspace") }
     var editingProfileId by rememberSaveable { mutableStateOf(-1) }
     var editingContainerId by rememberSaveable { mutableStateOf("") }
     var showContainerPicker by rememberSaveable { mutableStateOf(false) }
@@ -168,6 +165,37 @@ fun SleepyHubMainScreen(
     var deleteProfileId by rememberSaveable { mutableStateOf(-1) }
     var folderProfileId by rememberSaveable { mutableStateOf(-1) }
     var folderDraft by rememberSaveable { mutableStateOf("") }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val systemBarView = LocalView.current
+    val surfaceIsLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+    SideEffect {
+        if (activity != null && !systemBarView.isInEditMode) {
+            activity.window.navigationBarColor = AndroidColor.TRANSPARENT
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                activity.window.navigationBarDividerColor = AndroidColor.TRANSPARENT
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                activity.window.isNavigationBarContrastEnforced = false
+            }
+            val controller = WindowCompat.getInsetsController(activity.window, systemBarView)
+            val isWorkspace = page == "workspace"
+            controller.isAppearanceLightNavigationBars = !isWorkspace && surfaceIsLight
+            if (isWorkspace) {
+                activity.window.statusBarColor = AndroidColor.TRANSPARENT
+                controller.isAppearanceLightStatusBars = false
+            } else {
+                activity.window.statusBarColor = MaterialTheme.colorScheme.surface.toArgb()
+                controller.isAppearanceLightStatusBars = surfaceIsLight
+            }
+        }
+    }
+
+    LaunchedEffect(page) {
+        if (page != "workspace" && drawerState.isOpen) drawerState.close()
+    }
 
     val activeProfile = profiles.firstOrNull { it.userId == activeUserId }
     val activeContainer = containers.firstOrNull { it.id == activeContainerId }
@@ -175,9 +203,9 @@ fun SleepyHubMainScreen(
     AnimatedContent(
         targetState = page,
         transitionSpec = {
-            (fadeIn(animationSpec = tween(300)) +
+            (fadeIn(animationSpec = tween(340)) +
                 slideInHorizontally(animationSpec = tween(300)) { width -> width / 18 }) togetherWith
-                (fadeOut(animationSpec = tween(200)) +
+                (fadeOut(animationSpec = tween(260)) +
                     slideOutHorizontally(animationSpec = tween(200)) { width -> -width / 24 })
         },
         label = "sleepy-hub-page-transition",
@@ -230,7 +258,11 @@ fun SleepyHubMainScreen(
             profiles = profiles,
             onBack = { page = "workspace" },
             onAdd = onAddProfile,
-            onEdit = { userId -> editingProfileId = userId; page = "profile-settings" },
+            onEdit = {
+                editingProfileId = it
+                profileSettingsReturnPage = "profile-manager"
+                page = "profile-settings"
+            },
             onClone = onCloneProfile,
             onDelete = onDeleteProfile,
             onReorder = onReorderProfiles,
@@ -238,21 +270,21 @@ fun SleepyHubMainScreen(
         "profile-settings" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
             if (profile == null) {
-                page = "workspace"
+                page = profileSettingsReturnPage
             } else {
                 ProfileDetailScreen(
                     profile = profile,
-                    onBack = { page = "workspace" },
+                    onBack = { page = profileSettingsReturnPage },
                     onOpenBasic = { page = "profile-basic" },
                     onOpenBackground = { page = "profile-background" },
-                    onDelete = { onDeleteProfile(profile.userId); page = "workspace" },
+                    onDelete = { onDeleteProfile(profile.userId); page = profileSettingsReturnPage },
                 )
             }
         }
         "profile-basic" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
             if (profile == null) {
-                page = "workspace"
+                page = profileSettingsReturnPage
             } else {
                 ProfileBasicScreen(
                     profile = profile,
@@ -270,7 +302,7 @@ fun SleepyHubMainScreen(
         "profile-background" -> {
             val profile = profiles.firstOrNull { it.userId == editingProfileId }
             if (profile == null) {
-                page = "workspace"
+                page = profileSettingsReturnPage
             } else {
                 ProfileBackgroundScreen(
                     profile = profile,
@@ -302,7 +334,6 @@ fun SleepyHubMainScreen(
         )
         "theme" -> ThemeSettingsScreen(onBack = { page = "preferences" })
         else -> {
-            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             val scope = rememberCoroutineScope()
             var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
             val folders = remember(profiles) {
@@ -326,14 +357,13 @@ fun SleepyHubMainScreen(
                         ) {
                             DrawerHeader(profile = activeProfile)
 
-                            Row(
+                            Column(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 DrawerQuickAction(
                                     icon = { Icon(Icons.Outlined.LocationOn, null) },
                                     label = "Fake location",
-                                    modifier = Modifier.weight(1f),
                                     onClick = {
                                         scope.launch { drawerState.close() }
                                         onOpenFakeLocation()
@@ -342,7 +372,6 @@ fun SleepyHubMainScreen(
                                 DrawerQuickAction(
                                     icon = { Icon(Icons.Outlined.Cloud, null) },
                                     label = "Google services",
-                                    modifier = Modifier.weight(1f),
                                     onClick = {
                                         scope.launch { drawerState.close() }
                                         onOpenGmsManager()
@@ -400,6 +429,7 @@ fun SleepyHubMainScreen(
                                 items(visibleProfiles, key = { it.userId }) { profile ->
                                     ProfileDrawerRow(
                                         profile = profile,
+                                        modifier = Modifier.animateItem(),
                                         selected = profile.userId == activeUserId,
                                         onSelect = {
                                             onSelectProfile(profile.userId)
@@ -413,6 +443,7 @@ fun SleepyHubMainScreen(
                                         onTogglePinned = { onToggleProfilePinned(profile.userId, !profile.pinned) },
                                         onRename = {
                                             editingProfileId = profile.userId
+                                            profileSettingsReturnPage = "workspace"
                                             scope.launch { drawerState.close() }
                                             page = "profile-settings"
                                         },
@@ -443,7 +474,7 @@ fun SleepyHubMainScreen(
                                     onClick = { showContainerPicker = true },
                                     modifier = Modifier.weight(1f),
                                     shape = MaterialTheme.shapes.large,
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
@@ -461,7 +492,7 @@ fun SleepyHubMainScreen(
                                             Text(
                                                 "Switch container",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                color = if (container.id == activeContainerId) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
                                         Icon(Icons.Outlined.ArrowForward, contentDescription = "Choose container")
@@ -672,9 +703,10 @@ fun SleepyHubMainScreen(
         page = when (page) {
             "container-manager" -> returnToPage
             "container-settings" -> containerSettingsReturnPage
-            "container-basic", "container-background" -> "container-settings"
+            "container-basic" -> "container-settings"
             "profile-basic", "profile-background" -> "profile-settings"
-            "profile-settings", "profile-manager" -> "workspace"
+            "profile-settings" -> profileSettingsReturnPage
+            "profile-manager" -> "workspace"
             "preferences" -> "settings"
             "theme" -> "preferences"
             else -> "workspace"
@@ -729,13 +761,21 @@ private fun DrawerQuickAction(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    NavigationDrawerItem(
-        label = { Text(label, maxLines = 1) },
-        icon = icon,
-        selected = false,
+    Surface(
         onClick = onClick,
-        modifier = modifier,
-    )
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) { icon() }
+            Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -750,16 +790,17 @@ private fun ProfileDrawerRow(
     onRename: () -> Unit,
     onClone: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val rowColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-        animationSpec = tween(220),
+        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        animationSpec = tween(280),
         label = "profile-row-selection",
     )
     Box {
         Surface(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .combinedClickable(
                     onClick = onSelect,
@@ -779,7 +820,7 @@ private fun ProfileDrawerRow(
                         Text(
                             profile.name,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
+                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -839,16 +880,16 @@ private fun ContainerPickerSheet(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(containers, key = { it.id }) { container ->
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().animateItem(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
                             onClick = { onSelect(container.id) },
                             modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                             color = if (container.id == activeContainerId) {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            } else Color.Transparent,
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else MaterialTheme.colorScheme.surfaceContainerLow,
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
@@ -857,11 +898,16 @@ private fun ContainerPickerSheet(
                             ) {
                                 ContainerAvatar(container, 34.dp)
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(container.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                                    Text(
+                                        container.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (container.id == activeContainerId) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                    )
                                     Text(
                                         "${container.profileCount} profiles",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = if (container.id == activeContainerId) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                             }
@@ -898,13 +944,13 @@ private fun MoveProfileSheet(
                     Surface(
                         onClick = { if (container.id != activeContainerId) onMove(container.id) },
                         enabled = container.id != activeContainerId,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                         color = if (container.id == activeContainerId) {
-                            MaterialTheme.colorScheme.secondaryContainer
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            MaterialTheme.colorScheme.surfaceContainerLow
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().animateItem(),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
@@ -950,6 +996,7 @@ private fun ContainerManagerScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text("Containers") },
@@ -971,13 +1018,10 @@ private fun ContainerManagerScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
+            RikkaSearchField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = CircleShape,
-                label = { Text("Search containers") },
+                placeholder = "Search containers",
             )
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(filtered, key = { it.id }) { container ->
@@ -990,7 +1034,7 @@ private fun ContainerManagerScreen(
                             containerColor = if (container.id == activeContainerId) {
                                 MaterialTheme.colorScheme.primaryContainer
                             } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                MaterialTheme.colorScheme.surfaceContainerLow
                             },
                         ),
                     ) {
@@ -1094,55 +1138,6 @@ internal fun ContainerAvatar(container: ContainerItem?, size: androidx.compose.u
         uri = container?.avatarUri,
         size = size,
     )
-}
-
-@Composable
-private fun rememberUriImage(uriString: String?): ImageBitmap? {
-    val context = LocalContext.current
-    val image by produceState<ImageBitmap?>(initialValue = null, key1 = uriString) {
-        value = if (uriString.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-            try {
-                val uri = Uri.parse(uriString)
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                context.contentResolver.openInputStream(uri)?.use {
-                    BitmapFactory.decodeStream(it, null, bounds)
-                }
-                var sample = 1
-                while (bounds.outWidth / sample > 1800 || bounds.outHeight / sample > 1800) sample *= 2
-                val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                context.contentResolver.openInputStream(uri)?.use {
-                    BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                }
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
-    return image
-}
-
-@Composable
-internal fun ContainerWorkspaceBackground(
-    container: ContainerItem?,
-    modifier: Modifier = Modifier,
-) {
-    val image = rememberUriImage(container?.backgroundUri)
-    val alpha by animateFloatAsState(
-        targetValue = if (image != null) container?.backgroundOpacity ?: 0f else 0f,
-        label = "ContainerWorkspaceBackground",
-    )
-    Box(modifier = modifier.background(Color.Black)) {
-        if (image != null) {
-            Image(
-                bitmap = image,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = alpha,
-            )
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
-        }
-    }
 }
 
 @Composable

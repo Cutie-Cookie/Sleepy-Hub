@@ -1,5 +1,6 @@
 package top.niunaijun.blackboxa.view.list
 
+import top.niunaijun.blackboxa.view.main.RikkaSearchField
 import top.niunaijun.blackboxa.view.main.LargeFlexibleTopAppBar
 import android.widget.ImageView
 import androidx.compose.animation.AnimatedVisibility
@@ -112,21 +113,10 @@ fun InstalledAppPickerScreen(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedTextField(
+                RikkaSearchField(
                     value = query,
                     onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = CircleShape,
-                    label = { Text("Search apps") },
-                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Clear search")
-                            }
-                        }
-                    },
+                    placeholder = "Search apps",
                 )
 
                 Text(
@@ -183,9 +173,9 @@ fun InstalledAppPickerScreen(
                                     enabled = !app.isInstall,
                                     shape = MaterialTheme.shapes.large,
                                     color = if (app.isInstall) {
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f)
+                                        MaterialTheme.colorScheme.surfaceContainerLowest
                                     } else {
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+                                        MaterialTheme.colorScheme.surfaceContainerLow
                                     },
                                     modifier = Modifier.animateItem().fillMaxWidth(),
                                 ) {

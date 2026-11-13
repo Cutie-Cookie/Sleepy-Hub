@@ -351,24 +351,41 @@ class AppsRepository {
                 File(source).isFile -> File(source)
                 else -> null
             }
+            temporaryApk = sourceFile?.takeIf {
+                it.absolutePath.contains("/cache/apk-imports/")
+            }
+            val expectsFile = parsedUri.scheme == "file" || source.startsWith("/")
+            if (expectsFile && sourceFile == null) {
+                resultLiveData.postValue("The selected APK file could not be found.")
+                return
+            }
+            if (sourceFile != null && (!sourceFile.isFile || !sourceFile.canRead() || sourceFile.length() == 0L)) {
+                resultLiveData.postValue("The selected APK file is empty or cannot be read.")
+                return
+            }
 
-            // Never allow Sleepy Hub to install itself into its own virtual container.
-            val archivePackageName = sourceFile?.takeIf { it.isFile }?.let { file ->
+            val archiveInfo = sourceFile?.let { file ->
                 runCatching {
-                    BlackBoxCore.getPackageManager().getPackageArchiveInfo(file.absolutePath, 0)?.packageName
+                    BlackBoxCore.getPackageManager().getPackageArchiveInfo(file.absolutePath, 0)
                 }.getOrNull()
             }
+            if (sourceFile != null && archiveInfo == null) {
+                resultLiveData.postValue("This file is not a readable single APK. Choose an .apk file rather than an XAPK or APK bundle.")
+                return
+            }
+
+            if (userId < 0 || blackBoxCore.users.none { it.id == userId }) {
+                resultLiveData.postValue("The selected profile is no longer available. Switch to a profile and try again.")
+                return
+            }
+
+            // Never allow Sleepy Hub to install itself into its own virtual container.
+            val archivePackageName = archiveInfo?.packageName
             if (source == hostPackageName || archivePackageName == hostPackageName) {
                 resultLiveData.postValue(
                     "Sleepy Hub cannot be installed inside its own virtual profile."
                 )
                 return
-            }
-
-            if (sourceFile != null) {
-                temporaryApk = sourceFile.takeIf {
-                    it.absolutePath.contains("/cache/apk-imports/")
-                }
             }
 
             Log.i(

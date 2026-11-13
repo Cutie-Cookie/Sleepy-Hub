@@ -1,5 +1,11 @@
 package top.niunaijun.blackboxa.view.apps
 
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -35,6 +41,7 @@ class AppsFragment : Fragment() {
     private var isLoading by androidx.compose.runtime.mutableStateOf(false)
     private var serviceCallbackRegistered = false
     private var pendingInstallSource: String? = null
+    private var installErrorMessage by androidx.compose.runtime.mutableStateOf<String?>(null)
     private val serviceAvailableCallback = Runnable {
         Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
         if (isAdded && ::viewModel.isInitialized) {
@@ -74,20 +81,32 @@ class AppsFragment : Fragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                SleepyHubTheme {
+                SleepyHubTheme(workspace = true) {
                     val apps by viewModel.appsLiveData.observeAsState(emptyList())
-                    AppGridScreen(
-                        apps = apps,
-                        columns = gridColumns,
-                        loading = isLoading,
-                        onLaunch = ::launchApp,
-                        onAction = ::handleAppAction,
-                        onReorder = { viewModel.updateApkOrder(userID, it) },
-                        onScrollChange = {
-                            isWorkspaceScrolled = it
-                            (activity as? MainActivity)?.onWorkspaceScrollChanged(userID, it)
-                        },
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AppGridScreen(
+                            apps = apps,
+                            columns = gridColumns,
+                            loading = isLoading,
+                            onLaunch = ::launchApp,
+                            onAction = ::handleAppAction,
+                            onReorder = { viewModel.updateApkOrder(userID, it) },
+                            onScrollChange = {
+                                isWorkspaceScrolled = it
+                                (activity as? MainActivity)?.onWorkspaceScrollChanged(userID, it)
+                            },
+                        )
+                        installErrorMessage?.let { message ->
+                            AlertDialog(
+                                onDismissRequest = { installErrorMessage = null },
+                                title = { Text(if (message.contains("install", ignoreCase = true)) "Couldn't install app" else "Couldn't complete action") },
+                                text = { Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                confirmButton = {
+                                    TextButton(onClick = { installErrorMessage = null }) { Text("OK") }
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -102,7 +121,12 @@ class AppsFragment : Fragment() {
         viewModel.resultLiveData.observe(viewLifecycleOwner) { result ->
             if (!result.isNullOrBlank()) {
                 isLoading = false
-                Toast.makeText(requireContext(), result, Toast.LENGTH_LONG).show()
+                if (result.contains("failed", ignoreCase = true)) {
+                    installErrorMessage = result
+                } else {
+                    Toast.makeText(requireContext(), result, Toast.LENGTH_LONG).show()
+                }
+                viewModel.resultLiveData.value = null
                 viewModel.getInstalledApps(userID)
                 (activity as? MainActivity)?.scanUser()
             }
@@ -169,6 +193,7 @@ class AppsFragment : Fragment() {
             return
         }
         try {
+            installErrorMessage = null
             isLoading = true
             viewModel.install(source, userID)
         } catch (e: Exception) {

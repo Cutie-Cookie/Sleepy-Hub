@@ -1,5 +1,11 @@
 package top.niunaijun.blackboxa.view.main
 
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.Icons
 import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.compose.animation.core.animateFloatAsState
@@ -74,7 +80,7 @@ fun CardGroup(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
             Column(content = content)
         }
@@ -105,7 +111,7 @@ fun CardGroupItem(
     val rowModifier = if (onClick != null) {
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = enabled, onClick = onClick)
     } else {
         modifier.fillMaxWidth()
@@ -215,7 +221,7 @@ fun LargeFlexibleTopAppBar(
 @Composable
 fun GooglePlayBadge(
     modifier: Modifier = Modifier,
-    badgeSize: Dp = 16.dp,
+    size: Dp = 16.dp,
 ) {
     val context = LocalContext.current
     val playIcon: Drawable? = remember(context) {
@@ -228,12 +234,12 @@ fun GooglePlayBadge(
         AndroidView(
             factory = { ImageView(it).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
             update = { it.setImageDrawable(playIcon) },
-            modifier = modifier.size(badgeSize).clip(CircleShape),
+            modifier = modifier.size(size).clip(CircleShape),
         )
     } else {
-        Canvas(modifier = modifier.size(badgeSize)) {
-            val w = size.width
-            val h = size.height
+        Canvas(modifier = modifier.size(size)) {
+            val w = this.size.width
+            val h = this.size.height
             val blue = Path().apply {
                 moveTo(w * 0.12f, h * 0.08f)
                 lineTo(w * 0.58f, h * 0.50f)
@@ -264,6 +270,39 @@ fun GooglePlayBadge(
             drawPath(green, Color(0xFF34A853))
         }
     }
+}
+
+@Composable
+fun RikkaSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        shape = CircleShape,
+        placeholder = { Text(placeholder) },
+        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+        trailingIcon = if (value.isNotBlank()) {
+            {
+                IconButton(onClick = { onValueChange("") }) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Clear search")
+                }
+            }
+        } else null,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceBright,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+        ),
+    )
 }
 
 @Composable

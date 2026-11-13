@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import sh.calvin.reorderable.reorderable
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 import top.niunaijun.blackboxa.bean.AppInfo
@@ -136,7 +137,7 @@ fun AppGridScreen(
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns.coerceIn(3, 5)),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().reorderable(reorderableState),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 start = 12.dp,
                 top = 12.dp,

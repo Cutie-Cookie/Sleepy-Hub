@@ -1,5 +1,6 @@
 package top.niunaijun.blackboxa.view.fake
 
+import top.niunaijun.blackboxa.view.main.RikkaSearchField
 import top.niunaijun.blackboxa.view.main.LargeFlexibleTopAppBar
 import android.widget.ImageView
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -106,25 +107,15 @@ fun FakeLocationScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
+            RikkaSearchField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text("Search virtual apps") },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Outlined.Close, contentDescription = "Clear search")
-                        }
-                    }
-                },
+                placeholder = "Search virtual apps",
             )
 
             Surface(
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -134,13 +125,13 @@ fun FakeLocationScreen(
                     Icon(
                         Icons.Outlined.Info,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 1.dp),
                     )
                     Text(
-                        "Choose an app, tap a point on the map, then press “Use this location”. Only that app in this profile receives the fake coordinates; your phone’s real GPS and other apps stay unchanged. Long-press an app with a location set to turn it off.",
+                        "1. Choose an app from this profile.  2. Tap a place on the map to drop the pin, then press “Use this location”.  3. That app, in this profile only, will see the chosen coordinates instead of its real location. Your phone’s GPS and other apps are not changed. To turn it off later, long-press the app and choose Disable.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -173,13 +164,13 @@ fun FakeLocationScreen(
                                 app.fakeLocation != null &&
                                     app.fakeLocationPattern != BLocationManager.CLOSE_MODE
                             Card(
-                                modifier = Modifier.combinedClickable(
+                                modifier = Modifier.animateItem().combinedClickable(
                                     onClick = { onSelect(app) },
                                     onLongClick = { if (hasFakeLocation) appToDisable = app },
                                 ),
                                 shape = MaterialTheme.shapes.large,
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f),
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                                 ),
                             ) {
                                 Row(
@@ -219,7 +210,7 @@ fun FakeLocationScreen(
                                             if (hasFakeLocation) {
                                                 "${app.fakeLocation!!.latitude}, ${app.fakeLocation!!.longitude}"
                                             } else {
-                                                "Real location"
+                                                "No fake location · tap to set"
                                             },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (hasFakeLocation) {

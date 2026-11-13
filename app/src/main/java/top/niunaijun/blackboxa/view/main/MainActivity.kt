@@ -37,6 +37,9 @@ class MainActivity : BaseActivity() {
     private lateinit var viewPager: ViewPager2
     private lateinit var pagerAdapter: ViewPagerAdapter
     private val profileAppCounts = mutableMapOf<Int, Int>()
+    private var pagerUpdateGeneration = 0
+    private var pagerDataUpdateInProgress = false
+    private var pendingPagerUserId: Int? = null
 
     var activeUserId by mutableIntStateOf(-1)
         private set
@@ -194,10 +197,16 @@ class MainActivity : BaseActivity() {
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
+                    if (pagerDataUpdateInProgress) return
                     val fragment = pagerAdapter.fragmentAt(position) ?: return
-                    activeUserId = fragment.userID
+                    val userId = fragment.userID
+                    if (ProfileAppearance.profileContainer(userId) != activeContainerId) return
+                    val pendingUserId = pendingPagerUserId
+                    if (pendingUserId != null && pendingUserId != userId) return
+                    pendingPagerUserId = null
+                    activeUserId = userId
                     workspaceScrolled = fragment.isWorkspaceScrolled
-                    ProfileAppearance.saveLastProfileId(activeContainerId, activeUserId)
+                    ProfileAppearance.saveLastProfileId(activeContainerId, userId)
                     refreshProfiles()
                 }
             }
@@ -221,29 +230,36 @@ class MainActivity : BaseActivity() {
                 )
             )
 
-        pagerAdapter.replaceData(members.map { AppsFragment.newInstance(it.id) })
-
         val selected = preferredUserId?.takeIf { id -> members.any { it.id == id } }
             ?: ProfileAppearance.lastProfileId(containerId).takeIf { id -> members.any { it.id == id } }
             ?: ProfileAppearance.lastProfileId().takeIf { id -> members.any { it.id == id } }
             ?: members.firstOrNull()?.id
+
+        // FragmentStateAdapter can emit onPageSelected for the old numeric index
+        // while its stable item IDs are being replaced. Ignore those callbacks until
+        // the new target page has been selected and the adapter has settled.
+        val generation = ++pagerUpdateGeneration
+        pagerDataUpdateInProgress = true
+        pendingPagerUserId = selected
         activeUserId = selected ?: -1
+
+        pagerAdapter.replaceData(members.map { AppsFragment.newInstance(it.id) })
         if (selected != null) ProfileAppearance.saveLastProfileId(containerId, selected)
         refreshProfiles()
         val selectedIndex = selected?.let(pagerAdapter::indexOfUserId) ?: -1
         workspaceScrolled = pagerAdapter.fragmentAt(selectedIndex)?.isWorkspaceScrolled ?: false
 
-        // Wait until FragmentStateAdapter has observed the new item ids before selecting.
         viewPager.post {
-            val index = selected?.let(pagerAdapter::indexOfUserId) ?: -1
-            if (selected != null &&
-                activeContainerId == containerId &&
-                activeUserId == selected &&
-                index >= 0 &&
-                viewPager.adapter === pagerAdapter
-            ) {
-                viewPager.setCurrentItem(index, false)
+            if (generation != pagerUpdateGeneration) return@post
+            if (activeContainerId == containerId && activeUserId == selected) {
+                val index = selected?.let(pagerAdapter::indexOfUserId) ?: -1
+                if (index >= 0 && viewPager.adapter === pagerAdapter) {
+                    viewPager.setCurrentItem(index, false)
+                    workspaceScrolled = pagerAdapter.fragmentAt(index)?.isWorkspaceScrolled ?: false
+                }
             }
+            pagerDataUpdateInProgress = false
+            pendingPagerUserId = null
         }
     }
 
@@ -280,8 +296,6 @@ class MainActivity : BaseActivity() {
                     id = container.id,
                     name = container.name,
                     avatarUri = container.avatarUri,
-                    backgroundUri = container.backgroundUri,
-                    backgroundOpacity = container.backgroundOpacity,
                     profileCount = users.count {
                         ProfileAppearance.profileContainer(it.id) == container.id
                     },
@@ -310,21 +324,22 @@ class MainActivity : BaseActivity() {
         if (ProfileAppearance.profileContainer(userId) != activeContainerId) return
         val index = pagerAdapter.indexOfUserId(userId)
         if (index < 0) {
-            // Recover from a stale pager list instead of silently ignoring the tap.
             loadContainerProfiles(activeContainerId, userId)
             return
         }
         activeUserId = userId
+        pendingPagerUserId = userId
         workspaceScrolled = pagerAdapter.fragmentAt(index)?.isWorkspaceScrolled ?: false
         ProfileAppearance.saveLastProfileId(activeContainerId, userId)
         refreshProfiles()
-        // Switch immediately on the UI thread; keep a posted sync as a guard for
-        // the rare case where FragmentStateAdapter is still completing a layout pass.
         viewPager.setCurrentItem(index, true)
         viewPager.post {
             val currentIndex = pagerAdapter.indexOfUserId(userId)
-            if (activeUserId == userId && currentIndex >= 0 && viewPager.currentItem != currentIndex) {
-                viewPager.setCurrentItem(currentIndex, true)
+            if (activeUserId == userId && currentIndex >= 0) {
+                if (viewPager.currentItem != currentIndex) {
+                    viewPager.setCurrentItem(currentIndex, true)
+                }
+                if (viewPager.currentItem == currentIndex) pendingPagerUserId = null
             }
         }
     }
@@ -484,14 +499,13 @@ class MainActivity : BaseActivity() {
     fun updateContainer(updated: ContainerItem) {
         val current = ProfileAppearance.containers().firstOrNull { it.id == updated.id } ?: return
         if (current.avatarUri != updated.avatarUri) releaseContainerUri(current.avatarUri)
-        if (current.backgroundUri != updated.backgroundUri) releaseContainerUri(current.backgroundUri)
         ProfileAppearance.updateContainer(
             HubContainer(
                 id = current.id,
                 name = updated.name.trim().ifBlank { current.name },
                 avatarUri = updated.avatarUri,
-                backgroundUri = updated.backgroundUri,
-                backgroundOpacity = updated.backgroundOpacity.coerceIn(0f, 1f),
+                backgroundUri = null,
+                backgroundOpacity = 0.32f,
             )
         )
         refreshProfiles()
@@ -517,7 +531,6 @@ class MainActivity : BaseActivity() {
 
             val removed = allContainers.firstOrNull { it.id == containerId }
             releaseContainerUri(removed?.avatarUri)
-            releaseContainerUri(removed?.backgroundUri)
             ProfileAppearance.removeContainer(containerId)
             val target = existingTarget ?: ProfileAppearance.createContainer("Default")
 
@@ -599,8 +612,11 @@ class MainActivity : BaseActivity() {
     }
 
     fun openInstallPicker() {
-        if (activeUserId < 0) {
-            Toast.makeText(this, "Add a profile before installing apps", Toast.LENGTH_SHORT).show()
+        val activeProfileExists = activeUserId >= 0 &&
+            BlackBoxCore.get().users.any { it.id == activeUserId } &&
+            ProfileAppearance.profileContainer(activeUserId) == activeContainerId
+        if (!activeProfileExists) {
+            Toast.makeText(this, "Create or select a profile before adding apps.", Toast.LENGTH_LONG).show()
             return
         }
         try {
@@ -613,8 +629,11 @@ class MainActivity : BaseActivity() {
     }
 
     fun openFakeLocation() {
-        if (activeUserId < 0) {
-            Toast.makeText(this, "Select a profile before setting a fake location", Toast.LENGTH_SHORT).show()
+        val activeProfileExists = activeUserId >= 0 &&
+            BlackBoxCore.get().users.any { it.id == activeUserId } &&
+            ProfileAppearance.profileContainer(activeUserId) == activeContainerId
+        if (!activeProfileExists) {
+            Toast.makeText(this, "Select a profile before setting a fake location.", Toast.LENGTH_LONG).show()
             return
         }
         startActivity(Intent(this, FakeManagerActivity::class.java).putExtra("userID", activeUserId))

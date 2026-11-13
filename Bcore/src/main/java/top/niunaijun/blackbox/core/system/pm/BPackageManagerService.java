@@ -716,7 +716,7 @@ public class BPackageManagerService extends IBPackageManagerService.Stub impleme
             onPackageInstalled(bPackageSettings.pkg.packageName, userId);
             return result;
         } catch (Throwable t) {
-            t.printStackTrace();
+            Slog.e(TAG, "installPackageAsUserLocked failed for user=" + userId + " source=" + file, t);
             String reason = t.getMessage();
             if (reason == null || reason.length() == 0) {
                 reason = t.getClass().getSimpleName();
@@ -738,7 +738,7 @@ public class BPackageManagerService extends IBPackageManagerService.Stub impleme
             PackageParserCompat.collectCertificates(parser, aPackage, 0);
             return aPackage;
         } catch (Throwable t) {
-            t.printStackTrace();
+            Slog.e(TAG, "parserApk failed for " + file, t);
         }
         return null;
     }

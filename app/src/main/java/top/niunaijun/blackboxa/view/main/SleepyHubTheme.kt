@@ -23,7 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import top.niunaijun.blackboxa.app.ProfileAppearance
 
 @Composable
-fun SleepyHubTheme(content: @Composable () -> Unit) {
+fun SleepyHubTheme(workspace: Boolean = false, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val view = LocalView.current
     val themeRevision = ProfileAppearance.themeRevision
@@ -87,15 +87,17 @@ fun SleepyHubTheme(content: @Composable () -> Unit) {
         val activity = context as? Activity
         if (activity != null && !view.isInEditMode) {
             WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-            activity.window.statusBarColor = colorScheme.surface.toArgb()
+            activity.window.statusBarColor = if (workspace) AndroidColor.TRANSPARENT else colorScheme.surface.toArgb()
             activity.window.navigationBarColor = AndroidColor.TRANSPARENT
-            activity.window.navigationBarDividerColor = AndroidColor.TRANSPARENT
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                activity.window.navigationBarDividerColor = AndroidColor.TRANSPARENT
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 activity.window.isNavigationBarContrastEnforced = false
             }
             val controller = WindowCompat.getInsetsController(activity.window, view)
-            controller.isAppearanceLightStatusBars = !darkTheme
-            controller.isAppearanceLightNavigationBars = !darkTheme
+            controller.isAppearanceLightStatusBars = !darkTheme && !workspace
+            controller.isAppearanceLightNavigationBars = !darkTheme && !workspace
         }
     }
 
