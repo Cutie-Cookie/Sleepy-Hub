@@ -46,9 +46,9 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 - The previous source head is build-verified, but the current candidate is not yet build-verified. No runtime behavior, storage isolation or visual parity is claimed until the current APK and device checks pass.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
-## Next phone test session — current-head APK only
+## Next phone test session — after current candidate passes
 
-**Use only the current-head Preview APK for this test session.** The verified APK was built from exact source head `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` in successful run [43424012176](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43424012176). APK SHA-256: `4f3bbdc528a24797eb0b8654776155c40a68c7e1c463a1e2e35668510998e2d0`. Do not use the older `dae5f46` artifact for this checklist.
+**Wait for run 43437776339 to pass before installing the new candidate.** The last successful APK was built from older head cd917c58c7d4f8baa521f6839eafdb318cb40fa7; it does not contain the new identity, folder, lifecycle or UI fixes. Do not use that older APK for the next test session.
 
 ### Before testing
 - [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.

@@ -73,7 +73,7 @@ A successful CI build proves compilation and artifact upload only. It does not p
 1. **Device smoke testing:** record Android version/device class and test installation, first launch, app cloning, permissions, notifications, and normal network access. Do not write private device identifiers.
 2. **Documentation drift:** root `README.md`, `Docs.md`, and `RELEASE_NOTES.md` still contain upstream BlackBox/NewBlackbox names and/or old VPN and log-upload descriptions. Review and replace them deliberately.
 3. **Target SDK review:** target SDK is currently 28. Evaluate a target-SDK upgrade separately, with a compatibility and permission test plan; do not mix it into the UI redesign.
-4. **UI redesign:** implementation is underway on `sleepyhub/ui-rikkahub-inspired`. Follow [UI roadmap](UI_ROADMAP.md) and [UI implementation plan](UI_IMPLEMENTATION_PLAN.md).
+4. **UI redesign:** active implementation and bug fixes are on `sleepyhub/bugfix-install-switch-polish`. Follow [the living development plan](DEVELOPMENT_PLAN.md), [UI roadmap](UI_ROADMAP.md), and [RikkaHub source audit](RIKKAHUB_SOURCE_AUDIT.md).
 5. **Release readiness:** the current verified artifact is a debug build, not a signed production/release package.
 
 ## Source-of-truth order
