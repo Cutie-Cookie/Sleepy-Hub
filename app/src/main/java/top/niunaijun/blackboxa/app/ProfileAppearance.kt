@@ -164,6 +164,7 @@ object ProfileAppearance {
 
     fun removeContainer(containerId: String) {
         saveContainers(containers().filterNot { it.id == containerId })
+        preferences.edit { remove("last_profile_id_$containerId") }
         preferences.edit {
             preferences.all.keys
                 .filter { it.startsWith("profile_container_") }
