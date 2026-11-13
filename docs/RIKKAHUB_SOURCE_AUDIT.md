@@ -22,9 +22,11 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Latest inspected feature commit: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
 - Latest completed build before the newest fix: [43414502981 — successful ARM64 Preview debug build](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43414502981), for commit `9bd8b7b6c0adcaa21f00a51d3efcf12b548ffe70`.
-- Current build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — in progress at the time of this update, for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Current build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — **successful** for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Artifact: `sleepy-hub-arm64-preview-debug` (ID `14032447856`), APK `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, 26,038,134 bytes.
+- APK SHA-256: `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
+- CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
-- The current build workflow checks package identity, label, signing and ARM64 native-library presence before uploading.
 - The APK has not been installed or interaction-tested on a physical Android device.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
@@ -41,7 +43,7 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 - Rounded search fields and consistent grouped surfaces across profile management, app picking, fake location, settings, and Google services.
 - Transparent system navigation bars with safe-drawing insets retained on the actual content. Bottom controls remain padded above the system navigation area.
 - Slower page transitions and animated list placement/color changes.
-- APK/profile validation and a detailed failure dialog for installation actions, plus additional package-parser/install logging. These diagnostics do not yet establish that the reported app-install failure is fixed.
+- APK/profile validation and a detailed failure dialog for installation actions, plus additional package-parser/install logging. Source comparison also found and corrected the external-APK path dispatch: filesystem paths now use the File overload instead of the package-name overload. The installed-app clone path and actual device installation result remain unverified.
 
 ### Verification still required
 
