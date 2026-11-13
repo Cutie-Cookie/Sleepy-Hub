@@ -33,10 +33,11 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
         // Package code is shared by all virtual users. When the parser source
         // already points at the shared app directory (for example while cloning a
         // profile), deleting that directory would also delete the APK being installed.
-        File sourceApk = new File(ps.pkg.baseCodePath);
+        File sourceApk = ps.pkg.baseCodePath == null ? null : new File(ps.pkg.baseCodePath);
         File sharedAppDir = BEnvironment.getAppDir(ps.pkg.packageName);
         String sharedAppPath = sharedAppDir.getAbsolutePath() + File.separator;
-        boolean sourceAlreadyStored = sourceApk.isFile()
+        boolean sourceAlreadyStored = sourceApk != null
+                && sourceApk.isFile()
                 && sourceApk.getAbsolutePath().startsWith(sharedAppPath);
 
         if (!sourceAlreadyStored) {
