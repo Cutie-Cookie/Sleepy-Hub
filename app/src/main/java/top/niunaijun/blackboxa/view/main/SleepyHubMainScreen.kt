@@ -15,8 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -204,12 +202,11 @@ fun SleepyHubMainScreen(
     val activeContainer = containers.firstOrNull { it.id == activeContainerId }
 
     AnimatedContent(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         targetState = page,
         transitionSpec = {
-            (fadeIn(animationSpec = tween(340)) +
-                slideInHorizontally(animationSpec = tween(300)) { width -> width / 18 }) togetherWith
-                (fadeOut(animationSpec = tween(260)) +
-                    slideOutHorizontally(animationSpec = tween(200)) { width -> -width / 24 })
+            fadeIn(animationSpec = tween(180)) togetherWith
+                fadeOut(animationSpec = tween(140))
         },
         label = "sleepy-hub-page-transition",
     ) { currentPage ->

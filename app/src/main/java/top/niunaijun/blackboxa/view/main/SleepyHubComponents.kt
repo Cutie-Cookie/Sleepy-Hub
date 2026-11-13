@@ -223,55 +223,18 @@ fun GooglePlayBadge(
     modifier: Modifier = Modifier,
     size: Dp = 16.dp,
 ) {
-    val context = LocalContext.current
-    val playIcon: Drawable? = remember(context) {
-        runCatching {
-            context.packageManager.getApplicationIcon("com.android.vending")
-        }.getOrNull()
-    }
-
-    if (playIcon != null) {
-        AndroidView(
-            factory = { ImageView(it).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
-            update = { it.setImageDrawable(playIcon) },
-            modifier = modifier.size(size).clip(CircleShape),
-        )
-    } else {
-        Canvas(modifier = modifier.size(size)) {
-            val w = this.size.width
-            val h = this.size.height
-            val blue = Path().apply {
-                moveTo(w * 0.12f, h * 0.08f)
-                lineTo(w * 0.58f, h * 0.50f)
-                lineTo(w * 0.12f, h * 0.92f)
-                close()
-            }
-            val red = Path().apply {
-                moveTo(w * 0.12f, h * 0.08f)
-                lineTo(w * 0.88f, h * 0.42f)
-                lineTo(w * 0.60f, h * 0.50f)
-                close()
-            }
-            val yellow = Path().apply {
-                moveTo(w * 0.60f, h * 0.50f)
-                lineTo(w * 0.88f, h * 0.42f)
-                lineTo(w * 0.88f, h * 0.58f)
-                close()
-            }
-            val green = Path().apply {
-                moveTo(w * 0.12f, h * 0.92f)
-                lineTo(w * 0.60f, h * 0.50f)
-                lineTo(w * 0.88f, h * 0.58f)
-                close()
-            }
-            drawPath(blue, Color(0xFF4285F4))
-            drawPath(red, Color(0xFFEA4335))
-            drawPath(yellow, Color(0xFFFBBC04))
-            drawPath(green, Color(0xFF34A853))
+    Canvas(modifier = modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val triangle = Path().apply {
+            moveTo(w * 0.16f, h * 0.08f)
+            lineTo(w * 0.88f, h * 0.50f)
+            lineTo(w * 0.16f, h * 0.92f)
+            close()
         }
+        drawPath(triangle, Color.White)
     }
 }
-
 @Composable
 fun RikkaSearchField(
     value: String,

@@ -31,7 +31,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Launch
-import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,7 +65,6 @@ enum class AppAction {
     INFO,
     CLEAR_CACHE,
     CLEAR_DATA,
-    STOP,
     SHORTCUT,
     UNINSTALL,
 }
@@ -112,7 +110,15 @@ fun AppGridScreen(
             contentAlignment = Alignment.Center,
         ) {
             if (loading) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.size(14.dp))
+                    Text(
+                        "Loading apps…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.76f),
+                    )
+                }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
@@ -148,6 +154,7 @@ fun AppGridScreen(
         ) {
             items(displayedApps, key = { it.packageName }) { app ->
                 ReorderableItem(reorderableState, key = app.packageName) { isDragging ->
+                    var suppressNextClick by remember(app.packageName) { mutableStateOf(false) }
                     Column(
                         modifier = Modifier
                             .animateItem()
@@ -155,6 +162,7 @@ fun AppGridScreen(
                             .longPressDraggableHandle(
                                 onDragStarted = { didReorder = false },
                                 onDragStopped = {
+                                    suppressNextClick = true
                                     if (didReorder) {
                                         onReorder(displayedApps)
                                     } else {
@@ -162,7 +170,13 @@ fun AppGridScreen(
                                     }
                                 },
                             )
-                            .clickable { onLaunch(app) }
+                            .clickable {
+                                if (suppressNextClick) {
+                                    suppressNextClick = false
+                                } else {
+                                    onLaunch(app)
+                                }
+                            }
                             .scale(if (isDragging) 1.04f else 1f)
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -271,10 +285,6 @@ fun AppGridScreen(
                     selectedApp = null
                     confirmingApp = app
                     confirmingAction = AppAction.CLEAR_DATA
-                }
-                AppActionRow(Icons.Outlined.Stop, "Stop") {
-                    selectedApp = null
-                    onAction(app, AppAction.STOP)
                 }
                 AppActionRow(Icons.Outlined.Launch, "Create shortcut") {
                     selectedApp = null

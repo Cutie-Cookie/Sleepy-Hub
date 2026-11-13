@@ -39,7 +39,7 @@ class AppsFragment : Fragment() {
 
     private lateinit var viewModel: AppsViewModel
     private var gridColumns by mutableIntStateOf(4)
-    private var isLoading by androidx.compose.runtime.mutableStateOf(false)
+    private var isLoading by androidx.compose.runtime.mutableStateOf(true)
     private var serviceCallbackRegistered = false
     private var pendingInstallSource: String? = null
     private var installErrorMessage by androidx.compose.runtime.mutableStateOf<String?>(null)
@@ -224,10 +224,6 @@ class AppsFragment : Fragment() {
                 AppAction.CLEAR_DATA -> {
                     isLoading = true
                     viewModel.clearApkData(info.packageName, userID)
-                }
-                AppAction.STOP -> {
-                    BlackBoxCore.get().stopPackage(info.packageName, userID)
-                    Toast.makeText(requireContext(), "Stopped ${info.name}", Toast.LENGTH_SHORT).show()
                 }
                 AppAction.SHORTCUT -> {
                     ShortcutUtil.createShortcut(requireContext(), userID, info)

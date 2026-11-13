@@ -235,7 +235,7 @@ object ProfileAppearance {
     fun profileName(userId: Int, index: Int = userId): String {
         return AppManager.mRemarkSharedPreferences.getString("Remark$userId", null)
             ?.takeIf { it.isNotBlank() }
-            ?: "Profile ${index + 1}"
+            ?: "New Profile"
     }
 
     fun setProfileName(userId: Int, name: String) {
@@ -323,6 +323,12 @@ object ProfileAppearance {
 
     fun setUseAmoledDarkMode(enabled: Boolean) {
         preferences.edit { putBoolean("amoled_dark_mode", enabled) }
+    }
+
+    fun autoStopIdleApps(): Boolean = preferences.getBoolean("auto_stop_idle_apps", true)
+
+    fun setAutoStopIdleApps(enabled: Boolean) {
+        preferences.edit { putBoolean("auto_stop_idle_apps", enabled) }
     }
 
     fun appGridColumns(): Int = preferences.getInt("app_grid_columns", 4).coerceIn(3, 5)

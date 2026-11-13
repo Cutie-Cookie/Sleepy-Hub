@@ -11,8 +11,8 @@ import java.util.List;
 
 import black.android.os.BRServiceManager;
 import black.com.android.internal.telephony.BRITelephonyStub;
-import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.app.BActivityThread;
+import top.niunaijun.blackbox.core.env.BUserIdentifiers;
 import top.niunaijun.blackbox.entity.location.BCell;
 import top.niunaijun.blackbox.fake.frameworks.BLocationManager;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
@@ -50,7 +50,7 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
 
 
-            return Md5Utils.md5(BlackBoxCore.getHostPkg());
+            return BUserIdentifiers.getImei(BActivityThread.getUserId());
         }
     }
 
@@ -60,7 +60,7 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
 
 
-            return Md5Utils.md5(BlackBoxCore.getHostPkg());
+            return BUserIdentifiers.getImei(BActivityThread.getUserId());
         }
     }
 
@@ -68,9 +68,7 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
     public static class GetMeidForSlot extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-
-
-            return Md5Utils.md5(BlackBoxCore.getHostPkg());
+            return BUserIdentifiers.getMeid(BActivityThread.getUserId());
         }
     }
 
@@ -95,7 +93,7 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
     public static class GetSubscriberId extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return Md5Utils.md5(BlackBoxCore.getHostPkg());
+            return BUserIdentifiers.getSubscriberId(BActivityThread.getUserId());
         }
     }
 
@@ -103,7 +101,15 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
     public static class GetDeviceIdWithFeature extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return Md5Utils.md5(BlackBoxCore.getHostPkg());
+            return BUserIdentifiers.getImei(BActivityThread.getUserId());
+        }
+    }
+
+    @ProxyMethod("getSimSerialNumber")
+    public static class GetSimSerialNumber extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) {
+            return BUserIdentifiers.getSimSerial(BActivityThread.getUserId());
         }
     }
 

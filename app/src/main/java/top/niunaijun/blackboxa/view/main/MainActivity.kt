@@ -191,6 +191,7 @@ class MainActivity : BaseActivity() {
         viewPager = ViewPager2(this).apply {
             id = android.view.View.generateViewId()
             offscreenPageLimit = 1
+            isUserInputEnabled = false
         }
         pagerAdapter = ViewPagerAdapter(this)
         viewPager.adapter = pagerAdapter
@@ -341,12 +342,12 @@ class MainActivity : BaseActivity() {
         workspaceScrolled = pagerAdapter.fragmentAt(index)?.isWorkspaceScrolled ?: false
         ProfileAppearance.saveLastProfileId(activeContainerId, userId)
         refreshProfiles()
-        viewPager.setCurrentItem(index, true)
+        viewPager.setCurrentItem(index, false)
         viewPager.post {
             val currentIndex = pagerAdapter.indexOfUserId(userId)
             if (activeUserId == userId && currentIndex >= 0) {
                 if (viewPager.currentItem != currentIndex) {
-                    viewPager.setCurrentItem(currentIndex, true)
+                    viewPager.setCurrentItem(currentIndex, false)
                 }
                 if (viewPager.currentItem == currentIndex) pendingPagerUserId = null
             }

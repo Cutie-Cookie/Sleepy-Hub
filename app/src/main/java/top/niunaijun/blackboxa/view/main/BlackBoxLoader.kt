@@ -1,7 +1,10 @@
 package top.niunaijun.blackboxa.view.main
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
@@ -9,6 +12,7 @@ import top.niunaijun.blackbox.app.BActivityThread
 import top.niunaijun.blackbox.app.configuration.AppLifecycleCallback
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
 import top.niunaijun.blackboxa.app.App
+import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.app.rocker.RockerManager
 import top.niunaijun.blackboxa.biz.cache.AppSharedPreferenceDelegate
 
@@ -20,6 +24,41 @@ class BlackBoxLoader {
     private var mDaemonEnable by AppSharedPreferenceDelegate(App.getContext(), false)
     private var mShowShortcutPermissionDialog by AppSharedPreferenceDelegate(App.getContext(), true)
     private var mDisableFlagSecure by AppSharedPreferenceDelegate(App.getContext(), false)
+    private val idleStopHandler = Handler(Looper.getMainLooper())
+    private val pendingIdleStops = mutableMapOf<String, Runnable>()
+
+    fun cancelPendingIdleStops() {
+        pendingIdleStops.values.forEach(idleStopHandler::removeCallbacks)
+        pendingIdleStops.clear()
+    }
+
+    private fun idleStopKey(activity: Activity): String =
+        "${BActivityThread.getUserId()}:${activity.packageName}"
+
+    private fun cancelIdleStop(activity: Activity) {
+        pendingIdleStops.remove(idleStopKey(activity))?.let(idleStopHandler::removeCallbacks)
+    }
+
+    private fun scheduleIdleStop(activity: Activity) {
+        if (!ProfileAppearance.autoStopIdleApps()) return
+        val packageName = activity.packageName
+        if (packageName == BlackBoxCore.getHostPkg()) return
+        val userId = BActivityThread.getUserId()
+        val key = "$userId:$packageName"
+        pendingIdleStops.remove(key)?.let(idleStopHandler::removeCallbacks)
+        val task = Runnable {
+            pendingIdleStops.remove(key)
+            if (!ProfileAppearance.autoStopIdleApps()) return@Runnable
+            try {
+                BlackBoxCore.get().stopPackage(packageName, userId)
+                Log.i(TAG, "Automatically stopped idle virtual app $packageName for profile $userId")
+            } catch (error: Exception) {
+                Log.w(TAG, "Could not auto-stop idle app $packageName for profile $userId", error)
+            }
+        }
+        pendingIdleStops[key] = task
+        idleStopHandler.postDelayed(task, 60_000L)
+    }
 
     fun hideRoot(): Boolean {
         return try {
@@ -149,6 +188,7 @@ class BlackBoxLoader {
                                                 TAG,
                                                 "afterApplicationOnCreate: pkg $packageName, processName $processName"
                                         )
+                                        application?.registerActivityLifecycleCallbacks(this)
                                         RockerManager.init(application, userId)
                                     } catch (e: Exception) {
                                         Log.e(
@@ -156,6 +196,14 @@ class BlackBoxLoader {
                                                 "Error in afterApplicationOnCreate: ${e.message}"
                                         )
                                     }
+                                }
+
+                                override fun onActivityResumed(activity: Activity) {
+                                    cancelIdleStop(activity)
+                                }
+
+                                override fun onActivityPaused(activity: Activity) {
+                                    scheduleIdleStop(activity)
                                 }
 
                                 override fun onStoragePermissionNeeded(

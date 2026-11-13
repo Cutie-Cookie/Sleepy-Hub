@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -344,6 +346,7 @@ fun GlobalSettingsScreen(
     var hideRoot by remember { mutableStateOf(AppManager.mBlackBoxLoader.hideRoot()) }
     var daemonEnabled by remember { mutableStateOf(AppManager.mBlackBoxLoader.daemonEnable()) }
     var disableFlagSecure by remember { mutableStateOf(AppManager.mBlackBoxLoader.disableFlagSecure()) }
+    var autoStopIdleApps by remember { mutableStateOf(ProfileAppearance.autoStopIdleApps()) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
@@ -367,9 +370,17 @@ fun GlobalSettingsScreen(
         ) {
             item {
                 SettingsCard(title = "General settings") {
-                    Text("Color mode", style = androidx.compose.material3.MaterialTheme.typography.labelLarge)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("system", "light", "dark").forEach { mode ->
+                    Text(
+                        "Color mode",
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                    )
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(listOf("system", "light", "dark")) { mode ->
                             FilterChip(
                                 selected = themeMode == mode,
                                 onClick = {
@@ -425,6 +436,16 @@ fun GlobalSettingsScreen(
                             disableFlagSecure = it
                             AppManager.mBlackBoxLoader.invalidDisableFlagSecure(it)
                             Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    SettingsSwitch(
+                        title = "Stop inactive apps after 1 minute",
+                        subtitle = "Stop a virtual app after it stays in the background for one minute. Turn this off to keep apps running.",
+                        checked = autoStopIdleApps,
+                        onCheckedChange = {
+                            autoStopIdleApps = it
+                            ProfileAppearance.setAutoStopIdleApps(it)
+                            if (!it) AppManager.mBlackBoxLoader.cancelPendingIdleStops()
                         },
                     )
                 }
@@ -564,6 +585,8 @@ fun ThemeSettingsScreen(onBack: () -> Unit) {
                                     .background(Color(color), CircleShape)
                                     .clickable {
                                         accent = color
+                                        dynamicColor = false
+                                        ProfileAppearance.setUseDynamicColor(false)
                                         ProfileAppearance.setGlobalAccent(color)
                                         ProfileAppearance.notifyThemeChanged()
                                     },
@@ -580,7 +603,7 @@ fun ThemeSettingsScreen(onBack: () -> Unit) {
                 SettingsCard(title = "Theme options") {
                     SettingsSwitch(
                         title = "Dynamic color",
-                        subtitle = "Use Android wallpaper colors on Android 12 and newer.",
+                        subtitle = "Use Android wallpaper colors on Android 12 and newer. Choosing a fixed accent turns this off.",
                         checked = dynamicColor,
                         enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
                         onCheckedChange = {
@@ -622,6 +645,8 @@ fun ThemeSettingsScreen(onBack: () -> Unit) {
                     try {
                         val parsed = AndroidColor.parseColor(customHex.trim())
                         accent = parsed
+                        dynamicColor = false
+                        ProfileAppearance.setUseDynamicColor(false)
                         ProfileAppearance.setGlobalAccent(parsed)
                         ProfileAppearance.notifyThemeChanged()
                         showCustom = false
