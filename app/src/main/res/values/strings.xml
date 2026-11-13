@@ -12,12 +12,12 @@
     <string name="tg_group">Telegram Group</string>
     <string name="fake_location">Fake Location(Preview)</string>
     <string name="real_location">Real Location</string>
-    <string name="set_location">Set Fake Location Successfully:%s-%s</string>
+    <string name="set_location">Set Fake Location Successfully: %1$s-%2$s</string>
     <string name="close_fake_location">Disable FakeLocation</string>
     <string name="close_app_fake_location">Disable FakeLocation for %s</string>
     <string name="close_fake_location_success">Disable FakeLocation for %s Successfully</string>
-    <string name="set_location_failed">Couldn't apply fake location. Please try again.</string>
-    <string name="close_fake_location_failed">Couldn't disable fake location for %s. Please try again.</string>
+    <string name="set_location_failed">Unable to apply fake location. Please try again.</string>
+    <string name="close_fake_location_failed">Unable to disable fake location for %1$s. Please try again.</string>
     <string name="setting">Setting</string>
     <string name="jump_module">Go to Module Manager</string>
     <string name="module_setting">Module Manager</string>
