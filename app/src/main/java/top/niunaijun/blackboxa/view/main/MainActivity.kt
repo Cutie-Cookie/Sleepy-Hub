@@ -88,7 +88,17 @@ class MainActivity : BaseActivity() {
                     val userId = data.getIntExtra("userID", activeUserId)
                     val source = data.getStringExtra("source")
                     if (source != null && userId >= 0) {
-                        pagerAdapter.fragments().firstOrNull { it.userID == userId && it.isAdded }?.installApk(source)
+                        selectProfile(userId)
+                        val targetFragment = pagerAdapter.fragments().firstOrNull { it.userID == userId }
+                        if (targetFragment != null) {
+                            targetFragment.installApk(source)
+                        } else {
+                            Toast.makeText(
+                                this,
+                                "That profile is no longer available. Choose it again.",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
