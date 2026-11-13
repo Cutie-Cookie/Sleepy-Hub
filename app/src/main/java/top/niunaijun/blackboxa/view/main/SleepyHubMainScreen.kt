@@ -5,6 +5,12 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -165,7 +171,17 @@ fun SleepyHubMainScreen(
     val activeProfile = profiles.firstOrNull { it.userId == activeUserId }
     val activeContainer = containers.firstOrNull { it.id == activeContainerId }
 
-    when (page) {
+    AnimatedContent(
+        targetState = page,
+        transitionSpec = {
+            (fadeIn(animationSpec = tween(300)) +
+                slideInHorizontally(animationSpec = tween(300)) { width -> width / 18 }) togetherWith
+                (fadeOut(animationSpec = tween(200)) +
+                    slideOutHorizontally(animationSpec = tween(200)) { width -> -width / 24 })
+        },
+        label = "sleepy-hub-page-transition",
+    ) { currentPage ->
+        when (currentPage) {
         "container-manager" -> ContainerManagerScreen(
             containers = containers,
             activeContainerId = activeContainerId,
@@ -586,6 +602,7 @@ fun SleepyHubMainScreen(
                     },
                 )
             }
+        }
         }
     }
 
