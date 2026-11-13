@@ -586,7 +586,7 @@ fun SleepyHubMainScreen(
 
     BackHandler(enabled = page != "workspace") {
         page = when (page) {
-            "container-settings" -> "container-manager"
+            "container-settings" -> containerSettingsReturnPage
             "preferences" -> "settings"
             "theme" -> "preferences"
             else -> "workspace"
