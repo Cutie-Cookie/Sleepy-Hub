@@ -45,7 +45,7 @@ class FollowMyLocationOverlay : AppCompatActivity() {
         val appName = intent.getStringExtra("appName").orEmpty()
         binding.toolbar.title = "Choose location"
         binding.toolbar.subtitle = appName.takeIf { it.isNotBlank() }
-        binding.toolbar.setNavigationOnClickListener { finishWithResult(selectedPoint) }
+        binding.toolbar.setNavigationOnClickListener { cancelSelection() }
         binding.useLocation.setOnClickListener { finishWithResult(selectedPoint) }
 
         val marker = Marker(binding.map).apply {
@@ -110,7 +110,14 @@ class FollowMyLocationOverlay : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        finishWithResult(selectedPoint)
+        cancelSelection()
+    }
+
+    private fun cancelSelection() {
+        if (resultSent) return
+        resultSent = true
+        setResult(Activity.RESULT_CANCELED)
+        finish()
     }
 
     private fun finishWithResult(point: GeoPoint) {
