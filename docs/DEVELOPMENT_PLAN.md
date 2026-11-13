@@ -35,20 +35,20 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: `f3d12dddc5856019d93b494869bb3938d7898fb6`.
-- Current-head CI run: [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) — **in progress** for the identity, folder-manager, long-press and fake-location follow-up fixes.
+- Current feature-branch head: `81599d812db623a5f744d64ff69664b4507f8363`.
+- Current-head CI run: [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130) — **in progress** for the full follow-up set, including fake-location profile-context and parcel fixes.
 - Last verified prior artifact: ID `14046061691` from run `43439814552`; it does **not** contain the current fixes and must not be used for this retest.
 - Current-head APK: not available yet. Wait for run `43449035599` to pass and upload its artifact.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
 - The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. Commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea passed run 43437776339. The cross-process auto-stop opt-out hardening in commit 0fea772e8f7acc8e84c1ce244ca1c995f294db02 passed run 43439814552.
 - Earlier successful builds remain historical only: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for `dae5f468ad1fdf52dee22d3572de37f7a9af619c`, and [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for `046e04bb15ab328f531427a6ea64b9d9dba896fb`. Do not use their APKs for current-head testing.
-- Current source head `f3d12dddc5856019d93b494869bb3938d7898fb6` is awaiting run `43449035599`. The previous successful APK is historical only and does not contain the latest fixes.
+- Current source head `81599d812db623a5f744d64ff69664b4507f8363` is awaiting run `43449856130`. The previous successful APK is historical only and does not contain the latest fixes.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ## Next phone test session — current candidate
 
-**Do not install the previous APK for this retest.** Wait for run `43449035599` to pass, then use only its artifact. Install Preview alongside the regular app; do not uninstall the regular app or clear existing data.
+**Do not install the previous APK for this retest.** Wait for run `43449856130` to pass, then use only its artifact.
 
 ### Before testing
 - [ ] Confirm the APK is labelled **Sleepy Hub Preview** and its package ID is `com.cutiecookie.sleepyhub.preview`.
@@ -214,7 +214,7 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-014 | P1 | A delayed `loadContainerProfiles` callback unconditionally clears `pendingPagerUserId`; if a newer profile selection happens before that callback runs, the older refresh can erase the newer selection guard. | Build verified; device testing | Commit `168d15b` clears the pending ID only when it still matches that refresh's selected profile. Verify rapid container/profile switching and swipe-back behavior on device. |
 | BUG-015 | P1 | Fake-location apply/disable must report the real Binder result, not optimistic success. | Source fix on prior head; latest device flow crashed | Earlier changes wait for Binder completion and verify stored mode/coordinates. Latest device test crashed somewhere in the fake-location flow; see BUG-023 and keep this open until the failing step is known. |
 | BUG-016 | P1 | Google-services failures must produce an explicit result and refresh the selected profile state. | Source fix on prior head; device scope retest pending | Exception reporting is implemented. User reports the UI PASS but questions whether it is truly profile-scoped; verify after BUG-018. |
-| BUG-017 | P0 | ARM64 preview build must pass resource merge, identity/signature/ABI verification and artifact upload. | Prior head passed; current head building | Previous head `0fea772` passed run `43439814552`. Current head `f3d12ddd` is being checked by run `43449035599`; no APK for the latest fixes is ready until that run succeeds. |
+| BUG-017 | P0 | ARM64 preview build must pass resource merge, identity/signature/ABI verification and artifact upload. | Prior head passed; current head building | Previous head `0fea772` passed run `43439814552`. Current head `81599d81` is being checked by run `43449856130`; no APK for the latest fixes is ready until that run succeeds. |
 
 ## Device test report — 2026-11-13
 
@@ -248,7 +248,7 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-020 | P2 | First profile in an empty container is named Profile 3 because numbering is global. | Implemented in source; current CI/device verification pending | Commit 28443fd changes the unsaved/default profile label to New Profile; user-defined names remain unchanged. |
 | BUG-021 | P1 | Long-pressing an app opens it on release instead of only opening its action sheet. | Gesture redesign committed; current CI/device verification pending | Commit `dbfc10d` separates `combinedClickable` tap/long-press from a dedicated small reorder handle. Long press should open actions without launching; normal tap should still launch. |
 | BUG-022 | P1 | Manual Stop action does nothing; inactive apps should stop after one minute, with an option to disable auto-stop. | Build verified; device testing pending | Commit 28443fd removes the ineffective Stop action and adds a 60-second background idle-stop hook. Commit 0fea772 mirrors the toggle to a file so virtual processes see changes immediately rather than relying on stale SharedPreferences caches. Run 43439814552 passed; test timeout, resume-before-timeout and toggle-off behavior on device. |
-| BUG-023 | P1 | Fake-location flow crashes during device testing. | Crash occurs when selecting an app; map hardening committed, trace pending | The user identified the failing action as selecting an app. Missing osmdroid network permissions and use of its default external cache were found during source review; the picker now uses network permissions, app-private cache, explicit user agent and guarded map lifecycle. This is a plausible source fix, not a confirmed runtime diagnosis. |
+| BUG-023 | P1 | Fake-location flow crashes during device testing. | Crash occurs when selecting an app; map hardening committed, trace pending | The user identified the failing action as selecting an app. Missing osmdroid network permissions and use of its default external cache were found during source review; the picker now uses network permissions, app-private cache, explicit user agent and guarded map lifecycle. A follow-up also fixes BLocation parcel read order, carries the originating profile ID through the picker result, and catches launch errors. This is a plausible source fix, not a confirmed runtime diagnosis. |
 | BUG-024 | P1 | Settings still has some clipped content; theme/animation polish feels slightly off. | Open; targeted screenshot/retest needed | User now marks scrolling/navigation PASS and says the UI is great overall, but still notices some clipping in Settings and wants more natural animations. Keep this open; ask for the exact clipped control/screenshot if it remains after the current build. |
 | BUG-025 | P2 | Profile/container switching sweeps across the screen, especially noticeable with separate backgrounds. | Sweep removed; visual polish remains | User confirms the sweep issue is now PASS. Keep only the remaining subtle motion/transition feel as Phase 3 polish; do not reintroduce horizontal sweeps. |
 

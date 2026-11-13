@@ -23,7 +23,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | Branch | Purpose | Baseline |
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
-| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `f3d12dd` — current candidate; CI run `43449035599` in progress |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `81599d8` — current candidate; CI run `43449856130` in progress |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -64,8 +64,8 @@ Workflow: [Sleepy Hub ARM64 debug build](../.github/workflows/sleepyhub-arm64-de
 - Latest successful prior feature build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552), source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`.
 - Last verified prior artifact: ID `14046061691` from run `43439814552`; historical only for this retest.
 - Package ID: `com.cutiecookie.sleepyhub.preview`; label: `Sleepy Hub Preview`; it is intended to install alongside the regular app.
-- Current candidate: source head `f3d12dddc5856019d93b494869bb3938d7898fb6`; Actions run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The previous successful APK does not contain these fixes.
-- Current-head APK: not available until run `43449035599` succeeds. The previous APK is not suitable for testing the new identity, folder, gesture, icon and map fixes.
+- Current candidate: source head `81599d812db623a5f744d64ff69664b4507f8363`; Actions run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130) is in progress. The previous successful APK does not contain these fixes.
+- Current-head APK: not available until run `43449856130` succeeds. The previous APK is not suitable for testing the new identity, folder, gesture, icon and map fixes.
 
 A successful CI build proves compilation and artifact upload only. It does not prove runtime behavior, data isolation, visual parity, or physical-device compatibility.
 ## Known gaps and follow-ups
@@ -233,5 +233,5 @@ The latest source candidate adds Settings/GSF provider interception and cache cl
 
 - Android ID, GSF Android ID and Wi-Fi MAC were identical across Profile A/B; IMEI, hardware serial and App Set ID differed. The new source intercepts the Settings secure read and GSF gservices query, clears the framework Android-ID cache, and generates a per-profile virtual Wi-Fi MAC.
 - The user confirmed the previous folder UI was unchanged. The folder registry existed but the UI still exposed a free-text field; new source wires create/rename/delete UI, folder chips, and a choice-based move picker.
-- Fake-location crash is narrowed to selecting an app. The map path now has network permissions, private tile-cache storage, an explicit user agent and guarded lifecycle; device confirmation is still required.
+- Fake-location crash is narrowed to selecting an app. The map path now has network permissions, private tile-cache storage, explicit user agent and guarded lifecycle; BLocation parcel order and originating profile context are also corrected. Device confirmation is still required.
 - Phase 0 is complete. Phase 1 remains active. Phase 2 is partially implemented but not signed off; Phase 3 motion/inset polish remains open.

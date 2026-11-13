@@ -248,3 +248,8 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 - Commit `8ac5aef` replaces the hand-drawn white triangle with the real Play Store adaptive-icon foreground from the virtual profile's `com.android.vending` package.
 - Current source head: `f3d12dddc5856019d93b494869bb3938d7898fb6`; current-head Actions run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The prior successful APK does not include these fixes.
 - Phase 0 is complete; Phase 1 is active. Phase 2 is partially implemented but not signed off, and Phase 3 visual/motion polish remains open. `main` remains untouched.
+
+### 2026-11-13 — Fake-location profile context and parcel correction
+
+- Commit `81599d8` fixes the BLocation parcel read order to match its write order, carries the originating virtual user ID through the location-picker result, and catches immediate map-launch failures with a user-visible message and log entry.
+- Current source head `81599d812db623a5f744d64ff69664b4507f8363` is being checked by Actions run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130). Device confirmation is still required.

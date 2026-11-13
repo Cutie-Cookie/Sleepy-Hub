@@ -20,7 +20,7 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="success">Current feature head build verified</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature head: `f3d12dddc5856019d93b494869bb3938d7898fb6`; current-head CI run [43449035599](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449035599) is in progress. The previous verified run 43439814552 is historical and does not include these follow-up changes.
+- Latest inspected feature head: `81599d812db623a5f744d64ff69664b4507f8363`; current-head CI run [43449856130](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43449856130) is in progress. The previous verified run 43439814552 is historical and does not include these follow-up changes.
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
 - Last successful prior build: [43439814552](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43439814552) for source head `0fea772e8f7acc8e84c1ce244ca1c995f294db02`; do not use its artifact for the current changes.
 - Current-head artifact: `sleepy-hub-arm64-preview-debug` (ID `14036965394`), archive size 24,220,845 bytes, GitHub artifact SHA-256 `2f2bb35f5a798b0844a2609955b89f6cb2849a1cfaa6bee218ec779d19b1bdae` (archive digest); expires 2026-11-20 12:22:41 UTC. Extracted APK is 26,039,396 bytes with SHA-256 `4f3bbdc528a24797eb0b8654776155c40a68c7e1c463a1e2e35668510998e2d0`.
@@ -232,11 +232,11 @@ Created [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md), which indexes the upst
 - Profile pager touch swiping is disabled and profile selection snaps to the target. Page changes fade over the app's theme background instead of sliding over white.
 - Material 3 container/error roles are explicitly neutral. Selecting a fixed accent disables dynamic wallpaper colors. Color mode chips use a horizontally scrollable row.
 - The first app-grid frame now shows a labeled loading indicator instead of an empty black surface.
-- Current feature head is `f3d12dddc5856019d93b494869bb3938d7898fb6`; run `43449035599` is in progress. The previous artifact is not suitable for testing these fixes.
+- Current feature head is `81599d812db623a5f744d64ff69664b4507f8363`; run `43449856130` is in progress.
 
 ### Outstanding device evidence
 
-- The fake-location test crashed when selecting an app. The map now declares INTERNET/ACCESS_NETWORK_STATE, uses an app-private osmdroid cache and explicit user agent, and guards initialization/lifecycle. This is a plausible source fix, not a confirmed runtime diagnosis; collect the crash dialog/logcat if it persists.
+- The fake-location test crashed when selecting an app. The map now declares INTERNET/ACCESS_NETWORK_STATE, uses an app-private osmdroid cache and explicit user agent, and guards initialization/lifecycle. BLocation parcel order and originating profile ID are also corrected. This is a plausible source fix, not a confirmed runtime diagnosis; collect the crash dialog/logcat if it persists.
 - Re-test GMS profile scope after the per-profile identifiers change.
 - Verify storage isolation separately from ID uniqueness.
 - Verify Android/GSF ID and Wi-Fi MAC uniqueness/stability, storage isolation, GMS scope, idle-stop timing/opt-out, folder manager/picker, long-press, fake-location selection/map/apply/disable, original Play icon, Settings clipping and motion on the target phone.
