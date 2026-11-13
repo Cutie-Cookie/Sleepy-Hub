@@ -36,10 +36,12 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Current feature-branch head: `c7b28cda67535e5ffd4fea497196aec8340b07fe`.
-- Current-head CI run: [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) — **in progress** for the folder-selection state-scope compile fix.
-- Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope.
-- Last verified prior artifact: ID `14046061691` from run `43439814552`; it does **not** contain the current fixes and must not be used for this retest.
-- Current-head APK: not available yet. Wait for run `43452740407` to pass its package/signature/ABI checks and upload its artifact.
+- Current-head CI run: [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) — **success**; ARM64 debug build, package identity, APK signature, ABI check and artifact upload all passed.
+- Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope; corrected build is green.
+- Current artifact: `sleepy-hub-arm64-preview-debug`, ID `14052746172`, from run `43452740407`; ZIP SHA-256 `61d62844bca5561c6a0e55a43eb889ca68ab8cdc164301d720a0c03ee88baefb`.
+- APK: `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk`, 26,095,735 bytes; package `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, version `4.0.0-preview`, ARM64-v8a. APK SHA-256: `4403b84b08118d95e7cc45160ce9d87aa2ad30f78f66fb8a4773f64f29532468`.
+- The APK archive passed ZIP integrity validation after download. CI verified APK v1/v2 signing, preview package/label and the `arm64-v8a/libblackbox.so` library. This is a debug preview build, not a production release.
+- The older artifact ID `14046061691` is historical only; use artifact `14052746172` for this test session.
 - Current CI verified package ID com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, APK signature and ARM64 native-library presence. Preview uses the .preview application ID suffix and persistent preview debug signing identity; it is intended to install alongside the regular app.
 - The preceding run [43423100800](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43423100800) failed during `:app:mergeDebugResources` because of fake-location string resource parsing/formatting. The correction commits `5a2084aa6aee2700eafc67e8be81169c9bc1d3a3`, `a69ca35a1d01ac9b792f7abec58e50413caa592a`, and `cd917c58c7d4f8baa521f6839eafdb318cb40fa7` fixed the English and Chinese positional placeholders and simplified the English failure strings. The corrected exact head now passes CI.
 - The thirteen earlier feature/resource commits through cd917c5 were build-verified by run 43424012176. Commits 28443fd7dfaebaf774935b7c6f601345b7535c0e and 6df0bbcc031bace16bb2461c4963ea23520277ea passed run 43437776339. The cross-process auto-stop opt-out hardening in commit 0fea772e8f7acc8e84c1ce244ca1c995f294db02 passed run 43439814552.
@@ -49,7 +51,7 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 ## Next phone test session — current candidate
 
-**Do not install an older preview for this retest.** Wait for run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407) to pass and upload the APK. Confirm it is labelled **Sleepy Hub Preview** with package ID `com.cutiecookie.sleepyhub.preview`. Install alongside the regular app; do not uninstall the regular app or clear its data.
+**Use the verified APK from run [43452740407](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43452740407), artifact `14052746172`.** It is labelled **Sleepy Hub Preview** with package ID `com.cutiecookie.sleepyhub.preview`. Install alongside the regular app; do not uninstall the regular app or clear its data.
 
 ### Test in this order
 
