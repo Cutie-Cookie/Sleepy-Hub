@@ -17,16 +17,18 @@ Reviewed 2026-11-13.
 
 The current living plan and append-only bug register are maintained in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md). That file is the source of truth for issue IDs, priorities, statuses, phase order and acceptance checks.
 
-<badge color="success">ARM64 debug build succeeded</badge>
+<badge color="warning">Current feature head is not yet build-verified</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Latest inspected feature commit: `168d15ba71e7f1f879d1869c32c676519ba39590` (drawer-row, clone-container, profile-ID allocation, and pager selection changes; CI status not yet retrieved).
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Latest successful build: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`. The newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` have not yet been build-verified.
-- Latest artifact: `sleepy-hub-arm64-preview-debug` (ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (archive digest, not APK file checksum); expires 2026-11-20 11:47:43 UTC.
-- The latest workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
+- Most recent successful build known: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for the older commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`; it does **not** contain the four newer source commits. The newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` have not yet been build-verified.
+- Most recent artifact from the older build: `sleepy-hub-arm64-preview-debug` (ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (archive digest, not APK file checksum); expires 2026-11-20 11:47:43 UTC.
+- That older workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. No artifact is currently confirmed for head `168d15ba71e7f1f879d1869c32c676519ba39590`. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
 - The APK has not been installed or interaction-tested on a physical Android device.
+
+- The user-facing device checklist is maintained in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), under “Next phone test session — current-head APK only”. Do not ask the user to test the older `dae5f46` artifact as if it contained commits `6a11fed`, `28167df`, `bf6752f`, or `168d15b`.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ### Implemented in the latest feature branch
