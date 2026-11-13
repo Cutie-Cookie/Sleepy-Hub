@@ -42,7 +42,6 @@ class FakeManagerActivity : BaseActivity() {
                         packageName,
                         BLocation(latitude, longitude),
                     )
-                    toast(getString(top.niunaijun.blackboxa.R.string.set_location, latitude.toString(), longitude.toString()))
                 }
             }
         }
@@ -58,6 +57,12 @@ class FakeManagerActivity : BaseActivity() {
 
         viewModel.appsLiveData.observe(this) {
             if (it != null) isLoading = false
+        }
+
+        viewModel.actionLiveData.observe(this) { result ->
+            result ?: return@observe
+            toast(result.msg)
+            viewModel.clearActionResult()
         }
 
         viewBinding.composeView.setViewCompositionStrategy(
@@ -98,8 +103,7 @@ class FakeManagerActivity : BaseActivity() {
     }
 
     private fun disableFakeLocation(app: FakeLocationBean) {
-        viewModel.disableFakeLocation(currentUserID(), app.packageName)
-        toast(getString(top.niunaijun.blackboxa.R.string.close_fake_location_success, app.name))
+        viewModel.disableFakeLocation(currentUserID(), app.packageName, app.name)
     }
 
     companion object {
