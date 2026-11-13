@@ -159,12 +159,7 @@ class MainActivity : BaseActivity() {
 
     private fun initializeProfilesAndPager() {
         val core = BlackBoxCore.get()
-        var users = core.users.sortedBy { it.id }
-        if (users.isEmpty()) {
-            core.createUser(0)
-            users = core.users.sortedBy { it.id }
-        }
-
+        val users = core.users.sortedBy { it.id }
         ProfileAppearance.ensureContainers(users.map { it.id })
         activeContainerId = ProfileAppearance.activeContainerId()
 
