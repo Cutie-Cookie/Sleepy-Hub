@@ -77,7 +77,6 @@ fun ContainerSettingsScreen(
     container: ContainerItem,
     onBack: () -> Unit,
     onOpenBasic: () -> Unit,
-    onOpenBackground: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -725,17 +724,8 @@ fun ThemeSettingsScreen(onBack: () -> Unit) {
 
 @Composable
 private fun SettingsCard(title: String, content: @Composable () -> Unit) {
-    Card(
-        shape = androidx.compose.material3.MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-        ),
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+    CardGroup(title = title) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             content()
         }
     }
@@ -751,14 +741,20 @@ private fun SettingsActionRow(
     androidx.compose.material3.Surface(
         onClick = onClick,
         color = Color.Transparent,
-        shape = androidx.compose.material3.MaterialTheme.shapes.medium,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { icon() }
+            androidx.compose.material3.Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+            ) {
+                Box(contentAlignment = Alignment.Center) { icon() }
+            }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
                 Text(
@@ -767,6 +763,11 @@ private fun SettingsActionRow(
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -780,12 +781,12 @@ private fun SettingsSwitch(
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+            Text(title, style = androidx.compose.material3.MaterialTheme.typography.bodyLarge)
             Text(
                 subtitle,
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
