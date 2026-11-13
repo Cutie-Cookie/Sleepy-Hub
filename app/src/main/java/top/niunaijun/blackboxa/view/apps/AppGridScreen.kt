@@ -84,7 +84,7 @@ fun AppGridScreen(
     }
     LaunchedEffect(isScrolled) { onScrollChange(isScrolled) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier.fillMaxSize()) {
     if (apps.isEmpty()) {
         Box(
             modifier = Modifier
