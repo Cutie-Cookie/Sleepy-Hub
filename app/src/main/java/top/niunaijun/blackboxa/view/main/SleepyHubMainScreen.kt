@@ -95,6 +95,7 @@ data class ProfileItem(
     val name: String,
     val folder: String,
     val appCount: Int,
+    val pinned: Boolean,
 )
 
 data class ContainerItem(
@@ -124,6 +125,7 @@ fun SleepyHubMainScreen(
     onDeleteProfile: (Int) -> Unit,
     onMoveProfile: (Int, String) -> Unit,
     onSetProfileFolder: (Int, String) -> Unit,
+    onToggleProfilePinned: (Int, Boolean) -> Unit,
     onCreateContainer: (String) -> Unit,
     onSelectContainer: (String) -> Unit,
     onUpdateContainer: (ContainerItem) -> Unit,
@@ -222,8 +224,8 @@ fun SleepyHubMainScreen(
                 profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
             }
             val visibleProfiles = remember(profiles, selectedFolder) {
-                if (selectedFolder == "All") profiles
-                else profiles.filter { it.folder == selectedFolder }
+                val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
+                filtered.sortedWith(compareByDescending<ProfileItem> { it.pinned }.thenBy { it.name.lowercase() })
             }
 
             ModalNavigationDrawer(
@@ -325,6 +327,7 @@ fun SleepyHubMainScreen(
                                             folderProfileId = profile.userId
                                             folderDraft = profile.folder
                                         },
+                                        onTogglePinned = { onToggleProfilePinned(profile.userId, !profile.pinned) },
                                         onRename = {
                                             editingProfileId = profile.userId
                                             scope.launch { drawerState.close() }
@@ -650,6 +653,7 @@ private fun ProfileDrawerRow(
     onSelect: () -> Unit,
     onMove: () -> Unit,
     onMoveToFolder: () -> Unit,
+    onTogglePinned: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -697,6 +701,10 @@ private fun ProfileDrawerRow(
             DropdownMenuItem(
                 text = { Text("Move to folder") },
                 onClick = { expanded = false; onMoveToFolder() },
+            )
+            DropdownMenuItem(
+                text = { Text(if (profile.pinned) "Unpin" else "Pin") },
+                onClick = { expanded = false; onTogglePinned() },
             )
             DropdownMenuItem(
                 text = { Text("Rename") },
