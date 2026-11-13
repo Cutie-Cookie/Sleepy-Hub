@@ -7,6 +7,8 @@ import android.util.ArrayMap;
 
 import java.lang.reflect.Proxy;
 import java.util.HashSet;
+import java.util.Map;
+
 import java.util.Set;
 
 import black.android.app.BRActivityThread;
@@ -98,13 +100,22 @@ public class ContentProviderDelegate {
     }
 
     private static void clearContentProvider(Object cache) {
+        if (cache == null) return;
         if (BuildCompat.isOreo()) {
             Object holder = BRSettingsNameValueCacheOreo.get(cache).mProviderHolder();
             if (holder != null) {
                 BRSettingsContentProviderHolder.get(holder)._set_mContentProvider(null);
             }
+            clearCachedAndroidId(BRSettingsNameValueCacheOreo.get(cache).mValues());
         } else {
             BRSettingsNameValueCache.get(cache)._set_mContentProvider(null);
+            clearCachedAndroidId(BRSettingsNameValueCache.get(cache).mValues());
+        }
+    }
+
+    private static void clearCachedAndroidId(Object values) {
+        if (values instanceof Map) {
+            ((Map<?, ?>) values).remove("android_id");
         }
     }
 }

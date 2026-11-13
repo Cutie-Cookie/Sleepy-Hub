@@ -1,6 +1,8 @@
 package black.android.providers;
 
 import android.os.IInterface;
+import java.util.HashMap;
+
 
 import top.niunaijun.blackreflection.annotation.BClassName;
 import top.niunaijun.blackreflection.annotation.BField;
@@ -30,12 +32,18 @@ public interface Settings {
     interface NameValueCacheOreo {
         @BField
         Object mProviderHolder();
+
+        @BField
+        HashMap<String, String> mValues();
     }
 
     @BClassName("android.provider.Settings$NameValueCache")
     interface NameValueCache {
         @BField
         Object mContentProvider();
+
+        @BField
+        HashMap<String, String> mValues();
     }
 
     @BClassName("android.provider.Settings$Global")
