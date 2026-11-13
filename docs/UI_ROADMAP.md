@@ -66,3 +66,19 @@ The latest failure is recorded rather than hidden. No application code was chang
 ## License boundary
 
 RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reimplement the same flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.
+
+
+## Additional user-confirmed interaction rules — 2026-11-13
+
+- Long-press a profile in the inline drawer list to open the source-style action menu. Include **Move to container**, Move to folder, Rename, and Delete. Moving opens a scrollable container picker sheet.
+- Moving a profile changes its container membership only. Preserve its BlackBox user ID and all installed apps/data. If it is active, switch to the target container and keep the same profile active. Clear its old container-scoped folder assignment.
+- Add Profile is a small plus beside the dashboard's inline profile-list heading.
+- Add Container is the top-app-bar plus in the Container Manager, like RikkaHub AssistantPage. New containers are empty.
+- Container switching is the compact AssistantPicker-style bottom-drawer selector. Container manager is reachable from the dashboard footer and Settings home.
+- Settings stays at the dashboard bottom-right. Global theme is Settings → Preferences → Theme. No per-container/profile theme controls.
+- The top-right action in the workspace takes the position of RikkaHub's New Message icon but performs **Add App / Install App** for the active profile. No chat or chat composer is added.
+- Remove the top-right three-dot menu. Its functions are already available through dashboard Settings, profile actions, Container Manager, and Refresh shortcut.
+- Replace the native storage-permission explanation popup with a source-style Compose Material 3 rationale dialog, but keep the actual Android All Files Access permission flow.
+- Container deletion always shows Cancel/Delete confirmation and explains the impact on contained profiles/data. Do not implement destructive cascade behavior until the user confirms the policy.
+- The app picker needs a genuine interaction/layout pass: compact app rows, icons, search, APK chooser, installed status, loading/empty states. Do not merely recolor the current cards.
+- File-by-file upstream references are indexed in [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md).
