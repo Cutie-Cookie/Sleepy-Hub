@@ -336,6 +336,7 @@ fun GlobalSettingsScreen(
     onGridColumnsChanged: () -> Unit,
 ) {
     var themeMode by remember { mutableStateOf(ProfileAppearance.globalThemeMode()) }
+    val context = LocalContext.current
     var hideRoot by remember { mutableStateOf(AppManager.mBlackBoxLoader.hideRoot()) }
     var daemonEnabled by remember { mutableStateOf(AppManager.mBlackBoxLoader.daemonEnable()) }
     var disableFlagSecure by remember { mutableStateOf(AppManager.mBlackBoxLoader.disableFlagSecure()) }
@@ -395,7 +396,7 @@ fun GlobalSettingsScreen(
                         onCheckedChange = {
                             hideRoot = it
                             AppManager.mBlackBoxLoader.invalidHideRoot(it)
-                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
                         },
                     )
                     SettingsSwitch(
@@ -684,9 +685,6 @@ private fun SettingsSwitch(
         Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
-
-@Composable
-private fun contextForSettings(): android.content.Context = LocalContext.current
 
 private fun persistReadPermission(context: android.content.Context, uri: Uri) {
     try {
