@@ -7,42 +7,45 @@ Reviewed 2026-11-13.
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
-- Latest audited head: `bff794ecb18d8b606d5af67b8b8332f40124f4f3`
+- Latest inspected head: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
+- Living roadmap and bug register: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 - Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
 - `main` remains untouched; the rebuild branch is separate.
 
 ## Current implementation status — 2026-11-13
 
+The current living plan and append-only bug register are maintained in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md). That file is the source of truth for issue IDs, priorities, statuses, phase order and acceptance checks.
+
 <badge color="success">ARM64 debug build succeeded</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Commit: `bff794ecb18d8b606d5af67b8b8332f40124f4f3`
-- Workflow: [43413343419 — successful ARM64 debug build](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43413343419)
-- Artifact: `sleepy-hub-arm64-debug` (artifact ID `14031251227`)
-- APK: `SleepyHub_4.0.0_arm64-v8a-debug.apk`
-- APK size: 26,036,671 bytes
-- SHA-256: `3e36cac613f4fc16f6cad9c1bc60c10e57eb93ec154843cad46d16a71f03e200`
-- APK archive and Android manifest were present; ARM64 native library was present; JAR signature verification succeeded with the self-signed debug certificate.
-- This is a debug-signed ARM64 APK, not a release-signed build. It has **not** been installed or interaction-tested on a physical Android device.
+- Latest inspected feature commit: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
+- Latest completed build before the newest fix: [43414502981 — successful ARM64 Preview debug build](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43414502981), for commit `9bd8b7b6c0adcaa21f00a51d3efcf12b548ffe70`.
+- Current build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — in progress at the time of this update, for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
+- The current build workflow checks package identity, label, signing and ARM64 native-library presence before uploading.
+- The APK has not been installed or interaction-tested on a physical Android device.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ### Implemented in the latest feature branch
 
 - Persistent container membership, an empty-container flow, and a last-active-profile ID per container.
-- A race guard around ViewPager2 data replacement and profile selection so stale page callbacks cannot switch the active profile back.
+- A ViewPager2 stale-callback guard (commit `046e04b`) so a delayed event for an old page cannot silently select a different active profile; CI and device verification are pending.
 - Inline, independently scrollable profile rows in the drawer, folder filtering, profile sorting, a small Add Profile action, and a separate bottom container selector.
 - Profile manager search, compact rows, reorder handles, detail/basic/background pages, and per-profile workspace wallpapers.
 - Container settings now cover container name and picture only. Legacy container wallpaper data is migrated to profiles when needed; no per-container theme or accent controls remain.
 - One global theme system; the workspace remains black by default, and the selected profile's optional background is drawn behind its app grid only.
 - A Compose Google services manager that lists profiles rather than installed Google packages. Google system packages are filtered from the app grid; enabled profiles show the small Play badge beside the profile name.
-- A clearer fake-location explanation: choose an app in the active profile, choose a point on the map, confirm it, and long-press that app later to disable it.
+- Clearer fake-location instructions: choose an app in the active profile, choose a point on the map, apply it, and long-press that app later to disable it. Actual location override behavior still requires device verification.
 - Rounded search fields and consistent grouped surfaces across profile management, app picking, fake location, settings, and Google services.
 - Transparent system navigation bars with safe-drawing insets retained on the actual content. Bottom controls remain padded above the system navigation area.
 - Slower page transitions and animated list placement/color changes.
-- APK/profile validation and a detailed failure dialog for installation actions, plus additional package-parser/install logging.
+- APK/profile validation and a detailed failure dialog for installation actions, plus additional package-parser/install logging. These diagnostics do not yet establish that the reported app-install failure is fixed.
 
 ### Verification still required
+
+See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for the active bug IDs and exact acceptance checks. In particular, the reported app-install failure remains unresolved until an app is successfully installed on-device.
 
 - Install the APK on the target phone and test switching profiles, switching between populated and empty containers, and switching back.
 - Test adding an app from the installed-app picker and from an external APK. The new validation and error dialog improve diagnosis, but installation success is **not** claimed until this is exercised on-device.
