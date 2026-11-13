@@ -56,6 +56,7 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -170,6 +171,7 @@ fun SleepyHubMainScreen(
     val activity = context as? Activity
     val systemBarView = LocalView.current
     val surfaceIsLight = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val surfaceBarColor = MaterialTheme.colorScheme.surface.toArgb()
 
     SideEffect {
         if (activity != null && !systemBarView.isInEditMode) {
@@ -187,7 +189,7 @@ fun SleepyHubMainScreen(
                 activity.window.statusBarColor = AndroidColor.TRANSPARENT
                 controller.isAppearanceLightStatusBars = false
             } else {
-                activity.window.statusBarColor = MaterialTheme.colorScheme.surface.toArgb()
+                activity.window.statusBarColor = surfaceBarColor
                 controller.isAppearanceLightStatusBars = surfaceIsLight
             }
         }
@@ -336,11 +338,18 @@ fun SleepyHubMainScreen(
         else -> {
             val scope = rememberCoroutineScope()
             var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
+            var profileSortMode by rememberSaveable(activeContainerId) { mutableStateOf("custom") }
+            var sortMenuExpanded by rememberSaveable(activeContainerId) { mutableStateOf(false) }
             val folders = remember(profiles) {
                 profiles.map { it.folder }.distinct().filter { it != "All" }.sorted()
             }
-            val visibleProfiles = remember(profiles, selectedFolder) {
-                if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
+            val visibleProfiles = remember(profiles, selectedFolder, profileSortMode) {
+                val filtered = if (selectedFolder == "All") profiles else profiles.filter { it.folder == selectedFolder }
+                when (profileSortMode) {
+                    "name-asc" -> filtered.sortedBy { it.name.lowercase() }
+                    "name-desc" -> filtered.sortedByDescending { it.name.lowercase() }
+                    else -> filtered
+                }
             }
 
             ModalNavigationDrawer(
@@ -389,6 +398,28 @@ fun SleepyHubMainScreen(
                                     style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.weight(1f),
                                 )
+                                Box {
+                                    IconButton(onClick = { sortMenuExpanded = true }) {
+                                        Icon(Icons.Outlined.Sort, contentDescription = "Sort profiles")
+                                    }
+                                    DropdownMenu(
+                                        expanded = sortMenuExpanded,
+                                        onDismissRequest = { sortMenuExpanded = false },
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Custom order") },
+                                            onClick = { profileSortMode = "custom"; sortMenuExpanded = false },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Name (A–Z)") },
+                                            onClick = { profileSortMode = "name-asc"; sortMenuExpanded = false },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Name (Z–A)") },
+                                            onClick = { profileSortMode = "name-desc"; sortMenuExpanded = false },
+                                        )
+                                    }
+                                }
                                 IconButton(
                                     onClick = {
                                         scope.launch { drawerState.close() }
@@ -492,7 +523,7 @@ fun SleepyHubMainScreen(
                                             Text(
                                                 "Switch container",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = if (container.id == activeContainerId) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
                                         Icon(Icons.Outlined.ArrowForward, contentDescription = "Choose container")
