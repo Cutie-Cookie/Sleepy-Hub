@@ -7,7 +7,7 @@ Reviewed 2026-11-13.
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected head: `168d15ba71e7f1f879d1869c32c676519ba39590`
+- Latest inspected head: `b11616660b1246cc0180b549b48bf2e2ed17465f`
 - Living roadmap and bug register: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 - Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
@@ -20,15 +20,15 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 <badge color="warning">Current feature head is not yet build-verified</badge>
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected feature commit: `168d15ba71e7f1f879d1869c32c676519ba39590` (drawer-row, clone-container, profile-ID allocation, and pager selection changes; CI status not yet retrieved).
+- Latest inspected feature commit: `b11616660b1246cc0180b549b48bf2e2ed17465f` (drawer-row, clone-container, profile-ID allocation, pager selection, fake-location feedback, and Google-services error-handling changes; CI status not yet retrieved).
 - Previous successful build: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`; its APK was 26,038,134 bytes with SHA-256 `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
-- Most recent successful build known: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for the older commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`; it does **not** contain the four newer source commits. The newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, and `168d15ba71e7f1f879d1869c32c676519ba39590` have not yet been build-verified.
+- Most recent successful build known: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) for the older commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`; it does **not** contain the four newer source commits. The ten newer commits `6a11fedfd2b5b1ea6b40e8610575ea587609a9b3`, `28167dfaf336938ed387e2f0fff653dbddbee66f`, `bf6752f3c0dfbb9ad7f3affdc95d8b5ece95f4b4`, `168d15ba71e7f1f879d1869c32c676519ba39590`, `9336b6f6d4e62a7fe371b99dac605c9163aa3a0b`, `f95758adec8f8c149019b9c1c8f22f25dc022302`, `858e9114fb7918f746b4b446c33a4517778f810b`, `eb870fc4b2e7e850da3dbfc53462d65279aabeae`, `ea11a66497f28fd8bcdaab43db9558ad87ab255b`, and `b11616660b1246cc0180b549b48bf2e2ed17465f` have not yet been build-verified.
 - Most recent artifact from the older build: `sleepy-hub-arm64-preview-debug` (ID `14033183422`), archive size 24,219,966 bytes, GitHub artifact SHA-256 `ec367179f93612dd9cf2e8d94716420e61dd85a6030ecbe133bb1de5e2bb0116` (archive digest, not APK file checksum); expires 2026-11-20 11:47:43 UTC.
-- That older workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. No artifact is currently confirmed for head `168d15ba71e7f1f879d1869c32c676519ba39590`. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
+- That older workflow passed ARM64 debug build, preview APK identity/signature/ABI verification, and artifact upload. No artifact is currently confirmed for head `b11616660b1246cc0180b549b48bf2e2ed17465f`. CI verified package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, APK signature, and ARM64 native-library presence.
 - Preview package uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and a persistent debug keystore at `app/sleepyhub-preview-debug.keystore`; this is a safety identity for testing alongside the existing app, not a reduced-feature build or final release identity.
 - The APK has not been installed or interaction-tested on a physical Android device.
 
-- The user-facing device checklist is maintained in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), under “Next phone test session — current-head APK only”. Do not ask the user to test the older `dae5f46` artifact as if it contained commits `6a11fed`, `28167df`, `bf6752f`, or `168d15b`.
+- The user-facing device checklist is maintained in [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), under “Next phone test session — current-head APK only”. Do not ask the user to test the older `dae5f46` artifact as if it contained the ten newer commits listed above.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
 
 ### Implemented in the latest feature branch
@@ -40,6 +40,8 @@ The current living plan and append-only bug register are maintained in [DEVELOPM
 - Profile cloning (commit `28167df`) now captures the source container before background work, assigns the new profile to that container even if the user switches away, and cleans up if the container disappears during the copy. CI and device timing tests are pending.
 - Profile creation and cloning (commit `bf6752f`) now share a process-wide lock around `max(userId) + 1` allocation and `createUser`, preventing simultaneous requests from reusing one virtual user ID. CI and rapid-action device tests are pending.
 - Pager cleanup (commit `168d15b`) now clears `pendingPagerUserId` only when it still belongs to the container refresh that scheduled the callback, preserving a newer profile selection. CI and rapid-switch device tests are pending.
+- Fake-location apply/disable (commits `9336b6f`, `f95758a`, `858e911`, `eb870fc`, and `ea11a66`) now exposes Binder write outcomes, verifies the selected point/mode, and only shows success after the operation completes; failures receive an explicit message. CI and apply/restore device tests are pending.
+- Google-services install/uninstall (commit `b116166`) now catches operation exceptions and emits a visible failed result rather than leaving the screen without feedback. CI and enable/disable device tests are pending.
 - Inline, independently scrollable profile rows in the drawer, folder filtering, profile sorting, a small Add Profile action, and a separate bottom container selector.
 - Profile manager search, compact rows, reorder handles, detail/basic/background pages, and per-profile workspace wallpapers.
 - Container settings now cover container name and picture only. Legacy container wallpaper data is migrated to profiles when needed; no per-container theme or accent controls remain.
