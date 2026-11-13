@@ -139,6 +139,7 @@ fun SleepyHubMainScreen(
 ) {
     var page by rememberSaveable { mutableStateOf("workspace") }
     var returnToPage by rememberSaveable { mutableStateOf("workspace") }
+    var containerSettingsReturnPage by rememberSaveable { mutableStateOf("workspace") }
     var editingProfileId by rememberSaveable { mutableStateOf(-1) }
     var editingContainerId by rememberSaveable { mutableStateOf("") }
     var showContainerPicker by rememberSaveable { mutableStateOf(false) }
@@ -162,6 +163,7 @@ fun SleepyHubMainScreen(
             },
             onEdit = {
                 editingContainerId = it
+                containerSettingsReturnPage = "container-manager"
                 page = "container-settings"
             },
             onDelete = onDeleteContainer,
@@ -173,10 +175,10 @@ fun SleepyHubMainScreen(
             } else {
                 ContainerSettingsScreen(
                     container = container,
-                    onBack = { page = "container-manager" },
+                    onBack = { page = containerSettingsReturnPage },
                     onSave = {
                         onUpdateContainer(it)
-                        page = "container-manager"
+                        page = containerSettingsReturnPage
                     },
                 )
             }
@@ -245,6 +247,7 @@ fun SleepyHubMainScreen(
                                 onEdit = {
                                     activeContainer?.let {
                                         editingContainerId = it.id
+                                        containerSettingsReturnPage = "workspace"
                                         scope.launch { drawerState.close() }
                                         page = "container-settings"
                                     }
@@ -507,6 +510,7 @@ fun SleepyHubMainScreen(
                     onEdit = {
                         showContainerPicker = false
                         editingContainerId = it
+                        containerSettingsReturnPage = "workspace"
                         page = "container-settings"
                     },
                     onManage = {
