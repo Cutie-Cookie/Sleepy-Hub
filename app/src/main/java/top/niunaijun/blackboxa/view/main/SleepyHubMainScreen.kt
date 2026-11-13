@@ -967,25 +967,39 @@ private fun ContainerManagerScreen(
     }
 
     if (showCreate) {
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { showCreate = false },
-            title = { Text("New container") },
-            text = {
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("New container", style = MaterialTheme.typography.titleLarge)
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
+                    modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    shape = MaterialTheme.shapes.large,
                     label = { Text("Name") },
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onAdd(newName)
-                    showCreate = false
-                }, enabled = newName.isNotBlank()) { Text("Create") }
-            },
-            dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel") } },
-        )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { showCreate = false }) { Text("Cancel") }
+                    TextButton(
+                        onClick = {
+                            onAdd(newName)
+                            showCreate = false
+                        },
+                        enabled = newName.isNotBlank(),
+                    ) { Text("Create") }
+                }
+            }
+        }
     }
 
     deleteTarget?.let { target ->
