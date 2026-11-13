@@ -44,6 +44,7 @@ class AppsFragment : Fragment() {
 
         fun newInstance(userID: Int): AppsFragment {
             return AppsFragment().apply {
+                this.userID = userID
                 arguments = Bundle().apply { putInt("userID", userID) }
             }
         }
