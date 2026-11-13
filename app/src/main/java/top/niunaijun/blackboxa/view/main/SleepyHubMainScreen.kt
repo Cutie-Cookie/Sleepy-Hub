@@ -672,6 +672,8 @@ fun SleepyHubMainScreen(
             "container-manager" -> returnToPage
             "container-settings" -> containerSettingsReturnPage
             "container-basic", "container-background" -> "container-settings"
+            "profile-basic", "profile-background" -> "profile-settings"
+            "profile-settings", "profile-manager" -> "workspace"
             "preferences" -> "settings"
             "theme" -> "preferences"
             else -> "workspace"
