@@ -7,7 +7,7 @@ Reviewed 2026-11-13.
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
 - Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
-- Latest inspected head: `b11616660b1246cc0180b549b48bf2e2ed17465f`
+- Latest inspected head: `cd917c58c7d4f8baa521f6839eafdb318cb40fa7`
 - Living roadmap and bug register: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 - Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
