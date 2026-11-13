@@ -14,16 +14,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackboxa.app.HubContainer
 import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityMainBinding
 import top.niunaijun.blackboxa.util.inflate
 import top.niunaijun.blackboxa.view.apps.AppsFragment
 import top.niunaijun.blackboxa.view.base.BaseActivity
 import top.niunaijun.blackboxa.view.fake.FakeManagerActivity
-import top.niunaijun.blackboxa.view.list.ListActivity
 import top.niunaijun.blackboxa.view.gms.GmsManagerActivity
+import top.niunaijun.blackboxa.view.list.ListActivity
 
 class MainActivity : BaseActivity() {
 
@@ -33,13 +33,22 @@ class MainActivity : BaseActivity() {
     private val fragmentList = mutableListOf<AppsFragment>()
     private val profileAppCounts = mutableMapOf<Int, Int>()
 
-    var activeUserId by mutableIntStateOf(0)
+    var activeUserId by mutableIntStateOf(-1)
+        private set
+
+    var activeContainerId by mutableStateOf("")
         private set
 
     var profiles by mutableStateOf<List<ProfileItem>>(emptyList())
         private set
 
+    var containers by mutableStateOf<List<ContainerItem>>(emptyList())
+        private set
+
     var workspaceScrolled by mutableStateOf(false)
+        private set
+
+    var storageRationaleVisible by mutableStateOf(false)
         private set
 
     companion object {
@@ -73,7 +82,7 @@ class MainActivity : BaseActivity() {
                     val data = result.data ?: return@registerForActivityResult
                     val userId = data.getIntExtra("userID", activeUserId)
                     val source = data.getStringExtra("source")
-                    if (source != null) {
+                    if (source != null && userId >= 0) {
                         fragmentList.firstOrNull { it.userID == userId }?.installApk(source)
                     }
                 }
@@ -101,22 +110,27 @@ class MainActivity : BaseActivity() {
                 SleepyHubTheme {
                     SleepyHubMainScreen(
                         profiles = profiles,
+                        containers = containers,
                         activeUserId = activeUserId,
+                        activeContainerId = activeContainerId,
                         isWorkspaceScrolled = workspaceScrolled,
                         viewPager = viewPager,
+                        storageRationaleVisible = storageRationaleVisible,
+                        onDismissStorageRationale = { storageRationaleVisible = false },
+                        onGrantStoragePermission = ::openAllFilesAccessSettings,
                         onSelectProfile = ::selectProfile,
                         onAddProfile = ::createProfile,
                         onRenameProfile = ::renameProfile,
                         onDeleteProfile = ::deleteProfile,
+                        onMoveProfile = ::moveProfile,
+                        onSetProfileFolder = ::setProfileFolder,
+                        onCreateContainer = ::createContainer,
+                        onSelectContainer = ::switchContainer,
+                        onUpdateContainer = ::updateContainer,
+                        onDeleteContainer = ::deleteContainer,
                         onInstallApps = ::openInstallPicker,
                         onOpenFakeLocation = ::openFakeLocation,
-                        onOpenGmsManager = {
-                            if (BlackBoxCore.get().isSupportGms) {
-                                GmsManagerActivity.start(this)
-                            } else {
-                                Toast.makeText(this, "Google services are not supported", Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onOpenGmsManager = ::openGmsManager,
                         onRefreshApps = ::refreshCurrentApps,
                         onRefreshProfiles = ::refreshProfiles,
                     )
@@ -151,28 +165,14 @@ class MainActivity : BaseActivity() {
             users = core.users.sortedBy { it.id }
         }
 
-        fragmentList.clear()
-        users.forEach { user ->
-            fragmentList.add(AppsFragment.newInstance(user.id))
-        }
-
-        activeUserId = users.firstOrNull { it.id == ProfileAppearance.lastProfileId() }?.id
-            ?: users.firstOrNull()?.id
-            ?: 0
+        ProfileAppearance.ensureContainers(users.map { it.id })
+        activeContainerId = ProfileAppearance.activeContainerId()
 
         viewPager = ViewPager2(this).apply {
             id = android.view.View.generateViewId()
             offscreenPageLimit = 1
-            setPageTransformer { page, position ->
-                val distance = kotlin.math.abs(position).coerceIn(0f, 1f)
-                page.alpha = 1f - distance * 0.08f
-                page.scaleY = 1f - distance * 0.015f
-                page.translationX = -position * 8f
-            }
         }
-
         pagerAdapter = ViewPagerAdapter(this)
-        pagerAdapter.replaceData(fragmentList)
         viewPager.adapter = pagerAdapter
         viewPager.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
@@ -185,28 +185,60 @@ class MainActivity : BaseActivity() {
                 }
             }
         )
+        loadContainerProfiles(activeContainerId, ProfileAppearance.lastProfileId())
+    }
 
-        val initialIndex = fragmentList.indexOfFirst { it.userID == activeUserId }.coerceAtLeast(0)
-        viewPager.setCurrentItem(initialIndex, false)
+    private fun loadContainerProfiles(containerId: String, preferredUserId: Int? = null) {
+        val users = BlackBoxCore.get().users.sortedBy { it.id }
+        ProfileAppearance.ensureContainers(users.map { it.id })
+        val members = users.filter { ProfileAppearance.profileContainer(it.id) == containerId }
+
+        fragmentList.clear()
+        members.forEach { fragmentList.add(AppsFragment.newInstance(it.id)) }
+        pagerAdapter.replaceData(fragmentList)
+
+        val selected = preferredUserId?.takeIf { id -> members.any { it.id == id } }
+            ?: ProfileAppearance.lastProfileId().takeIf { id -> members.any { it.id == id } }
+            ?: members.firstOrNull()?.id
+        activeUserId = selected ?: -1
         refreshProfiles()
+
+        val index = fragmentList.indexOfFirst { it.userID == activeUserId }
+        if (index >= 0) viewPager.setCurrentItem(index, false)
     }
 
     fun refreshProfiles() {
         try {
             val users = BlackBoxCore.get().users.sortedBy { it.id }
-            profiles = users.mapIndexed { index, user ->
+            ProfileAppearance.ensureContainers(users.map { it.id })
+            val allProfiles = users.mapIndexed { index, user ->
                 ProfileItem(
                     userId = user.id,
                     name = ProfileAppearance.profileName(user.id, index),
                     folder = ProfileAppearance.profileFolder(user.id),
                     appCount = profileAppCounts[user.id] ?: -1,
-                    accent = ProfileAppearance.profileAccent(user.id),
-                    backgroundUri = ProfileAppearance.backgroundUri(user.id),
-                    backgroundOpacity = ProfileAppearance.backgroundOpacity(user.id),
                 )
             }
+            profiles = allProfiles.filter {
+                ProfileAppearance.profileContainer(it.userId) == activeContainerId
+            }
+            containers = ProfileAppearance.containers().map { container ->
+                ContainerItem(
+                    id = container.id,
+                    name = container.name,
+                    avatarUri = container.avatarUri,
+                    backgroundUri = container.backgroundUri,
+                    backgroundOpacity = container.backgroundOpacity,
+                    profileCount = users.count {
+                        ProfileAppearance.profileContainer(it.id) == container.id
+                    },
+                )
+            }
+            if (activeUserId >= 0 && profiles.none { it.userId == activeUserId }) {
+                activeUserId = profiles.firstOrNull()?.userId ?: -1
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Could not refresh profiles: ${e.message}")
+            Log.e(TAG, "Could not refresh profiles: ${e.message}", e)
         }
     }
 
@@ -229,11 +261,25 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    fun switchContainer(containerId: String, preferredUserId: Int? = null) {
+        if (containers.none { it.id == containerId } &&
+            ProfileAppearance.containers().none { it.id == containerId }
+        ) return
+        activeContainerId = containerId
+        ProfileAppearance.saveActiveContainerId(containerId)
+        loadContainerProfiles(containerId, preferredUserId)
+    }
+
     fun createProfile() {
         try {
+            if (activeContainerId.isBlank()) {
+                Toast.makeText(this, "Choose a container first", Toast.LENGTH_SHORT).show()
+                return
+            }
             val users = BlackBoxCore.get().users
             val nextId = (users.maxOfOrNull { it.id } ?: -1) + 1
             BlackBoxCore.get().createUser(nextId)
+            ProfileAppearance.setProfileContainer(nextId, activeContainerId)
             fragmentList.add(AppsFragment.newInstance(nextId))
             pagerAdapter.replaceData(fragmentList)
             refreshProfiles()
@@ -250,40 +296,109 @@ class MainActivity : BaseActivity() {
         refreshProfiles()
     }
 
+    fun setProfileFolder(userId: Int, folder: String) {
+        ProfileAppearance.setProfileFolder(userId, folder)
+        refreshProfiles()
+    }
+
+    fun moveProfile(userId: Int, targetContainerId: String) {
+        if (containers.none { it.id == targetContainerId }) return
+        if (ProfileAppearance.profileContainer(userId) == targetContainerId) return
+        ProfileAppearance.setProfileContainer(userId, targetContainerId)
+        if (activeUserId == userId) {
+            switchContainer(targetContainerId, userId)
+        } else {
+            refreshProfiles()
+        }
+    }
+
+    fun createContainer(name: String) {
+        val created = ProfileAppearance.createContainer(name)
+        refreshProfiles()
+        switchContainer(created.id)
+    }
+
+    fun updateContainer(updated: ContainerItem) {
+        val current = ProfileAppearance.containers().firstOrNull { it.id == updated.id } ?: return
+        ProfileAppearance.updateContainer(
+            HubContainer(
+                id = current.id,
+                name = updated.name.trim().ifBlank { current.name },
+                avatarUri = updated.avatarUri,
+                backgroundUri = updated.backgroundUri,
+                backgroundOpacity = updated.backgroundOpacity.coerceIn(0f, 1f),
+            )
+        )
+        refreshProfiles()
+    }
+
+    fun deleteContainer(containerId: String) {
+        val allContainers = ProfileAppearance.containers()
+        if (allContainers.size <= 1) {
+            Toast.makeText(this, "Keep at least one container", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val target = allContainers.firstOrNull { it.id != containerId } ?: return
+        try {
+            val userIds = BlackBoxCore.get().users
+                .filter { ProfileAppearance.profileContainer(it.id) == containerId }
+                .map { it.id }
+
+            userIds.forEach { userId ->
+                BlackBoxCore.get().deleteUser(userId)
+                ProfileAppearance.clearProfile(userId)
+                profileAppCounts.remove(userId)
+            }
+
+            val removed = allContainers.firstOrNull { it.id == containerId }
+            releaseContainerUri(removed?.avatarUri)
+            releaseContainerUri(removed?.backgroundUri)
+            ProfileAppearance.removeContainer(containerId)
+
+            if (activeContainerId == containerId) {
+                switchContainer(target.id)
+            } else {
+                refreshProfiles()
+            }
+            Toast.makeText(this, "Container deleted", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not delete container $containerId: ${e.message}", e)
+            refreshProfiles()
+            Toast.makeText(this, "Couldn't completely delete the container", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun releaseContainerUri(value: String?) {
+        if (value.isNullOrBlank()) return
+        try {
+            contentResolver.releasePersistableUriPermission(
+                Uri.parse(value),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        } catch (_: Exception) {
+        }
+    }
+
     fun deleteProfile(userId: Int) {
         try {
             val users = BlackBoxCore.get().users.sortedBy { it.id }
             if (users.size <= 1) {
-                Toast.makeText(this, "Keep at least one profile", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Keep at least one virtual profile", Toast.LENGTH_SHORT).show()
                 return
             }
 
-            val targetUserId = if (activeUserId == userId) {
-                users.firstOrNull { it.id != userId }?.id
-            } else {
-                activeUserId
+            val sameContainer = users.filter {
+                it.id != userId && ProfileAppearance.profileContainer(it.id) == activeContainerId
             }
-
-            val background = ProfileAppearance.backgroundUri(userId)
-            if (!background.isNullOrBlank()) {
-                try {
-                    contentResolver.releasePersistableUriPermission(
-                        Uri.parse(background),
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (_: Exception) {
-                }
-            }
-
+            val wasActive = activeUserId == userId
             BlackBoxCore.get().deleteUser(userId)
             ProfileAppearance.clearProfile(userId)
             profileAppCounts.remove(userId)
-            fragmentList.removeAll { it.userID == userId }
-            pagerAdapter.replaceData(fragmentList)
-
-            val nextUser = targetUserId ?: fragmentList.first().userID
-            refreshProfiles()
-            selectProfile(nextUser)
+            if (wasActive) {
+                loadContainerProfiles(activeContainerId, sameContainer.firstOrNull()?.id)
+            } else {
+                refreshProfiles()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Could not delete profile $userId: ${e.message}", e)
             Toast.makeText(this, "Couldn't delete profile", Toast.LENGTH_SHORT).show()
@@ -291,6 +406,10 @@ class MainActivity : BaseActivity() {
     }
 
     fun openInstallPicker() {
+        if (activeUserId < 0) {
+            Toast.makeText(this, "Add a profile before installing apps", Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
             val intent = Intent(this, ListActivity::class.java).putExtra("userID", activeUserId)
             apkPathResult.launch(intent)
@@ -301,12 +420,23 @@ class MainActivity : BaseActivity() {
     }
 
     fun openFakeLocation() {
+        if (activeUserId < 0) return
         startActivity(Intent(this, FakeManagerActivity::class.java).putExtra("userID", activeUserId))
+    }
+
+    fun openGmsManager() {
+        if (BlackBoxCore.get().isSupportGms) {
+            GmsManagerActivity.start(this)
+        } else {
+            Toast.makeText(this, "Google services are not supported", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun refreshCurrentApps() {
         fragmentList.forEach { it.refreshGridColumns() }
-        fragmentList.firstOrNull { it.userID == activeUserId }?.refreshApps()
+        if (activeUserId >= 0) {
+            fragmentList.firstOrNull { it.userID == activeUserId }?.refreshApps()
+        }
     }
 
     fun scanUser() {
@@ -317,7 +447,7 @@ class MainActivity : BaseActivity() {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                 if (!android.os.Environment.isExternalStorageManager()) {
-                    showStoragePermissionDialog()
+                    storageRationaleVisible = true
                 }
             } else if (
                 ContextCompat.checkSelfPermission(
@@ -343,16 +473,8 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun showStoragePermissionDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Storage permission required")
-            .setMessage("Sleepy Hub needs All Files Access to run sandboxed apps correctly. You can grant it in the next screen.")
-            .setPositiveButton("Grant permission") { _, _ -> openAllFilesAccessSettings() }
-            .setNegativeButton("Later", null)
-            .show()
-    }
-
     private fun openAllFilesAccessSettings() {
+        storageRationaleVisible = false
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return
         try {
             val intent = Intent(
@@ -381,9 +503,7 @@ class MainActivity : BaseActivity() {
         if (requestCode == STORAGE_PERMISSION_REQUEST_CODE) {
             val granted = grantResults.isNotEmpty() &&
                 grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }
-            if (!granted) {
-                Log.w(TAG, "Legacy storage permissions were denied")
-            }
+            if (!granted) Log.w(TAG, "Legacy storage permissions were denied")
         }
     }
 }
