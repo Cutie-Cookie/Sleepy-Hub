@@ -131,6 +131,7 @@ fun SleepyHubMainScreen(
     onInstallApps: () -> Unit,
     onOpenFakeLocation: () -> Unit,
     onOpenGmsManager: () -> Unit,
+    onOpenStorageAccess: () -> Unit,
     onRefreshApps: () -> Unit,
     onRefreshProfiles: () -> Unit,
 ) {
@@ -204,6 +205,7 @@ fun SleepyHubMainScreen(
             },
             onOpenFakeLocation = onOpenFakeLocation,
             onOpenGmsManager = onOpenGmsManager,
+            onOpenStorageAccess = onOpenStorageAccess,
             onGridColumnsChanged = onRefreshApps,
         )
         "preferences" -> SettingsPreferencesScreen(
