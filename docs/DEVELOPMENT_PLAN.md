@@ -36,11 +36,13 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Current feature-branch head at this update: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
-- Current CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — in progress at the time of writing.
-- Previous completed CI run: [43414502981](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43414502981) — successful for commit `9bd8b7b6c0adcaa21f00a51d3efcf12b548ffe70`.
-- Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity.
-- The latest commit adds a stale-ViewPager-callback guard and clearer fake-location instructions. These are source changes awaiting the current CI result and device verification.
-- No claim is made that the app-install failure, all profile switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
+- Latest CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — **successful** for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Artifact: `sleepy-hub-arm64-preview-debug` (artifact ID `14032447856`), containing `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk` (26,038,134 bytes).
+- APK SHA-256: `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
+- CI verified APK signature, package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, and ARM64 native library presence.
+- Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity or a reduced-feature app.
+- The latest commit adds a stale-ViewPager-callback guard and clearer fake-location instructions. CI is green; physical-device verification is still pending.
+- No claim is made that app installation, all profile/container switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
 
 ## Phase 0 — project safety and repeatable builds
 
@@ -120,9 +122,9 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 
 | ID | Priority | Issue / expected behavior | Current status | Evidence, fix and next check |
 |---|---|---|---|---|
-| BUG-001 | P0 | Cannot switch between profiles or reliably switch back. Selecting a profile must select the matching BlackBox page and persist correctly. | Fixing; CI/device check pending | Source audit found a stale ViewPager2 callback risk. Commit `046e04b` ignores callbacks whose position is no longer `viewPager.currentItem`. CI run 43417371053 is pending. Test A→B→A, reorder, add/delete, app restart and container return. |
+| BUG-001 | P0 | Cannot switch between profiles or reliably switch back. Selecting a profile must select the matching BlackBox page and persist correctly. | Build verified; device testing | Source audit found a stale ViewPager2 callback risk. Commit `046e04b` ignores callbacks whose position is no longer `viewPager.currentItem`; CI run 43417371053 passed. Test A→B→A, reorder, add/delete, app restart and container return on the phone. |
 | BUG-002 | P0 | Container switching may also be broken; user has not confirmed either way. Empty containers must remain empty and switching back must restore the previous profile. | Reported as uncertain; device testing | Test two populated containers and one empty container; verify active profile ID is scoped to each container and no profile is silently created or moved. |
-| BUG-003 | P0 | Adding apps always reports “Installing Failed”. | Investigating; not fixed/proven | Existing branch adds validation, diagnostic error display and package/install logging, but this is not a root-cause fix. Trace URI permission, source APK access, ABI/native libraries, package parsing, BlackBox install result and the exact error/logcat. Test both picker and external APK. |
+| BUG-003 | P0 | Adding apps always reports “Installing Failed”. | Investigating; one source-path defect corrected, runtime still unverified | Comparing against the known-good baseline exposed a real external-APK dispatch defect: a filesystem path was passed to the package-name overload. Current code routes file paths to `installPackageAsUser(File, userId)` and host package names to the package-name overload. This should correct the external-APK path at source level; the installed-app clone path and actual device result remain unverified. Test both paths; if either fails, capture the exact new error message and relevant logcat. |
 | BUG-004 | P1 | Google services manager still appears old; user does not want Google packages displayed as ordinary installed apps. Show only the small Google Play logo beside the relevant profile name. | Code path updated; device visual check pending | Branch contains a Compose profile-based GMS manager, Google package filtering from the app grid and a Play indicator on profile rows. Compare actual installed screen and ensure no GMS app tile/card is exposed. |
 | BUG-005 | P1 | Navigation bar appears as an opaque bar; user wants transparent but all controls must remain visible and tappable above the system navigation area. | Code-level changes present; device testing | Theme code sets a transparent navigation bar and disables decor fitting; audit every bottom screen for safe insets. Test gesture and three-button navigation; never solve transparency by placing controls behind system buttons. |
 | BUG-006 | P1 | Animations are missing or too fast; transitions should be smooth and deliberate like RikkaHub. | Partially implemented; visual audit pending | Page/list animations exist in source, but coverage, duration and easing need screen-by-screen comparison and device review. |
