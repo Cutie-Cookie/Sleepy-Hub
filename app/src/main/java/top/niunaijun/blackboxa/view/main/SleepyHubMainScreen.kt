@@ -48,6 +48,9 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Check
+
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Menu
@@ -92,6 +95,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -170,7 +176,10 @@ fun SleepyHubMainScreen(
     var moveProfileId by rememberSaveable { mutableStateOf(-1) }
     var deleteProfileId by rememberSaveable { mutableStateOf(-1) }
     var folderProfileId by rememberSaveable { mutableStateOf(-1) }
-    var folderDraft by rememberSaveable { mutableStateOf("") }
+    var showCreateFolderDialog by rememberSaveable { mutableStateOf(false) }
+    var folderToRename by rememberSaveable { mutableStateOf<String?>(null) }
+    var folderToDelete by rememberSaveable { mutableStateOf<String?>(null) }
+    var folderNameDraft by rememberSaveable { mutableStateOf("") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val context = LocalContext.current
     val activity = context as? Activity
@@ -445,18 +454,73 @@ fun SleepyHubMainScreen(
                                 }
                             }
 
-                            if (folders.isNotEmpty()) {
-                                LazyRow(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    items(listOf("All") + folders) { folder ->
-                                        androidx.compose.material3.FilterChip(
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                item {
+                                    ProfileFolderChip(
+                                        label = "All",
+                                        selected = selectedFolder == "All",
+                                        onClick = { selectedFolder = "All" },
+                                        onLongClick = {},
+                                    )
+                                }
+                                items(folders, key = { it }) { folder ->
+                                    if (folder.equals("General", ignoreCase = true)) {
+                                        ProfileFolderChip(
+                                            label = folder,
+                                            icon = Icons.Outlined.Folder,
                                             selected = selectedFolder == folder,
                                             onClick = { selectedFolder = folder },
-                                            label = { Text(folder) },
+                                            onLongClick = {},
                                         )
+                                    } else {
+                                        var menuExpanded by remember(folder) { mutableStateOf(false) }
+                                        Box {
+                                            ProfileFolderChip(
+                                                label = folder,
+                                                icon = Icons.Outlined.Folder,
+                                                selected = selectedFolder == folder,
+                                                onClick = { selectedFolder = folder },
+                                                onLongClick = { menuExpanded = true },
+                                            )
+                                            DropdownMenu(
+                                                expanded = menuExpanded,
+                                                onDismissRequest = { menuExpanded = false },
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Rename") },
+                                                    leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                                                    onClick = {
+                                                        folderToRename = folder
+                                                        folderNameDraft = folder
+                                                        menuExpanded = false
+                                                    },
+                                                )
+                                                DropdownMenuItem(
+                                                    text = { Text("Delete") },
+                                                    leadingIcon = { Icon(Icons.Outlined.Delete, null) },
+                                                    onClick = {
+                                                        folderToDelete = folder
+                                                        menuExpanded = false
+                                                    },
+                                                )
+                                            }
+                                        }
                                     }
+                                }
+                                item {
+                                    ProfileFolderChip(
+                                        label = "Add",
+                                        icon = Icons.Outlined.Add,
+                                        selected = false,
+                                        onClick = {
+                                            folderNameDraft = ""
+                                            showCreateFolderDialog = true
+                                        },
+                                        onLongClick = {},
+                                    )
                                 }
                             }
 
@@ -476,7 +540,6 @@ fun SleepyHubMainScreen(
                                         onMove = { moveProfileId = profile.userId },
                                         onMoveToFolder = {
                                             folderProfileId = profile.userId
-                                            folderDraft = profile.folder
                                         },
                                         onTogglePinned = { onToggleProfilePinned(profile.userId, !profile.pinned) },
                                         onRename = {
@@ -708,40 +771,135 @@ fun SleepyHubMainScreen(
 
     if (folderProfileId >= 0) {
         val movingProfile = profiles.firstOrNull { it.userId == folderProfileId }
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { folderProfileId = -1 },
-            title = { Text("Move ${movingProfile?.name ?: "profile"} to folder") },
-            text = {
-                Column(
-                    modifier = Modifier.heightIn(max = 280.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    folderNames.forEach { folder ->
-                        Row(
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("Move to folder", style = MaterialTheme.typography.titleLarge)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(folderNames, key = { it }) { folder ->
+                        val isCurrent = movingProfile?.folder == folder
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { folderDraft = folder }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                .clickable {
+                                    onSetProfileFolder(folderProfileId, folder)
+                                    folderProfileId = -1
+                                },
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (isCurrent) MaterialTheme.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.surface,
+                            tonalElevation = if (isCurrent) 2.dp else 0.dp,
                         ) {
-                            RadioButton(
-                                selected = folderDraft == folder,
-                                onClick = { folderDraft = folder },
-                            )
-                            Text(folder, style = MaterialTheme.typography.bodyLarge)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Icon(Icons.Outlined.Folder, contentDescription = null)
+                                Text(
+                                    folder,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                if (isCurrent) {
+                                    Icon(
+                                        Icons.Outlined.Check,
+                                        contentDescription = "Current folder",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+    }
+
+    if (showCreateFolderDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateFolderDialog = false },
+            title = { Text("Create folder") },
+            text = {
+                OutlinedTextField(
+                    value = folderNameDraft,
+                    onValueChange = { folderNameDraft = it },
+                    singleLine = true,
+                    label = { Text("Folder name") },
+                )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    onSetProfileFolder(folderProfileId, folderDraft)
-                    folderProfileId = -1
-                }, enabled = folderDraft in folderNames) { Text("Move") }
+                TextButton(
+                    onClick = {
+                        onCreateFolder(folderNameDraft)
+                        showCreateFolderDialog = false
+                    },
+                    enabled = folderNameDraft.isNotBlank(),
+                ) { Text("Create") }
             },
             dismissButton = {
-                TextButton(onClick = { folderProfileId = -1 }) { Text("Cancel") }
+                TextButton(onClick = { showCreateFolderDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    folderToRename?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { folderToRename = null },
+            title = { Text("Rename folder") },
+            text = {
+                OutlinedTextField(
+                    value = folderNameDraft,
+                    onValueChange = { folderNameDraft = it },
+                    singleLine = true,
+                    label = { Text("Folder name") },
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val newName = folderNameDraft.trim()
+                        if (selectedFolder == folder) selectedFolder = newName
+                        onRenameFolder(folder, newName)
+                        folderToRename = null
+                    },
+                    enabled = folderNameDraft.isNotBlank(),
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToRename = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    folderToDelete?.let { folder ->
+        AlertDialog(
+            onDismissRequest = { folderToDelete = null },
+            title = { Text("Delete $folder?") },
+            text = {
+                Text("Profiles in this folder will be moved to General. Their installed apps and data will stay intact.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (selectedFolder == folder) selectedFolder = "All"
+                        onDeleteFolder(folder)
+                        folderToDelete = null
+                    },
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { folderToDelete = null }) { Text("Cancel") }
             },
         )
     }
@@ -1224,6 +1382,46 @@ private fun StorageRationaleDialog(
                     TextButton(onClick = onGrant) { Text("Grant permission") }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileFolderChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    icon: ImageVector? = null,
+) {
+    Surface(
+        shape = CircleShape,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        },
+        modifier = Modifier
+            .clip(CircleShape)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
