@@ -6,10 +6,54 @@ Reviewed 2026-11-13.
 
 - Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
 - Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
-- Sleepy Hub branch audited: `sleepyhub/rikkahub-source-rebuild`
-- Audited Sleepy Hub head: `2ebae140fcd0c82c03321de648db00accaed5d98`
+- Latest implementation branch audited: `sleepyhub/bugfix-install-switch-polish`
+- Latest audited head: `bff794ecb18d8b606d5af67b8b8332f40124f4f3`
+- Earlier source-rebuild branch: `sleepyhub/rikkahub-source-rebuild` (`9788409e015b13796bf1fe52820edd0fae5e074d`)
 - App baseline: `sleepyhub/identity-icons-no-vpn`
 - `main` remains untouched; the rebuild branch is separate.
+
+## Current implementation status — 2026-11-13
+
+<badge color="success">ARM64 debug build succeeded</badge>
+
+- Feature branch: `sleepyhub/bugfix-install-switch-polish`
+- Commit: `bff794ecb18d8b606d5af67b8b8332f40124f4f3`
+- Workflow: [43413343419 — successful ARM64 debug build](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43413343419)
+- Artifact: `sleepy-hub-arm64-debug` (artifact ID `14031251227`)
+- APK: `SleepyHub_4.0.0_arm64-v8a-debug.apk`
+- APK size: 26,036,671 bytes
+- SHA-256: `3e36cac613f4fc16f6cad9c1bc60c10e57eb93ec154843cad46d16a71f03e200`
+- APK archive and Android manifest were present; ARM64 native library was present; JAR signature verification succeeded with the self-signed debug certificate.
+- This is a debug-signed ARM64 APK, not a release-signed build. It has **not** been installed or interaction-tested on a physical Android device.
+- `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
+
+### Implemented in the latest feature branch
+
+- Persistent container membership, an empty-container flow, and a last-active-profile ID per container.
+- A race guard around ViewPager2 data replacement and profile selection so stale page callbacks cannot switch the active profile back.
+- Inline, independently scrollable profile rows in the drawer, folder filtering, profile sorting, a small Add Profile action, and a separate bottom container selector.
+- Profile manager search, compact rows, reorder handles, detail/basic/background pages, and per-profile workspace wallpapers.
+- Container settings now cover container name and picture only. Legacy container wallpaper data is migrated to profiles when needed; no per-container theme or accent controls remain.
+- One global theme system; the workspace remains black by default, and the selected profile's optional background is drawn behind its app grid only.
+- A Compose Google services manager that lists profiles rather than installed Google packages. Google system packages are filtered from the app grid; enabled profiles show the small Play badge beside the profile name.
+- A clearer fake-location explanation: choose an app in the active profile, choose a point on the map, confirm it, and long-press that app later to disable it.
+- Rounded search fields and consistent grouped surfaces across profile management, app picking, fake location, settings, and Google services.
+- Transparent system navigation bars with safe-drawing insets retained on the actual content. Bottom controls remain padded above the system navigation area.
+- Slower page transitions and animated list placement/color changes.
+- APK/profile validation and a detailed failure dialog for installation actions, plus additional package-parser/install logging.
+
+### Verification still required
+
+- Install the APK on the target phone and test switching profiles, switching between populated and empty containers, and switching back.
+- Test adding an app from the installed-app picker and from an external APK. The new validation and error dialog improve diagnosis, but installation success is **not** claimed until this is exercised on-device.
+- Test Google services enable/disable and confirm only the Play badge appears on profile names.
+- Test fake location with a normal location-aware app and confirm that disabling it restores real location.
+- Check screenshots of the drawer, profile manager/detail, container picker, app picker, GMS manager, and system navigation area against the pinned RikkaHub source.
+- No automated UI or instrumentation tests have been added yet.
+
+### Reorderable API note
+
+The project uses Reorderable 3.1.0. Its current API uses `ReorderableItem` and the in-scope `longPressDraggableHandle`/drag handle modifiers; the older `Modifier.reorderable(state)` extension is not part of this version. The mistaken old modifier was removed after CI identified it. Existing drag handles remain in the list/grid items.
 
 ## User-confirmed mapping
 
@@ -22,10 +66,10 @@ Reviewed 2026-11-13.
 | Conversation | **BlackBox virtual Android profile** |
 | Assistant-owned folder | Profile folder inside that container |
 | Assistant avatar | Container picture |
-| Assistant chat background | Container workspace background |
+| Assistant-owned workspace background | Profile workspace background (per profile, behind its app grid only) |
 | Global theme | One global Sleepy Hub theme |
 
-A container owns zero or more virtual profiles. The inline scrollable list in RikkaHub's drawer maps to Sleepy Hub profiles. The compact assistant selector near the drawer bottom maps to containers. A new container starts empty; it must not auto-create a BlackBox user. Switching containers filters the profile list and restores the last selected profile when returning.
+A container owns zero or more virtual profiles. The inline scrollable list in RikkaHub's drawer maps to Sleepy Hub profiles. The compact assistant selector near the drawer bottom maps to containers. A new container starts empty; it must not auto-create a BlackBox user. Switching containers filters the profile list and restores the last selected profile when returning. Profile name, avatar, and workspace background belong to the profile; the background is rendered only behind that profile's active app grid, never on drawer rows, profile cards, or the container picker.
 
 Theme ownership is global only. The upstream `Assistant` data class has `avatar`, `background`, `backgroundOpacity`, and a gradient-background flag, but no theme ID or assistant-specific theme. RikkaHub theme state lives in global `Settings` and the theme preferences. Therefore Sleepy Hub must not add per-container or per-profile theme/accent controls.
 
@@ -53,7 +97,9 @@ Theme ownership is global only. The upstream `Assistant` data class has `avatar`
 - `SettingPreferencesThemePage.kt` and `SettingThemePage.kt`: global dynamic-color/AMOLED preferences, preset themes, custom themes, import/export, and theme selection.
 - `Assistant.kt` contains no per-assistant theme field. Assistant identity/background and global theme are separate.
 
-## Sleepy Hub code audit
+## Historical pre-container-model audit (superseded by the implementation above)
+
+The following issues described the pre-rebuild code and are retained as audit history. They are not a description of the current feature branch.
 
 ### Structural mismatches that must be fixed before visual polish
 
@@ -77,28 +123,19 @@ Theme ownership is global only. The upstream `Assistant` data class has `avatar`
 - Stop uses `BlackBoxCore.stopPackage(packageName, userID)`.
 - These per-user backend operations should be preserved while container membership is added.
 
-### Current build failure
+### Historical build failures (superseded)
 
-Latest ARM64 debug workflow: [43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208) — failed; no APK artifact was produced.
-
-Compiler output:
-- `AppGridScreen.kt`: unresolved `background` and `CircleShape` references (missing imports).
-- `SleepyHubMainScreen.kt`: unresolved `Icons.Outlined.Cloud` (missing import).
-- `ListActivity.kt`: imports `ActivityInstallPickerBinding` but declares `ActivityListBinding`; the file also reports a Compose call-context error.
-- These compile errors must be fixed and the workflow rerun before any debug APK is offered.
+Earlier ARM64 debug workflows failed during the first UI rebuild. Those failures were resolved in later commits. The latest successful build is [43413343419](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43413343419), with artifact ID `14031251227` as recorded above.
 
 There are currently no files under `app/src/test` or `app/src/androidTest`. Add tests for container/profile ownership, empty containers, last-selected-profile restoration, and persistence.
 
-## Required implementation order
+## Remaining implementation and verification order
 
-1. Add a persistent container model and a migration that assigns existing virtual users to a default container without touching their BlackBox app data.
-2. Make profile membership container-scoped; store last active profile per container.
-3. Rebuild the drawer to show the inline scrollable profile list and the bottom container selector.
-4. Add the assistant-style container picker and container manager.
-5. Move name/avatar/background to container settings; remove profile-level accent/background.
-6. Replace the theme controls with one global RikkaHub-style theme flow.
-7. Keep the app workspace black by default and render only the selected container's optional background behind it.
-8. Fix compile errors, add focused tests, run CI, then device-test the full flow.
+1. Device-test profile switching, empty-container switching, and restoration of the last profile.
+2. Device-test app installation from both the installed-app picker and an external APK; use the new detailed error dialog and logs if it fails.
+3. Device-test Google services and fake location behavior.
+4. Compare device screenshots against the pinned RikkaHub source and iterate on any concrete layout/animation differences.
+5. Add focused tests for container/profile ownership, empty containers, last-selected-profile restoration, and persistence.
 
 ## License boundary
 
@@ -139,7 +176,9 @@ Sleepy Hub placement:
 - Workspace top-right action replaces RikkaHub New Message with Add App.
 - Remove the top-right MoreVert popup entirely; use dashboard Settings, profile actions, Container Manager, and Refresh shortcut.
 
-### Sleepy Hub's own UI issues to fix
+### Historical Sleepy Hub UI issues from the initial audit (superseded)
+
+The items below record the initial UI mismatch list. The latest implementation addresses the listed drawer placement, Add App entry point, profile backgrounds, global theme ownership, Compose permission rationale, and app-picker structure; device-level visual verification remains outstanding.
 
 - `SleepyHubMainScreen.kt`: current drawer has a Manage profiles row and profile-picker bottom sheet. Replace with inline independently scrolling profile list; move container switching into the assistant-style sheet. Add the small profile plus beside the list heading.
 - `SleepyHubMainScreen.kt`: top bar already has an Add/Install action, but it also has a MoreVert menu with Profile settings, Manage profiles, and Refresh apps. Keep the Add/Install action in the New Message position; remove MoreVert. Keep Settings at dashboard bottom-right and Refresh in dashboard footer.
