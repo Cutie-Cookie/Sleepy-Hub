@@ -43,7 +43,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreHoriz
@@ -795,7 +795,7 @@ private fun ProfileDrawerRow(
                 }
                 if (profile.pinned) {
                     Icon(
-                        Icons.Outlined.Folder,
+                        Icons.Outlined.PushPin,
                         contentDescription = "Pinned profile",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp),
