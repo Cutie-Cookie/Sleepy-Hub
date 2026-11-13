@@ -983,6 +983,7 @@ private fun ContainerManagerScreen(
                     var expanded by remember { mutableStateOf(false) }
                     Card(
                         onClick = { onSelect(container.id) },
+                        modifier = Modifier.animateItem(),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
                             containerColor = if (container.id == activeContainerId) {
@@ -1005,9 +1006,6 @@ private fun ContainerManagerScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                            }
-                            IconButton(onClick = { onEdit(container.id) }) {
-                                Icon(Icons.Outlined.Edit, contentDescription = "Edit container")
                             }
                             Box {
                                 IconButton(onClick = { expanded = true }) {
