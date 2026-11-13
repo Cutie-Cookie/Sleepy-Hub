@@ -455,7 +455,7 @@ fun SleepyHubMainScreen(
                             }
 
                             LazyRow(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).padding(bottom = 6.dp),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 item {

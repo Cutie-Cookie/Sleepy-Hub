@@ -451,13 +451,17 @@ class AppsRepository {
     }
 
     fun launchApk(packageName: String, userId: Int, launchLiveData: MutableLiveData<Boolean>) {
-        try {
-            val result = BlackBoxCore.get().launchApk(packageName, userId)
-            launchLiveData.postValue(result)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error launching APK: ${e.message}")
-            launchLiveData.postValue(false)
-        }
+        Thread({
+            try {
+                Log.d(TAG, "Requesting launch for $packageName in profile $userId")
+                val result = BlackBoxCore.get().launchApk(packageName, userId)
+                Log.d(TAG, "Launch request for $packageName returned $result")
+                launchLiveData.postValue(result)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error launching $packageName in profile $userId", e)
+                launchLiveData.postValue(false)
+            }
+        }, "SleepyHubAppLaunch").start()
     }
 
     fun clearApkData(packageName: String, userID: Int, resultLiveData: MutableLiveData<String>) {

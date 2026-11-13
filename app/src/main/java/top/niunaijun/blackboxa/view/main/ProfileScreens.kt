@@ -372,12 +372,12 @@ fun GlobalSettingsScreen(
                 SettingsCard(title = "General settings") {
                     Text(
                         "Color mode",
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
                         maxLines = 1,
                         style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
                     )
                     LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(listOf("system", "light", "dark")) { mode ->

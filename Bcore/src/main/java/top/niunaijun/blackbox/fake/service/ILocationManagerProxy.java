@@ -3,11 +3,17 @@ package top.niunaijun.blackbox.fake.service;
 import android.content.Context;
 import android.location.LocationManager;
 import android.os.IInterface;
+import android.os.IBinder;
 import android.util.Log;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import black.android.location.BRILocationListener;
 import black.android.location.BRILocationManagerStub;
@@ -25,6 +31,23 @@ import top.niunaijun.blackbox.utils.MethodParameterUtils;
 
 public class ILocationManagerProxy extends BinderInvocationStub {
     public static final String TAG = "ILocationManagerProxy";
+    private static final Set<IBinder> FAKE_LOCATION_LISTENERS =
+            Collections.newSetFromMap(new ConcurrentHashMap<IBinder, Boolean>());
+
+    private static android.location.Location getFakeLocationIfAvailable() {
+        if (!BLocationManager.isFakeLocationEnable()) return null;
+        BLocation location = BLocationManager.get().getLocation(
+                BActivityThread.getUserId(), BActivityThread.getAppPackageName());
+        return location == null ? null : location.convert2SystemLocation();
+    }
+
+    private static IInterface findLocationListener(Object[] args) {
+        if (args == null) return null;
+        for (Object arg : args) {
+            if (arg instanceof IInterface) return (IInterface) arg;
+        }
+        return null;
+    }
 
     public ILocationManagerProxy() {
         super(BRServiceManager.get().getService(Context.LOCATION_SERVICE));
@@ -80,9 +103,8 @@ public class ILocationManagerProxy extends BinderInvocationStub {
 
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            if (BLocationManager.isFakeLocationEnable()) {
-                return BLocationManager.get().getLocation(BActivityThread.getUserId(), BActivityThread.getAppPackageName()).convert2SystemLocation();
-            }
+            android.location.Location fakeLocation = getFakeLocationIfAvailable();
+            if (fakeLocation != null) return fakeLocation;
             
             
             try {
@@ -102,9 +124,8 @@ public class ILocationManagerProxy extends BinderInvocationStub {
 
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            if (BLocationManager.isFakeLocationEnable()) {
-                return BLocationManager.get().getLocation(BActivityThread.getUserId(), BActivityThread.getAppPackageName()).convert2SystemLocation();
-            }
+            android.location.Location fakeLocation = getFakeLocationIfAvailable();
+            if (fakeLocation != null) return fakeLocation;
             
             
             try {
@@ -125,9 +146,11 @@ public class ILocationManagerProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             if (BLocationManager.isFakeLocationEnable()) {
-                if (args[1] instanceof IInterface) {
-                    IInterface listener = (IInterface) args[1];
-                    BLocationManager.get().requestLocationUpdates(listener.asBinder());
+                IInterface listener = findLocationListener(args);
+                if (listener != null) {
+                    IBinder binder = listener.asBinder();
+                    FAKE_LOCATION_LISTENERS.add(binder);
+                    BLocationManager.get().requestLocationUpdates(binder);
                     return 0;
                 }
             }
@@ -145,13 +168,42 @@ public class ILocationManagerProxy extends BinderInvocationStub {
         }
     }
 
-    @ProxyMethod("removeUpdates")
-    public static class RemoveUpdates extends MethodHook {
-
+    @ProxyMethod("registerLocationListener")
+    public static class RegisterLocationListener extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            if (args[0] instanceof IInterface) {
-                IInterface listener = (IInterface) args[0];
+            if (BLocationManager.isFakeLocationEnable()) {
+                IInterface listener = findLocationListener(args);
+                if (listener != null) {
+                    IBinder binder = listener.asBinder();
+                    FAKE_LOCATION_LISTENERS.add(binder);
+                    BLocationManager.get().requestLocationUpdates(binder);
+                    return null;
+                }
+            }
+            return method.invoke(who, args);
+        }
+    }
+
+    @ProxyMethod("unregisterLocationListener")
+    public static class UnregisterLocationListener extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            IInterface listener = findLocationListener(args);
+            if (listener != null && FAKE_LOCATION_LISTENERS.remove(listener.asBinder())) {
+                BLocationManager.get().removeUpdates(listener.asBinder());
+                return null;
+            }
+            return method.invoke(who, args);
+        }
+    }
+
+    @ProxyMethod("removeUpdates")
+    public static class RemoveUpdates extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            IInterface listener = findLocationListener(args);
+            if (listener != null && FAKE_LOCATION_LISTENERS.remove(listener.asBinder())) {
                 BLocationManager.get().removeUpdates(listener.asBinder());
                 return 0;
             }
@@ -165,13 +217,13 @@ public class ILocationManagerProxy extends BinderInvocationStub {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
             Object providerProperties = method.invoke(who, args);
-            if (BLocationManager.isFakeLocationEnable()) {
+            if (BLocationManager.isFakeLocationEnable() && providerProperties != null) {
                 BRProviderProperties.get(providerProperties)._set_mHasNetworkRequirement(false);
                 if (BLocationManager.get().getCell(BActivityThread.getUserId(), BActivityThread.getAppPackageName()) == null) {
                     BRProviderProperties.get(providerProperties)._set_mHasCellRequirement(false);
                 }
             }
-            return method.invoke(who, args);
+            return providerProperties;
         }
     }
 
@@ -202,7 +254,19 @@ public class ILocationManagerProxy extends BinderInvocationStub {
 
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return Arrays.asList(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER);
+            Object result = method.invoke(who, args);
+            if (!BLocationManager.isFakeLocationEnable()) return result;
+            if (result instanceof List) {
+                List providers = new ArrayList((List) result);
+                if (!providers.contains(LocationManager.GPS_PROVIDER)) providers.add(LocationManager.GPS_PROVIDER);
+                if (!providers.contains(LocationManager.NETWORK_PROVIDER)) providers.add(LocationManager.NETWORK_PROVIDER);
+                if (!providers.contains(LocationManager.PASSIVE_PROVIDER)) providers.add(LocationManager.PASSIVE_PROVIDER);
+                return providers;
+            }
+            return Arrays.asList(
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER);
         }
     }
 
@@ -211,8 +275,22 @@ public class ILocationManagerProxy extends BinderInvocationStub {
 
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            if (!BLocationManager.isFakeLocationEnable()) {
+                return method.invoke(who, args);
+            }
             String provider = (String) args[0];
-            return Objects.equals(provider, LocationManager.GPS_PROVIDER);
+            return Objects.equals(provider, LocationManager.GPS_PROVIDER)
+                    || Objects.equals(provider, LocationManager.NETWORK_PROVIDER)
+                    || Objects.equals(provider, LocationManager.PASSIVE_PROVIDER);
+        }
+    }
+
+    @ProxyMethod("isLocationEnabledForUser")
+    public static class IsLocationEnabledForUser extends MethodHook {
+        @Override
+        protected Object hook(Object who, Method method, Object[] args) throws Throwable {
+            if (BLocationManager.isFakeLocationEnable()) return true;
+            return method.invoke(who, args);
         }
     }
 

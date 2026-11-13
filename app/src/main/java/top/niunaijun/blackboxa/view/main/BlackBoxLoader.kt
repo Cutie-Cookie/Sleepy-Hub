@@ -271,6 +271,13 @@ class BlackBoxLoader {
                                     }
                                 }
 
+                                override fun isEnableLauncherActivity(): Boolean {
+                                    // Bypass the optional splash wrapper and launch the virtual
+                                    // app activity directly. This avoids a blank splash if its
+                                    // asynchronous hand-off fails on the device.
+                                    return false
+                                }
+
                                 override fun isEnableDaemonService(): Boolean {
                                     return try {
                                         mDaemonEnable

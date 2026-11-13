@@ -6,11 +6,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.Icons
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.os.Build
 
-import android.widget.ImageView
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -57,10 +53,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import top.niunaijun.blackbox.BlackBoxCore
 
 
 @Composable
@@ -224,38 +218,54 @@ fun LargeFlexibleTopAppBar(
 }
 
 @Composable
+@Suppress("UNUSED_PARAMETER")
 fun GooglePlayBadge(
     userId: Int,
     modifier: Modifier = Modifier,
     size: Dp = 16.dp,
 ) {
-    val playStoreIcon = remember(userId) {
-        runCatching {
-            val virtualStore = BlackBoxCore.get().getInstalledApplications(0, userId)
-                .firstOrNull { it.packageName == "com.android.vending" }
-            val icon = if (virtualStore != null) {
-                BlackBoxCore.getPackageManager().getApplicationIcon(virtualStore)
-            } else {
-                BlackBoxCore.getPackageManager().getApplicationIcon("com.android.vending")
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && icon is AdaptiveIconDrawable) {
-                icon.foreground
-            } else {
-                icon
-            }
-        }.getOrNull()
-    }
+    Canvas(modifier = modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val left = w * 0.08f
+        val top = h * 0.05f
+        val centerX = w * 0.54f
+        val centerY = h * 0.50f
+        val right = w * 0.92f
+        val upperRight = h * 0.43f
+        val lowerRight = h * 0.57f
+        val bottom = h * 0.95f
 
-    AndroidView(
-        factory = { context ->
-            ImageView(context).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                contentDescription = "Google Play"
-            }
-        },
-        update = { imageView -> imageView.setImageDrawable(playStoreIcon) },
-        modifier = modifier.size(size),
-    )
+        val blue = Path().apply {
+            moveTo(left, top)
+            lineTo(centerX, centerY)
+            lineTo(left, bottom)
+            close()
+        }
+        val red = Path().apply {
+            moveTo(left, top)
+            lineTo(right, upperRight)
+            lineTo(centerX, centerY)
+            close()
+        }
+        val yellow = Path().apply {
+            moveTo(centerX, centerY)
+            lineTo(right, upperRight)
+            lineTo(right, lowerRight)
+            close()
+        }
+        val green = Path().apply {
+            moveTo(left, bottom)
+            lineTo(centerX, centerY)
+            lineTo(right, lowerRight)
+            close()
+        }
+
+        drawPath(blue, Color(0xFF4285F4))
+        drawPath(red, Color(0xFFEA4335))
+        drawPath(yellow, Color(0xFFFBBC04))
+        drawPath(green, Color(0xFF34A853))
+    }
 }
 @Composable
 fun RikkaSearchField(

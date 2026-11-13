@@ -185,6 +185,11 @@ fun AppGridScreen(
                             },
                             update = { imageView ->
                                 imageView.setImageDrawable(app.icon)
+                                imageView.setOnClickListener { onLaunch(app) }
+                                imageView.setOnLongClickListener {
+                                    selectedApp = app
+                                    true
+                                }
                             },
                             modifier = Modifier.size(52.dp),
                         )
@@ -214,7 +219,7 @@ fun AppGridScreen(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .size(18.dp)
+                                    .size(24.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
                                     .draggableHandle(
@@ -229,7 +234,7 @@ fun AppGridScreen(
                                 Icon(
                                     Icons.Outlined.DragHandle,
                                     contentDescription = "Reorder app",
-                                    modifier = Modifier.size(12.dp),
+                                    modifier = Modifier.size(15.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
