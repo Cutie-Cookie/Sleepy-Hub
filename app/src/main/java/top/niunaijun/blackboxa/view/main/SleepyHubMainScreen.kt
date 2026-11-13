@@ -179,6 +179,7 @@ fun SleepyHubMainScreen(
     var folderToRename by rememberSaveable { mutableStateOf<String?>(null) }
     var folderToDelete by rememberSaveable { mutableStateOf<String?>(null) }
     var folderNameDraft by rememberSaveable { mutableStateOf("") }
+    var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val folderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
@@ -355,7 +356,6 @@ fun SleepyHubMainScreen(
         "theme" -> ThemeSettingsScreen(onBack = { page = "preferences" })
         else -> {
             val scope = rememberCoroutineScope()
-            var selectedFolder by rememberSaveable(activeContainerId) { mutableStateOf("All") }
             var profileSortMode by rememberSaveable(activeContainerId) { mutableStateOf("custom") }
             var sortMenuExpanded by rememberSaveable(activeContainerId) { mutableStateOf(false) }
             val folders = folderNames
