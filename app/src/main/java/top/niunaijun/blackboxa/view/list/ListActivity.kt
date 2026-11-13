@@ -17,7 +17,7 @@ import top.niunaijun.blackboxa.view.main.SleepyHubTheme
 
 class ListActivity : BaseActivity() {
 
-    private val viewBinding: ActivityListBinding by inflate()
+    private val viewBinding: ActivityInstallPickerBinding by inflate()
     private lateinit var viewModel: ListViewModel
 
     private val openDocumentedResult =
