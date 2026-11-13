@@ -23,14 +23,6 @@ public final class BUserIdentifiers {
         return getOrCreate(userId, "android_id", () -> randomHex(8));
     }
 
-    public static String getGsfAndroidId(int userId) {
-        return getOrCreate(userId, "gsf_android_id", () -> randomHex(8));
-    }
-
-    public static String getWifiMac(int userId) {
-        return getOrCreate(userId, "wifi_mac", BUserIdentifiers::randomMacAddress);
-    }
-
     public static String getImei(int userId) {
         return getOrCreate(userId, "imei", BUserIdentifiers::randomImei);
     }
@@ -122,14 +114,7 @@ public final class BUserIdentifiers {
         String compact = java.util.UUID.nameUUIDFromBytes(
                 seed.getBytes(java.nio.charset.StandardCharsets.UTF_8)
         ).toString().replace("-", "");
-        if ("android_id".equals(key) || "gsf_android_id".equals(key) || "serial".equals(key)) return compact.substring(0, 16);
-        if ("wifi_mac".equals(key)) {
-            String hex = compact.substring(0, 12);
-            int first = Integer.parseInt(hex.substring(0, 2), 16);
-            hex = String.format(Locale.US, "%02x", (first & 0xfc) | 0x02) + hex.substring(2);
-            return hex.substring(0, 2) + ":" + hex.substring(2, 4) + ":" + hex.substring(4, 6) + ":" +
-                    hex.substring(6, 8) + ":" + hex.substring(8, 10) + ":" + hex.substring(10, 12);
-        }
+        if ("android_id".equals(key) || "serial".equals(key)) return compact.substring(0, 16);
         if ("meid".equals(key)) return compact.substring(0, 14).toUpperCase(Locale.US);
         if ("subscriber_id".equals(key)) return "310260" + compact.replaceAll("[^0-9]", "0").substring(0, 9);
         if ("sim_serial".equals(key)) return "89" + compact.replaceAll("[^0-9]", "0").substring(0, 18);
@@ -152,16 +137,6 @@ public final class BUserIdentifiers {
 
     private static String randomImei() {
         return luhn(randomDigits(14));
-    }
-
-    private static String randomMacAddress() {
-        byte[] bytes = new byte[6];
-        RANDOM.nextBytes(bytes);
-        // Locally administered unicast address, unique to this virtual profile.
-        bytes[0] = (byte) ((bytes[0] & 0xfc) | 0x02);
-        return String.format(Locale.US, "%02x:%02x:%02x:%02x:%02x:%02x",
-                bytes[0] & 0xff, bytes[1] & 0xff, bytes[2] & 0xff,
-                bytes[3] & 0xff, bytes[4] & 0xff, bytes[5] & 0xff);
     }
 
     private static String luhn(String firstFourteenDigits) {

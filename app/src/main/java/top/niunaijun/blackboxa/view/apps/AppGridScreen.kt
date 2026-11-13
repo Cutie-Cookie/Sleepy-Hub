@@ -8,6 +8,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +31,8 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.DragHandle
+
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Launch
 import androidx.compose.material3.AlertDialog
@@ -50,6 +54,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -154,29 +160,14 @@ fun AppGridScreen(
         ) {
             items(displayedApps, key = { it.packageName }) { app ->
                 ReorderableItem(reorderableState, key = app.packageName) { isDragging ->
-                    var suppressNextClick by remember(app.packageName) { mutableStateOf(false) }
                     Column(
                         modifier = Modifier
                             .animateItem()
                             .fillMaxWidth()
-                            .longPressDraggableHandle(
-                                onDragStarted = { didReorder = false },
-                                onDragStopped = {
-                                    suppressNextClick = true
-                                    if (didReorder) {
-                                        onReorder(displayedApps)
-                                    } else {
-                                        selectedApp = app
-                                    }
-                                },
+                            .combinedClickable(
+                                onClick = { onLaunch(app) },
+                                onLongClick = { selectedApp = app },
                             )
-                            .clickable {
-                                if (suppressNextClick) {
-                                    suppressNextClick = false
-                                } else {
-                                    onLaunch(app)
-                                }
-                            }
                             .scale(if (isDragging) 1.04f else 1f)
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -216,6 +207,30 @@ fun AppGridScreen(
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     fontSize = 8.sp,
+                                )
+                            }
+                        }
+                        if (displayedApps.size > 1) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(18.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.92f))
+                                    .draggableHandle(
+                                        onDragStarted = { didReorder = false },
+                                        onDragStopped = {
+                                            if (didReorder) onReorder(displayedApps)
+                                            didReorder = false
+                                        },
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Outlined.DragHandle,
+                                    contentDescription = "Reorder app",
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }

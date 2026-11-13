@@ -5,6 +5,8 @@ import android.content.res.Configuration as AndroidConfiguration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -12,6 +14,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
 import androidx.preference.PreferenceManager
+import java.io.File
+
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -25,7 +29,12 @@ import top.niunaijun.blackboxa.util.inflate
 
 class FollowMyLocationOverlay : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "FakeLocationPicker"
+    }
+
     private val binding: ActivityOsmdroidBinding by inflate()
+    private var mapInitialized = false
     private var selectedPoint: GeoPoint? = null
     private var marker: Marker? = null
     private var resultSent = false
@@ -48,11 +57,21 @@ class FollowMyLocationOverlay : AppCompatActivity() {
         )
         super.onCreate(savedInstanceState)
 
-        Configuration.getInstance().load(
-            this,
-            PreferenceManager.getDefaultSharedPreferences(this),
-        )
-        setContentView(binding.root)
+        try {
+            val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+            val osmdroidDirectory = File(cacheDir, "osmdroid")
+            val tileCacheDirectory = File(osmdroidDirectory, "tiles")
+            if (!tileCacheDirectory.exists() && !tileCacheDirectory.mkdirs()) {
+                Log.w(TAG, "Could not create private map tile cache at $tileCacheDirectory")
+            }
+
+            Configuration.getInstance().apply {
+                load(this@FollowMyLocationOverlay, preferences)
+                setOsmdroidBasePath(osmdroidDirectory)
+                setOsmdroidTileCache(tileCacheDirectory)
+                setUserAgentValue(packageName)
+            }
+            setContentView(binding.root)
         configureSystemBars()
 
         val savedLocation: BLocation? = intent.getParcelableExtra("location")
@@ -105,6 +124,17 @@ class FollowMyLocationOverlay : AppCompatActivity() {
         binding.map.setMultiTouchControls(true)
         binding.map.controller.setZoom(if (savedLocation == null) 2.5 else 12.5)
         binding.map.controller.setCenter(selectedPoint ?: GeoPoint(20.0, 0.0))
+            mapInitialized = true
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not open the fake-location map", error)
+            android.widget.Toast.makeText(
+                this,
+                "Couldn't open the location map. Please try again.",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+            setResult(Activity.RESULT_CANCELED)
+            finish()
+        }
     }
 
     private fun configureSystemBars() {
@@ -132,12 +162,26 @@ class FollowMyLocationOverlay : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        binding.map.onResume()
+        if (mapInitialized) {
+            runCatching { binding.map.onResume() }
+                .onFailure { Log.w(TAG, "Map resume failed", it) }
+        }
     }
 
     override fun onPause() {
-        binding.map.onPause()
+        if (mapInitialized) {
+            runCatching { binding.map.onPause() }
+                .onFailure { Log.w(TAG, "Map pause failed", it) }
+        }
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (mapInitialized) {
+            runCatching { binding.map.onDetach() }
+                .onFailure { Log.w(TAG, "Map detach failed", it) }
+        }
+        super.onDestroy()
     }
 
     @Deprecated("Deprecated in Java")

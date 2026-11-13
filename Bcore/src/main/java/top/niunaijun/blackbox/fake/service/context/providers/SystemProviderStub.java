@@ -1,11 +1,6 @@
 package top.niunaijun.blackbox.fake.service.context.providers;
 
 import android.os.IInterface;
-import android.os.Bundle;
-import top.niunaijun.blackbox.app.BActivityThread;
-import top.niunaijun.blackbox.core.env.BUserIdentifiers;
-
-
 
 import java.lang.reflect.Method;
 
@@ -56,8 +51,6 @@ public class SystemProviderStub extends ClassInvocationStub implements BContentP
         
         
         if ("call".equals(methodName)) {
-            Bundle virtualAndroidId = getVirtualAndroidIdCallResult(args);
-            if (virtualAndroidId != null) return virtualAndroidId;
             
             if (args != null) {
                 Class<?> attributionSourceClass = BRAttributionSource.getRealClass();
@@ -91,24 +84,6 @@ public class SystemProviderStub extends ClassInvocationStub implements BContentP
             }
         }
         return method.invoke(mBase, args);
-    }
-
-    private Bundle getVirtualAndroidIdCallResult(Object[] args) {
-        boolean secureRead = false;
-        boolean androidIdRead = false;
-        if (args != null) {
-            for (Object arg : args) {
-                if (!(arg instanceof String)) continue;
-                String value = (String) arg;
-                if ("GET_secure".equals(value) || "GET_system".equals(value)) secureRead = true;
-                if ("android_id".equals(value)) androidIdRead = true;
-            }
-        }
-        if (!secureRead || !androidIdRead) return null;
-
-        Bundle result = new Bundle();
-        result.putString("value", BUserIdentifiers.getAndroidId(BActivityThread.getUserId()));
-        return result;
     }
 
     private boolean isSystemProviderAuthority(String authority) {

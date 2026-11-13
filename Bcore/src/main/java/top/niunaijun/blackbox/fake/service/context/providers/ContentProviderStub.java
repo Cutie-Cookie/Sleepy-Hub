@@ -6,17 +6,11 @@ import java.lang.reflect.Method;
 
 import black.android.content.BRAttributionSource;
 import top.niunaijun.blackbox.app.BActivityThread;
-import top.niunaijun.blackbox.core.env.BUserIdentifiers;
-
 import top.niunaijun.blackbox.BlackBoxCore;
 import top.niunaijun.blackbox.fake.hook.ClassInvocationStub;
 import top.niunaijun.blackbox.utils.compat.ContextCompat;
 import top.niunaijun.blackbox.utils.Slog;
 import android.os.Bundle;
-import android.database.Cursor;
-import android.database.MatrixCursor;
-import android.net.Uri;
-
 import top.niunaijun.blackbox.utils.AttributionSourceUtils;
 
 
@@ -55,11 +49,6 @@ public class ContentProviderStub extends ClassInvocationStub implements BContent
         
         
         String methodName = method.getName();
-
-        if ("query".equals(methodName)) {
-            Cursor virtualGsfId = getVirtualGsfAndroidIdCursor(args);
-            if (virtualGsfId != null) return virtualGsfId;
-        }
         
         
         
@@ -132,65 +121,6 @@ public class ContentProviderStub extends ClassInvocationStub implements BContent
         }
     }
     
-    private Cursor getVirtualGsfAndroidIdCursor(Object[] args) {
-        Uri uri = null;
-        String[] projection = null;
-        String[] selectionArgs = null;
-        String selection = null;
-        if (args != null) {
-            for (Object arg : args) {
-                if (arg instanceof Uri) {
-                    uri = (Uri) arg;
-                } else if (arg instanceof String[]) {
-                    String[] values = (String[]) arg;
-                    if (projection == null && (contains(values, "name") || contains(values, "value"))) {
-                        projection = values;
-                    } else if (selectionArgs == null) {
-                        selectionArgs = values;
-                    }
-                } else if (arg instanceof String) {
-                    String value = (String) arg;
-                    if (value.toLowerCase(java.util.Locale.US).contains("android_id")) {
-                        selection = value;
-                    } else if (value.contains("=") || value.contains("?")) {
-                        selection = value;
-                    }
-                } else if (arg instanceof Bundle) {
-                    Bundle queryArgs = (Bundle) arg;
-                    String bundleSelection = queryArgs.getString("android:query-arg-sql-selection");
-                    if (bundleSelection != null) selection = bundleSelection;
-                    String[] bundleSelectionArgs = queryArgs.getStringArray("android:query-arg-sql-selection-args");
-                    if (bundleSelectionArgs != null) selectionArgs = bundleSelectionArgs;
-                }
-            }
-        }
-
-        if (uri == null || !"com.google.android.gsf.gservices".equals(uri.getAuthority())) return null;
-        boolean requested = contains(selectionArgs, "android_id") ||
-                (selection != null && selection.toLowerCase(java.util.Locale.US).contains("android_id"));
-        if (!requested) return null;
-
-        String[] columns = projection != null && projection.length > 0
-                ? projection : new String[]{"name", "value"};
-        MatrixCursor cursor = new MatrixCursor(columns);
-        Object[] row = new Object[columns.length];
-        String profileId = BUserIdentifiers.getGsfAndroidId(BActivityThread.getUserId());
-        for (int index = 0; index < columns.length; index++) {
-            if ("name".equalsIgnoreCase(columns[index])) row[index] = "android_id";
-            else if ("value".equalsIgnoreCase(columns[index])) row[index] = profileId;
-        }
-        cursor.addRow(row);
-        return cursor;
-    }
-
-    private boolean contains(String[] values, String expected) {
-        if (values == null) return false;
-        for (String value : values) {
-            if (expected.equals(value)) return true;
-        }
-        return false;
-    }
-
     private Object getSafeDefaultValue(String methodName) {
         switch (methodName) {
             case "query":
