@@ -417,7 +417,10 @@ class MainActivity : BaseActivity() {
     }
 
     fun cloneProfile(sourceUserId: Int) {
-        if (ProfileAppearance.profileContainer(sourceUserId) != activeContainerId) return
+        // Pin the destination to the source's container before any background work.
+        // The user may switch containers while a large profile is being copied.
+        val sourceContainerId = activeContainerId
+        if (ProfileAppearance.profileContainer(sourceUserId) != sourceContainerId) return
         lifecycleScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
@@ -427,10 +430,13 @@ class MainActivity : BaseActivity() {
                         .coerceAtLeast(0)
                     val sourceUser = orderedUsers.firstOrNull { it.id == sourceUserId }
                         ?: throw IllegalStateException("The source profile no longer exists.")
+                    if (ProfileAppearance.containers().none { it.id == sourceContainerId }) {
+                        throw IllegalStateException("The source container no longer exists.")
+                    }
                     val newUserId = (core.users.maxOfOrNull { it.id } ?: -1) + 1
                     core.createUser(newUserId)
                     try {
-                        ProfileAppearance.setProfileContainer(newUserId, activeContainerId)
+                        ProfileAppearance.setProfileContainer(newUserId, sourceContainerId)
                         ProfileAppearance.setProfileName(
                             newUserId,
                             "${ProfileAppearance.profileName(sourceUserId, sourceProfileIndex)} copy",
@@ -454,12 +460,18 @@ class MainActivity : BaseActivity() {
                             val packageName = app.packageName ?: return@forEach
                             if (packageName.isBlank() || GmsCore.isGoogleAppOrService(packageName)) return@forEach
                             val apk = app.sourceDir?.let(::File)
-                            val result = if (apk?.isFile == true) {
+                            val installResult = if (apk?.isFile == true) {
                                 core.installPackageAsUser(apk, newUserId)
                             } else {
                                 core.installPackageAsUser(packageName, newUserId)
                             }
-                            if (result.success) copied++ else skipped++
+                            if (installResult.success) copied++ else skipped++
+                        }
+
+                        // A container may have been deleted while the copy was running.
+                        // Do not leave a profile assigned to a container that no longer exists.
+                        if (ProfileAppearance.containers().none { it.id == sourceContainerId }) {
+                            throw IllegalStateException("The source container was deleted while cloning.")
                         }
                         Triple(newUserId, copied, skipped)
                     } catch (error: Exception) {
@@ -468,7 +480,13 @@ class MainActivity : BaseActivity() {
                         throw error
                     }
                 }
-                loadContainerProfiles(activeContainerId, result.first)
+                if (activeContainerId == sourceContainerId) {
+                    loadContainerProfiles(sourceContainerId, result.first)
+                } else {
+                    // Keep the clone in its original container without interrupting the
+                    // container the user switched to while cloning.
+                    refreshProfiles()
+                }
                 Toast.makeText(
                     this@MainActivity,
                     "Profile cloned: ${result.second} apps copied, ${result.third} skipped. App data starts fresh.",
