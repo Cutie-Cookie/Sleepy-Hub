@@ -333,6 +333,7 @@ fun GlobalSettingsScreen(
     onOpenContainers: () -> Unit,
     onOpenFakeLocation: () -> Unit,
     onOpenGmsManager: () -> Unit,
+    onOpenStorageAccess: () -> Unit,
     onGridColumnsChanged: () -> Unit,
 ) {
     var themeMode by remember { mutableStateOf(ProfileAppearance.globalThemeMode()) }
@@ -434,6 +435,12 @@ fun GlobalSettingsScreen(
                         title = "Google services",
                         subtitle = "Manage supported Google services",
                         onClick = onOpenGmsManager,
+                    )
+                    SettingsActionRow(
+                        icon = { Icon(Icons.Outlined.Settings, null) },
+                        title = "Storage access",
+                        subtitle = "Open Android's All Files Access permission",
+                        onClick = onOpenStorageAccess,
                     )
                 }
             }
