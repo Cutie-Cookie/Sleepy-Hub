@@ -30,7 +30,6 @@ class MainActivity : BaseActivity() {
     private val viewBinding: ActivityMainBinding by inflate()
     private lateinit var viewPager: ViewPager2
     private lateinit var pagerAdapter: ViewPagerAdapter
-    private val fragmentList = mutableListOf<AppsFragment>()
     private val profileAppCounts = mutableMapOf<Int, Int>()
 
     var activeUserId by mutableIntStateOf(-1)
@@ -83,7 +82,7 @@ class MainActivity : BaseActivity() {
                     val userId = data.getIntExtra("userID", activeUserId)
                     val source = data.getStringExtra("source")
                     if (source != null && userId >= 0) {
-                        fragmentList.firstOrNull { it.userID == userId }?.installApk(source)
+                        pagerAdapter.fragments().firstOrNull { it.userID == userId && it.isAdded }?.installApk(source)
                     }
                 }
             } catch (e: Exception) {
@@ -155,7 +154,7 @@ class MainActivity : BaseActivity() {
         super.onResume()
         if (::pagerAdapter.isInitialized) {
             refreshProfiles()
-            fragmentList.forEach { it.refreshGridColumns() }
+            pagerAdapter.fragments().forEach { it.refreshGridColumns() }
         }
     }
 
@@ -175,7 +174,7 @@ class MainActivity : BaseActivity() {
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
-                    val fragment = fragmentList.getOrNull(position) ?: return
+                    val fragment = pagerAdapter.fragmentAt(position) ?: return
                     activeUserId = fragment.userID
                     ProfileAppearance.saveLastProfileId(activeContainerId, activeUserId)
                     refreshProfiles()
@@ -190,9 +189,7 @@ class MainActivity : BaseActivity() {
         ProfileAppearance.ensureContainers(users.map { it.id })
         val members = users.filter { ProfileAppearance.profileContainer(it.id) == containerId }
 
-        fragmentList.clear()
-        members.forEach { fragmentList.add(AppsFragment.newInstance(it.id)) }
-        pagerAdapter.replaceData(fragmentList)
+        pagerAdapter.replaceData(members.map { AppsFragment.newInstance(it.id) })
 
         val selected = preferredUserId?.takeIf { id -> members.any { it.id == id } }
             ?: ProfileAppearance.lastProfileId(containerId).takeIf { id -> members.any { it.id == id } }
@@ -202,8 +199,13 @@ class MainActivity : BaseActivity() {
         if (selected != null) ProfileAppearance.saveLastProfileId(containerId, selected)
         refreshProfiles()
 
-        val index = fragmentList.indexOfFirst { it.userID == activeUserId }
-        if (index >= 0) viewPager.setCurrentItem(index, false)
+        // Wait until FragmentStateAdapter has observed the new item ids before selecting.
+        viewPager.post {
+            val index = selected?.let(pagerAdapter::indexOfUserId) ?: -1
+            if (index >= 0 && viewPager.adapter === pagerAdapter) {
+                viewPager.setCurrentItem(index, false)
+            }
+        }
     }
 
     fun refreshProfiles() {
@@ -252,12 +254,19 @@ class MainActivity : BaseActivity() {
     }
 
     fun selectProfile(userId: Int) {
-        val index = fragmentList.indexOfFirst { it.userID == userId }
-        if (index >= 0) {
-            viewPager.setCurrentItem(index, true)
-            activeUserId = userId
-            ProfileAppearance.saveLastProfileId(activeContainerId, userId)
-            refreshProfiles()
+        if (ProfileAppearance.profileContainer(userId) != activeContainerId) return
+        val index = pagerAdapter.indexOfUserId(userId)
+        if (index < 0) {
+            // Recover from a stale pager list instead of silently ignoring the tap.
+            loadContainerProfiles(activeContainerId, userId)
+            return
+        }
+        activeUserId = userId
+        ProfileAppearance.saveLastProfileId(activeContainerId, userId)
+        refreshProfiles()
+        viewPager.post {
+            val currentIndex = pagerAdapter.indexOfUserId(userId)
+            if (currentIndex >= 0) viewPager.setCurrentItem(currentIndex, true)
         }
     }
 
@@ -280,10 +289,7 @@ class MainActivity : BaseActivity() {
             val nextId = (users.maxOfOrNull { it.id } ?: -1) + 1
             BlackBoxCore.get().createUser(nextId)
             ProfileAppearance.setProfileContainer(nextId, activeContainerId)
-            fragmentList.add(AppsFragment.newInstance(nextId))
-            pagerAdapter.replaceData(fragmentList)
-            refreshProfiles()
-            selectProfile(nextId)
+            loadContainerProfiles(activeContainerId, nextId)
         } catch (e: Exception) {
             Log.e(TAG, "Could not create profile: ${e.message}", e)
             Toast.makeText(this, "Couldn't create profile", Toast.LENGTH_SHORT).show()
@@ -442,9 +448,9 @@ class MainActivity : BaseActivity() {
     }
 
     fun refreshCurrentApps() {
-        fragmentList.forEach { it.refreshGridColumns() }
+        pagerAdapter.fragments().forEach { it.refreshGridColumns() }
         if (activeUserId >= 0) {
-            fragmentList.firstOrNull { it.userID == activeUserId }?.refreshApps()
+            pagerAdapter.fragments().firstOrNull { it.userID == activeUserId && it.isAdded }?.refreshApps()
         }
     }
 
