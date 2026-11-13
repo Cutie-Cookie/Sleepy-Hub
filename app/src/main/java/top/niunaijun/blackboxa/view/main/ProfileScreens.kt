@@ -406,7 +406,7 @@ fun GlobalSettingsScreen(
                         onCheckedChange = {
                             daemonEnabled = it
                             AppManager.mBlackBoxLoader.invalidDaemonEnable(it)
-                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
                         },
                     )
                     SettingsSwitch(
@@ -416,7 +416,7 @@ fun GlobalSettingsScreen(
                         onCheckedChange = {
                             disableFlagSecure = it
                             AppManager.mBlackBoxLoader.invalidDisableFlagSecure(it)
-                            Toast.makeText(contextForSettings(), "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Restart the virtual environment for this change", Toast.LENGTH_SHORT).show()
                         },
                     )
                 }
