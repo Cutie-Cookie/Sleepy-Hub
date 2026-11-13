@@ -80,7 +80,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -89,7 +88,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.niunaijun.blackboxa.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.viewpager2.widget.ViewPager2
@@ -309,7 +307,7 @@ fun SleepyHubMainScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                         ) {
-                            DrawerHeader()
+                            DrawerHeader(profile = activeProfile)
 
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -387,10 +385,8 @@ fun SleepyHubMainScreen(
                                         profile = profile,
                                         selected = profile.userId == activeUserId,
                                         onSelect = {
-                                            scope.launch {
-                                                drawerState.close()
-                                                onSelectProfile(profile.userId)
-                                            }
+                                            onSelectProfile(profile.userId)
+                                            scope.launch { drawerState.close() }
                                         },
                                         onMove = { moveProfileId = profile.userId },
                                         onMoveToFolder = {
@@ -667,7 +663,7 @@ fun SleepyHubMainScreen(
 }
 
 @Composable
-private fun DrawerHeader() {
+private fun DrawerHeader(profile: ProfileItem?) {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
         in 5..11 -> "Good morning"
@@ -680,16 +676,26 @@ private fun DrawerHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Image(
-            painter = painterResource(R.mipmap.ic_launcher),
-            contentDescription = "Sleepy Hub",
-            modifier = Modifier.size(42.dp),
-            contentScale = ContentScale.Crop,
+        ProfileAvatar(
+            name = profile?.name ?: "Sleepy Hub",
+            uri = profile?.avatarUri,
+            size = 50.dp,
         )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Sleepy Hub", style = MaterialTheme.typography.titleMedium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    profile?.name ?: "Sleepy Hub",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (profile?.googlePlayEnabled == true) GooglePlayBadge(size = 15.dp)
+            }
             Text(
-                greeting,
+                if (profile == null) "Choose a profile below" else greeting,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
