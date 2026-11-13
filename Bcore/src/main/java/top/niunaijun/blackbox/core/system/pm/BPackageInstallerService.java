@@ -1,6 +1,7 @@
 package top.niunaijun.blackbox.core.system.pm;
 
 import java.util.ArrayList;
+import java.io.File;
 import java.util.List;
 
 import top.niunaijun.blackbox.core.system.ISystemService;
@@ -10,6 +11,7 @@ import top.niunaijun.blackbox.core.system.pm.installer.CreateUserExecutor;
 import top.niunaijun.blackbox.core.system.pm.installer.Executor;
 import top.niunaijun.blackbox.core.system.pm.installer.RemoveAppExecutor;
 import top.niunaijun.blackbox.core.system.pm.installer.RemoveUserExecutor;
+import top.niunaijun.blackbox.core.env.BEnvironment;
 import top.niunaijun.blackbox.entity.pm.InstallOption;
 import top.niunaijun.blackbox.utils.Slog;
 
@@ -28,18 +30,16 @@ public class BPackageInstallerService extends IBPackageInstallerService.Stub imp
         List<Executor> executors = new ArrayList<>();
         executors.add(new CreateUserExecutor());
 
-        // Package code is shared by all virtual users. If another profile already
-        // has this package, do not delete and recopy its shared APK/lib directory:
-        // the source path may point inside that very directory (notably for APK imports).
-        boolean packageFilesAlreadyAvailable = false;
-        for (Integer installedUserId : ps.getUserIds()) {
-            if (installedUserId != userId && ps.getInstalled(installedUserId)) {
-                packageFilesAlreadyAvailable = true;
-                break;
-            }
-        }
+        // Package code is shared by all virtual users. When the parser source
+        // already points at the shared app directory (for example while cloning a
+        // profile), deleting that directory would also delete the APK being installed.
+        File sourceApk = new File(ps.pkg.baseCodePath);
+        File sharedAppDir = BEnvironment.getAppDir(ps.pkg.packageName);
+        String sharedAppPath = sharedAppDir.getAbsolutePath() + File.separator;
+        boolean sourceAlreadyStored = sourceApk.isFile()
+                && sourceApk.getAbsolutePath().startsWith(sharedAppPath);
 
-        if (!packageFilesAlreadyAvailable) {
+        if (!sourceAlreadyStored) {
             executors.add(new CreatePackageExecutor());
             executors.add(new CopyExecutor());
         }
