@@ -137,7 +137,7 @@ fun FakeLocationScreen(
                         modifier = Modifier.padding(top = 1.dp),
                     )
                     Text(
-                        "Choose an app, tap a point on the map, then press “Use this location”. Only that app in this profile receives the fake coordinates. Long-press an app with a location set to turn it off.",
+                        "Choose an app, tap a point on the map, then press “Use this location”. Only that app in this profile receives the fake coordinates; your phone’s real GPS and other apps stay unchanged. Long-press an app with a location set to turn it off.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
