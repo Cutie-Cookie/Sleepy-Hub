@@ -196,3 +196,24 @@ Current rebuild branch: `sleepyhub/rikkahub-source-rebuild`, audited head `2ebae
 Audit findings: the branch currently has a flat BlackBox-user list, no container model, profile-level accent/background storage, a profile picker sheet instead of an inline drawer list, no container avatar, manual string page state, and a default accent gradient. It is not yet the approved design.
 
 Latest ARM64 debug workflow [43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208) failed during Kotlin compilation. No APK was produced. The errors are listed in [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md). The branch has no app unit or instrumentation tests yet. No application code was changed during this audit; only documentation was updated. `main` remains untouched.
+
+
+## Deeper RikkaHub source map and interaction decisions — 2026-11-13
+
+See [RIKKAHUB_SOURCE_MAP.md](RIKKAHUB_SOURCE_MAP.md) for the file-by-file upstream index.
+
+Confirmed source behavior: long-pressing a conversation row opens a menu with Move to assistant. The move sheet lists assistants; service/repository/DAO update the same conversation's assistant ID and clear its folder. Moving the active conversation also switches the selected assistant. Sleepy Hub must map this to Move Profile to Container while preserving the same BlackBox user and installed app data.
+
+Confirmed UI placements:
+- Add Profile: small plus beside the dashboard's inline profile-list heading.
+- Add Container: top-bar plus in Container Manager.
+- Container picker: compact assistant-style selector in the drawer.
+- Container manager: dashboard footer and Settings home.
+- Settings: dashboard bottom-right.
+- Add App: workspace top-right action replacing RikkaHub's New Message action.
+- No workspace top-right MoreVert menu.
+- Storage rationale popup gets a Compose Material 3 redesign; Android All Files Access permission flow remains unchanged.
+- App picker gets a real structural redesign, not a color repaint.
+- Container delete shows Cancel/Delete confirmation. The impact on contained profiles/data must be clear; destructive cascade behavior is not yet authorized.
+
+Only documentation changed in this audit. Application source remains unchanged and the latest ARM64 workflow remains failed with no APK.
