@@ -253,4 +253,4 @@ Follow-up source commit 2905dac7b5800d4e374f41863bb03e5c3903d394:
 - Draws the multicolour Play triangle on a transparent Canvas.
 - Adds Android 13 location-enabled/listener hooks and fixes the provider-properties double call.
 
-Current CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834), still in progress at documentation time. The previously supplied APK is not the new candidate. Main remains untouched. Phase 2 UI overhaul remains deferred; only targeted Phase 1 corrections are in this batch.
+Current CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) passed. Current artifact: `sleepy-hub-arm64-preview-debug`, ID `14056805069`. APK SHA-256: `448ca06eadb1015a78017f85e0e6c2fbedce2be65959289021bbf17104d7a4f9`. Main remains untouched. Phase 2 UI overhaul remains deferred; only targeted Phase 1 corrections are in this batch.

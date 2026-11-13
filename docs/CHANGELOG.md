@@ -266,3 +266,13 @@ Feature branch: `sleepyhub/bugfix-install-switch-polish`.
 The first test of preview artifact 14052746172 found a P0 black-screen app-launch failure, missing app long-press menu/reorder behavior, clipped Color mode text, no gap between folder chips and profile rows, a white-square Play badge, and fake location that only appeared with device GPS enabled.
 
 Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: direct/background app launch, explicit icon click/long-press plus a larger reorder grip, small targeted spacing fixes, a transparent multicolour Play triangle, and Android 13 location-enabled/listener hooks. CI run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) is pending. These fixes are not marked runtime-complete until the next phone test.
+
+
+### 2026-11-13 — Follow-up preview build passed
+
+- Source head: 2905dac7b5800d4e374f41863bb03e5c3903d394.
+- GitHub Actions run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) completed successfully: Gradle build, APK identity/signature/ABI verification and upload all passed.
+- Artifact: sleepy-hub-arm64-preview-debug, ID 14056805069, ZIP SHA-256 0e68561e3c004ee28c3957cce4fbc3d33a7cf64ab042505ece99749fb0fb8960.
+- APK: SleepyHub_4.0.0-preview_arm64-v8a-debug.apk, 26,097,990 bytes, SHA-256 448ca06eadb1015a78017f85e0e6c2fbedce2be65959289021bbf17104d7a4f9.
+- Package com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, version 4.0.0-preview, ARM64-v8a. Certificate SHA-256 cbd3ce49b15de6f54b8b191f8e99e8dcd6610e6f6895ca7f5d522d855c009f20.
+- This is a debug preview build only. Device retesting is required before the fixes are marked Done.
