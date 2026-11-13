@@ -1,143 +1,105 @@
-# Sleepy Hub UI rebuild plan — strict RikkaHub source mapping
+# RikkaHub source audit and Sleepy Hub code review
 
-Reference: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub), pinned at `b10c168577482abed696669a58c0eb59f1eed270`.
+Reviewed 2026-11-13.
 
-## Non-negotiable product model
+## Reference
 
-Sleepy Hub remains a BlackBox virtual Android app manager. The mapping is:
+- Upstream: [rikkahub/rikkahub](https://github.com/rikkahub/rikkahub)
+- Pinned commit: `b10c168577482abed696669a58c0eb59f1eed270`
+- Sleepy Hub branch audited: `sleepyhub/rikkahub-source-rebuild`
+- Audited Sleepy Hub head: `2ebae140fcd0c82c03321de648db00accaed5d98`
+- App baseline: `sleepyhub/identity-icons-no-vpn`
+- `main` remains untouched; the rebuild branch is separate.
 
-| RikkaHub concept | Sleepy Hub concept |
+## User-confirmed mapping
+
+| RikkaHub | Sleepy Hub |
 |---|---|
 | Assistant | **Container** |
 | Assistant picker | Container picker |
 | Assistant manager | Container manager |
 | Assistant detail/basic settings | Container settings |
-| Conversation in the active assistant | **Virtual Android profile** (one BlackBox user) |
-| Assistant-owned folder | Profile folder within that container |
+| Conversation | **BlackBox virtual Android profile** |
+| Assistant-owned folder | Profile folder inside that container |
 | Assistant avatar | Container picture |
 | Assistant chat background | Container workspace background |
-| Global RikkaHub theme | **One global Sleepy Hub theme** |
+| Global theme | One global Sleepy Hub theme |
 
-A container owns zero or more virtual profiles. The red/list area in the user's reference is the active container's scrollable profile list. The green selector is the active container/assistant selector. The screenshot only clarifies this relationship; the pinned RikkaHub source remains the UI and interaction specification.
+A container owns zero or more virtual profiles. The inline scrollable list in RikkaHub's drawer maps to Sleepy Hub profiles. The compact assistant selector near the drawer bottom maps to containers. A new container starts empty; it must not auto-create a BlackBox user. Switching containers filters the profile list and restores the last selected profile when returning.
 
-### Data ownership
+Theme ownership is global only. The upstream `Assistant` data class has `avatar`, `background`, `backgroundOpacity`, and a gradient-background flag, but no theme ID or assistant-specific theme. RikkaHub theme state lives in global `Settings` and the theme preferences. Therefore Sleepy Hub must not add per-container or per-profile theme/accent controls.
 
-- **Container:** stable ID, display name, avatar/picture, optional workspace background, and background opacity.
-- **Profile:** BlackBox user ID, owning container ID, display name, folder assignment, and installed-app count/status. The actual installed apps and app data remain owned by that BlackBox user.
-- **Global appearance:** one global color mode/theme selection, dynamic-color setting, preset/custom theme collection, and AMOLED option. These values apply to every container and profile.
-- There is no per-container theme, per-container accent, or per-profile theme/accent. Do not add one.
-- A profile does not own a picture or wallpaper. The container owns the avatar and optional workspace background.
-
-### Container behavior
-
-1. The default container can contain the existing virtual profiles after migration.
-2. Creating a new container creates an empty container only. Do not silently create a BlackBox user/profile when the container is created or selected.
-3. Selecting a container filters the drawer's profile list to only that container's profiles and resets the folder filter, matching RikkaHub's assistant-switch behavior.
-4. Switching back to a container restores that container's last selected profile if it still exists. If it has no profiles, show the empty black workspace and an Add Profile action.
-5. Add Profile creates a real BlackBox user and assigns it to the currently selected container.
-6. Selecting a profile switches the app manager to that BlackBox user. Profile app data must remain isolated.
-7. Container avatar/name/background are edited in container settings. A selected background appears behind the active app-manager workspace only. With no background, the workspace is plain black.
-
-## RikkaHub flow to reproduce
+## RikkaHub source flow inspected
 
 ### Main shell and drawer
 
-Source: `ChatPage.kt`, `ChatDrawer.kt`.
+- `ChatPage.kt`: phone uses `ModalNavigationDrawer`; large screens use `PermanentNavigationDrawer`. The page uses a Material 3 `Scaffold`, transparent top bar, contextual actions, and explicit back handling that closes the drawer first.
+- `ChatDrawer.kt`: 300dp drawer sheet, 8dp outer padding/spacing, user header, compact quick actions, folder bar and sort control, independently scrollable center conversation list, assistant picker near the bottom, and bottom utility/settings actions.
+- `ChatDrawerVM.kt`: current assistant ID scopes the folder list and conversation query. Changing assistant resets the folder filter. The selected assistant determines which list is shown.
+- `ConversationList.kt`: inline lazy list, text-only rows, selected-row treatment, pinned/date separators, and long-press contextual actions. This is the correct structural analogue for Sleepy Hub's profile list.
 
-- Phone: Material 3 `ModalNavigationDrawer`; large/wide layout: `PermanentNavigationDrawer`.
-- Match the upstream drawer width, spacing, padding, responsive header behavior, top bar, and back behavior.
-- The drawer contains, in source order: user header, the agreed Sleepy Hub quick actions, folder/filter row, **an inline independently scrollable profile list**, the active container selector, and the agreed bottom navigation/settings actions.
-- The profile list is not a bottom sheet. Use the source `ConversationList` row behavior: compact text rows, selected-row treatment, scrollable list, and long-press contextual actions. Do not put profile avatar tiles in this list.
-- Folder filtering belongs to the selected container. Reset the filter when switching containers.
-- Back closes the open drawer before navigating away. Keep a real navigation/back stack rather than a handful of string page states.
+### Assistant picker and manager
 
-### Container selector
-
-Source: `AssistantPicker.kt`.
-
-- One compact drawer item near the bottom shows the active container name and its small avatar.
-- Tapping it opens the source-style modal bottom sheet (approximately 80% of available height).
-- Rows use the compact 32dp avatar, one-line name, selected state, and trailing edit action.
-- Selecting a container switches the profile list/workspace. Editing opens container settings.
-- Do not put Add Container as a giant button in the picker. Add belongs in the container manager's top-bar action, matching the source management flow.
-
-### Container manager
-
-Source: `AssistantPage.kt`.
-
-- Use the source `LargeFlexibleTopAppBar`, back action, add action, rounded search field, compact reorderable list, row proportions, and item-placement animation.
-- Rows represent containers and show the container avatar/name. Do not show workspace wallpaper thumbnails or add custom wide/tall cards.
-- Keep only the container-management actions required by the agreed Sleepy Hub plan. Do not add AI assistant tags, cloning, prompts, models, or other RikkaHub AI features.
-
-### Container settings
-
-Sources: `AssistantDetailPage.kt`, `AssistantBasicPage.kt`, `BackgroundPicker.kt`, `UIAvatar.kt`.
-
-- Follow the pinned top bar, animated title reveal, and grouped `CardGroup` settings hierarchy.
-- Keep container name editing and editable container picture/avatar.
-- Keep optional container workspace background: preview, gallery selection, URL option if retained from the source flow, opacity, change, and remove.
-- Store/copy selected images safely in app-private storage rather than relying on a temporary gallery URI.
-- The background is rendered behind the selected container's active profile workspace only. It never appears in the drawer header, container picker rows, or profile list.
-- No theme controls belong on this screen. No per-container theme or accent.
+- `AssistantPicker.kt`: compact drawer item opens a modal bottom sheet of about 80% height. Picker rows use a 32dp avatar, one-line name, selected state, and trailing edit action.
+- `AssistantPage.kt`: `LargeFlexibleTopAppBar`, add action, rounded search field, reorderable list, compact 20dp cards, 48dp avatars, and animated item placement. AI-specific tags/clone/model features are not automatically part of Sleepy Hub scope.
+- `AssistantDetailPage.kt`: pinned top bar, animated title reveal, and grouped `CardGroup` sections.
+- `AssistantBasicPage.kt`: editable assistant avatar and name; background is a separate optional assistant property.
+- `UIAvatar.kt`: source supports a generated avatar, image crop, emoji, URL, and reset. Sleepy Hub should preserve the agreed picture/avatar behavior without copying the source component.
+- `BackgroundPicker.kt`: optional background preview, gallery/URL selection, opacity, change, and removal.
 
 ### Global theme
 
-Sources: `Theme.kt`, `SettingPreferencesThemePage.kt`, `SettingThemePage.kt`, `PresetTheme.kt`, `CustomTheme.kt`.
+- `Theme.kt`: global `ColorMode` (System/Light/Dark), dynamic color, global theme lookup, AMOLED black, system-bar contrast, `MaterialExpressiveTheme`, and `MotionScheme.expressive()`.
+- `SettingPreferencesThemePage.kt` and `SettingThemePage.kt`: global dynamic-color/AMOLED preferences, preset themes, custom themes, import/export, and theme selection.
+- `Assistant.kt` contains no per-assistant theme field. Assistant identity/background and global theme are separate.
 
-- One theme applies to the entire app, across all containers and profiles.
-- Match RikkaHub's System/Light/Dark color mode, dynamic system colors, preset themes, custom themes, import/export, and optional AMOLED true-black mode.
-- System status/navigation bar icon contrast follows the selected global mode.
-- Match RikkaHub's expressive theme/motion where the existing BlackBox build toolchain can support it. Do not upgrade Gradle/Kotlin/Compose blindly; prove compatibility with the legacy BlackBox modules first.
-- The workspace itself remains pure black by default. No banner, profile-summary box, decorative header, illustration, or artwork above the app grid.
+## Sleepy Hub code audit
 
-### Workspace and BlackBox app manager
+### Structural mismatches that must be fixed before visual polish
 
-- Keep the installed-app grid as the main workspace and retain existing BlackBox per-user app operations.
-- Preserve install, launch, app info, clear cache, clear data, stop, shortcut, uninstall, GMS, and fake-location functionality already in scope.
-- Container background is optional; removing it returns to plain black.
-- Do not add AI chat, a chat composer, message generation, or background-running apps in this milestone.
+1. **No container model exists.** `MainActivity` enumerates every BlackBox user globally. `createProfile()` creates a global virtual user, and there is no container ID or membership mapping.
+2. **The new-empty-container flow cannot exist yet.** The current data model cannot represent an empty container separate from the global BlackBox user list. The last-profile guard is global, not scoped to a container.
+3. **Wrong drawer list placement.** `SleepyHubMainScreen.kt` does not show profiles inline in the drawer. It opens `ProfilePickerSheet` instead. This reverses the RikkaHub structure: the profile/conversation list belongs inline; the assistant/container picker is the bottom sheet.
+4. **Wrong picker identity.** The current bottom sheet selects virtual profiles and shows profile avatars. It should select containers and show container pictures. The inline profile list should be text-only, matching `ConversationList`.
+5. **Wrong appearance ownership.** `ProfileAppearance.kt` keys accent/background by BlackBox user ID. Move the optional background and picture to a container record. Remove all per-profile/per-container theme or accent controls.
+6. **Missing container picture.** Current `ProfileAvatar` is only an initial inside a color circle; there is no persisted container image/avatar.
+7. **Wrong default workspace surface.** `ProfileWorkspaceBackground()` draws an accent gradient even when no image is selected. The workspace must be plain black when background is null.
+8. **Incomplete global theme.** Current global settings have basic System/Light/Dark, dynamic color, global accent, and AMOLED options, but not the RikkaHub preset/custom theme flow. `SleepyHubTheme.kt` uses ordinary `MaterialTheme`, not the upstream expressive theme/motion APIs.
+9. **Navigation is incomplete.** The shell uses string-based page state and only a modal drawer. It lacks the source typed back stack and permanent drawer for large screens. The ViewPager adds custom page scaling/translation not present in RikkaHub's navigation.
+10. **Container settings are not represented.** Current `ProfileSettingsScreen` edits a virtual profile's name/folder/accent/background. It needs to become container settings for name, picture, and optional background. Profile names/folders remain attached to virtual users.
 
-## Current source audit findings (2026-11-13)
+### Existing BlackBox operations reviewed
 
-The current `sleepyhub/rikkahub-source-rebuild` branch is **not yet the requested structure**:
+- `AppsFragment.kt` routes actions using the selected BlackBox user ID.
+- `AppsRepository.clearApkCache()` clears both internal and external cache directories for that user.
+- Clear data uses `BlackBoxCore.clearPackage(packageName, userID)`.
+- Uninstall uses `uninstallPackageAsUser(packageName, userID)`.
+- Stop uses `BlackBoxCore.stopPackage(packageName, userID)`.
+- These per-user backend operations should be preserved while container membership is added.
 
-- It has a flat list of BlackBox users. There is no separate container/assistant entity and no profile-to-container membership.
-- `MainActivity` creates, selects, and deletes virtual users globally. A new empty container cannot be represented; last-profile protection is global rather than scoped to the active container.
-- `ProfileAppearance` stores accent and background by virtual user ID. Those are the wrong owners; background belongs to the container, and profile/container theme accents must be removed.
-- The drawer has no inline profile list. It opens a custom profile bottom sheet instead. That reverses the RikkaHub relationship: the profile list belongs inline in the drawer, while the container/assistant picker is the bottom sheet.
-- The current profile picker uses profile avatars and a full-width Add Profile button. The source conversation list is text-only; the source assistant picker is the one with container avatars and trailing edit.
-- Current workspace background draws an accent gradient even when no image is selected. This violates the plain-black default.
-- Current profile settings have a per-profile accent and wallpaper but no uploaded picture. They need to become container settings with name, picture, and background.
-- Current global appearance has basic mode/dynamic/accent/AMOLED options, but not the full RikkaHub preset/custom theme flow.
-- The shell uses manual string page state and only a modal drawer; it does not yet reproduce the source typed back stack, responsive permanent drawer, or complete back flow.
-- The current ViewPager adds custom scale/alpha/translation effects not present in the RikkaHub navigation flow. Re-evaluate it rather than adding more custom motion.
+### Current build failure
 
-### Build and test status
+Latest ARM64 debug workflow: [43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208) — failed; no APK artifact was produced.
 
-- Current app branch head audited: `2ebae140fcd0c82c03321de648db00accaed5d98`.
-- Latest ARM64 debug workflow: [43329277208](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43329277208) — **failed**.
-- Compiler errors: missing `background` and `CircleShape` imports in `AppGridScreen.kt`; missing `Icons.Outlined.Cloud` import in `SleepyHubMainScreen.kt`; `ListActivity.kt` imports `ActivityInstallPickerBinding` but declares `ActivityListBinding`, followed by a Compose call-context error in that picker.
-- No APK was produced by that run.
-- The app currently has no `app/src/test` or `app/src/androidTest` tests. Add focused tests for container/profile ownership and persistence before calling the structure complete.
-- Existing per-user app operations were inspected: cache clearing targets the selected BlackBox user's internal and external cache directories; data clearing and uninstall use the selected BlackBox user ID.
+Compiler output:
+- `AppGridScreen.kt`: unresolved `background` and `CircleShape` references (missing imports).
+- `SleepyHubMainScreen.kt`: unresolved `Icons.Outlined.Cloud` (missing import).
+- `ListActivity.kt`: imports `ActivityInstallPickerBinding` but declares `ActivityListBinding`; the file also reports a Compose call-context error.
+- These compile errors must be fixed and the workflow rerun before any debug APK is offered.
 
-## Acceptance checklist
+There are currently no files under `app/src/test` or `app/src/androidTest`. Add tests for container/profile ownership, empty containers, last-selected-profile restoration, and persistence.
 
-- [ ] Existing virtual users migrate into a default container without losing their installed apps or profile names.
-- [ ] Creating a new container produces an empty profile list and does not create a virtual user.
-- [ ] Switching containers filters the profile list and restores the selected profile when returning.
-- [ ] Add Profile creates a BlackBox user assigned only to the active container.
-- [ ] The red/list area is inline and independently scrollable in the drawer.
-- [ ] The green/container selector opens the compact assistant-style bottom sheet.
-- [ ] Container name, picture, and background persist across restart.
-- [ ] Removing the container background restores a plain black workspace.
-- [ ] There are no per-container or per-profile theme/accent controls.
-- [ ] Global theme changes apply identically across every container and profile.
-- [ ] BlackBox app operations remain isolated by virtual user.
-- [ ] Phone and large-screen drawer behavior and back navigation match the source flow.
-- [ ] ARM64 debug build succeeds and is tested on the user's device.
-- [ ] `main` remains untouched; no release signing secrets are created in this milestone.
+## Required implementation order
+
+1. Add a persistent container model and a migration that assigns existing virtual users to a default container without touching their BlackBox app data.
+2. Make profile membership container-scoped; store last active profile per container.
+3. Rebuild the drawer to show the inline scrollable profile list and the bottom container selector.
+4. Add the assistant-style container picker and container manager.
+5. Move name/avatar/background to container settings; remove profile-level accent/background.
+6. Replace the theme controls with one global RikkaHub-style theme flow.
+7. Keep the app workspace black by default and render only the selected container's optional background behind it.
+8. Fix compile errors, add focused tests, run CI, then device-test the full flow.
 
 ## License boundary
 
-RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Reproduce the source behavior and component structure with original Sleepy Hub code. Do not paste upstream source files or assets into the Apache-2.0 project. Literal source reuse would require an explicit licensing decision and compliance review.
+RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0. Match the source flow with original Sleepy Hub code. Do not paste upstream source files/assets into the Apache-2.0 project. Literal source reuse requires an explicit licensing decision and compliance review.
