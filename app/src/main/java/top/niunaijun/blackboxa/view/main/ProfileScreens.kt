@@ -603,7 +603,7 @@ fun ThemeSettingsScreen(onBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text("Theme") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
