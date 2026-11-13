@@ -50,6 +50,9 @@ class MainActivity : BaseActivity() {
     var profiles by mutableStateOf<List<ProfileItem>>(emptyList())
         private set
 
+    var profileFolders by mutableStateOf<List<String>>(listOf("General"))
+        private set
+
     var containers by mutableStateOf<List<ContainerItem>>(emptyList())
         private set
 
@@ -129,6 +132,7 @@ class MainActivity : BaseActivity() {
                 SleepyHubTheme {
                     SleepyHubMainScreen(
                         profiles = profiles,
+                        profileFolders = profileFolders,
                         containers = containers,
                         activeUserId = activeUserId,
                         activeContainerId = activeContainerId,
@@ -143,6 +147,9 @@ class MainActivity : BaseActivity() {
                         onDeleteProfile = ::deleteProfile,
                         onMoveProfile = ::moveProfile,
                         onSetProfileFolder = ::setProfileFolder,
+                        onCreateFolder = ::createProfileFolder,
+                        onRenameFolder = ::renameProfileFolder,
+                        onDeleteFolder = ::deleteProfileFolder,
                         onToggleProfilePinned = ::toggleProfilePinned,
                         onCloneProfile = ::cloneProfile,
                         onReorderProfiles = ::reorderProfiles,
@@ -277,6 +284,7 @@ class MainActivity : BaseActivity() {
         try {
             val users = BlackBoxCore.get().users.sortedBy { it.id }
             ProfileAppearance.ensureContainers(users.map { it.id })
+            profileFolders = ProfileAppearance.profileFolders(activeContainerId, users.map { it.id })
             val allProfiles = users.mapIndexed { index, user ->
                 ProfileItem(
                     userId = user.id,
@@ -394,8 +402,33 @@ class MainActivity : BaseActivity() {
     }
 
     fun setProfileFolder(userId: Int, folder: String) {
+        if (ProfileAppearance.profileContainer(userId) != activeContainerId) return
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        val availableFolders = ProfileAppearance.profileFolders(activeContainerId, userIds)
+        if (folder !in availableFolders) return
         ProfileAppearance.setProfileFolder(userId, folder)
         refreshProfiles()
+    }
+
+    fun createProfileFolder(name: String): Boolean {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        val created = ProfileAppearance.createProfileFolder(activeContainerId, name, userIds)
+        if (created) refreshProfiles()
+        return created
+    }
+
+    fun renameProfileFolder(oldName: String, newName: String): Boolean {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        val renamed = ProfileAppearance.renameProfileFolder(activeContainerId, oldName, newName, userIds)
+        if (renamed) refreshProfiles()
+        return renamed
+    }
+
+    fun deleteProfileFolder(name: String): Boolean {
+        val userIds = BlackBoxCore.get().users.map { it.id }
+        val deleted = ProfileAppearance.deleteProfileFolder(activeContainerId, name, userIds)
+        if (deleted) refreshProfiles()
+        return deleted
     }
 
     fun toggleProfilePinned(userId: Int, pinned: Boolean) {

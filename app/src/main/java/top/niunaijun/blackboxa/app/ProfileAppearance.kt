@@ -158,6 +158,7 @@ object ProfileAppearance {
             val repairedOrder = savedOrder.filter { it in members }.distinct() +
                 members.filterNot { it in savedOrder }
             if (savedOrder != repairedOrder) setProfileOrder(container.id, repairedOrder)
+            profileFolders(container.id, existingUserIds)
         }
 
         val active = preferences.getString(ACTIVE_CONTAINER_KEY, null)
@@ -183,6 +184,7 @@ object ProfileAppearance {
         preferences.edit {
             remove("last_profile_id_$containerId")
             remove(profileOrderKey(containerId))
+            remove(profileFoldersKey(containerId))
         }
         preferences.edit {
             preferences.all.keys
@@ -292,6 +294,77 @@ object ProfileAppearance {
         preferences.edit { putString("profile_folder_$userId", folder.trim().ifBlank { "General" }) }
     }
 
+    fun profileFolders(containerId: String, existingUserIds: List<Int>): List<String> {
+        val key = profileFoldersKey(containerId)
+        val saved = runCatching {
+            val array = JSONArray(preferences.getString(key, "[]") ?: "[]")
+            (0 until array.length()).mapNotNull { index ->
+                array.optString(index).trim().takeIf { it.isNotBlank() }
+            }
+        }.getOrDefault(emptyList())
+        val assigned = existingUserIds
+            .filter { profileContainer(it) == containerId }
+            .map { profileFolder(it) }
+        val merged = (listOf("General") + saved + assigned)
+            .distinctBy { it.lowercase() }
+            .let { folders -> listOf("General") + folders.filterNot { it.equals("General", ignoreCase = true) } }
+        if (saved != merged) saveProfileFolders(containerId, merged)
+        return merged
+    }
+
+    fun createProfileFolder(
+        containerId: String,
+        name: String,
+        existingUserIds: List<Int>,
+    ): Boolean {
+        val cleaned = name.trim()
+        if (cleaned.isBlank()) return false
+        val current = profileFolders(containerId, existingUserIds)
+        if (current.any { it.equals(cleaned, ignoreCase = true) }) return false
+        saveProfileFolders(containerId, current + cleaned)
+        return true
+    }
+
+    fun renameProfileFolder(
+        containerId: String,
+        oldName: String,
+        newName: String,
+        existingUserIds: List<Int>,
+    ): Boolean {
+        val cleaned = newName.trim()
+        if (oldName.equals("General", ignoreCase = true) || cleaned.isBlank()) return false
+        val current = profileFolders(containerId, existingUserIds)
+        if (oldName !in current) return false
+        if (oldName.equals(cleaned, ignoreCase = true)) return true
+        if (current.any { it.equals(cleaned, ignoreCase = true) }) return false
+        saveProfileFolders(containerId, current.map { if (it == oldName) cleaned else it })
+        existingUserIds
+            .filter { profileContainer(it) == containerId && profileFolder(it) == oldName }
+            .forEach { setProfileFolder(it, cleaned) }
+        return true
+    }
+
+    fun deleteProfileFolder(
+        containerId: String,
+        name: String,
+        existingUserIds: List<Int>,
+    ): Boolean {
+        if (name.equals("General", ignoreCase = true)) return false
+        val current = profileFolders(containerId, existingUserIds)
+        if (name !in current) return false
+        existingUserIds
+            .filter { profileContainer(it) == containerId && profileFolder(it) == name }
+            .forEach { setProfileFolder(it, "General") }
+        saveProfileFolders(containerId, current.filterNot { it == name })
+        return true
+    }
+
+    private fun saveProfileFolders(containerId: String, folders: List<String>) {
+        val array = JSONArray()
+        folders.forEach { array.put(it) }
+        preferences.edit { putString(profileFoldersKey(containerId), array.toString()) }
+    }
+
     fun isProfilePinned(userId: Int): Boolean =
         preferences.getBoolean("profile_pinned_$userId", false)
 
@@ -359,6 +432,8 @@ object ProfileAppearance {
     }
 
     private fun profileOrderKey(containerId: String) = "profile_order_$containerId"
+
+    private fun profileFoldersKey(containerId: String) = "profile_folders_$containerId"
 
     private fun profileContainerKey(userId: Int) = "profile_container_$userId"
 }
