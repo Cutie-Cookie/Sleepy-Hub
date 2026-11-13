@@ -36,9 +36,10 @@ class FakeManagerActivity : BaseActivity() {
                     val latitude = data.getDoubleExtra("latitude", 0.0)
                     val longitude = data.getDoubleExtra("longitude", 0.0)
                     val packageName = data.getStringExtra("pkg") ?: return@let
+                    val userId = data.getIntExtra("userID", currentUserID())
 
                     viewModel.applyFakeLocation(
-                        currentUserID(),
+                        userId,
                         packageName,
                         BLocation(latitude, longitude),
                     )
@@ -98,8 +99,13 @@ class FakeManagerActivity : BaseActivity() {
             putExtra("location", app.fakeLocation)
             putExtra("pkg", app.packageName)
             putExtra("appName", app.name)
+            putExtra("userID", currentUserID())
         }
-        locationResult.launch(intent)
+        runCatching { locationResult.launch(intent) }
+            .onFailure { error ->
+                toast("Couldn't open the location map")
+                android.util.Log.e("FakeManagerActivity", "Failed to launch location picker", error)
+            }
     }
 
     private fun disableFakeLocation(app: FakeLocationBean) {

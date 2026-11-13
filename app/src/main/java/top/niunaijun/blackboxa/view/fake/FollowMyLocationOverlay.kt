@@ -74,7 +74,12 @@ class FollowMyLocationOverlay : AppCompatActivity() {
             setContentView(binding.root)
         configureSystemBars()
 
-        val savedLocation: BLocation? = intent.getParcelableExtra("location")
+        val savedLocation: BLocation? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("location", BLocation::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("location")
+        }
         selectedPoint = savedLocation?.let { GeoPoint(it.latitude, it.longitude) }
 
         val appName = intent.getStringExtra("appName").orEmpty()
