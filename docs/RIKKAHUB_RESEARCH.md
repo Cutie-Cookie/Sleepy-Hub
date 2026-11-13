@@ -89,29 +89,37 @@ Sources:
 - System bar icon contrast follows the selected theme.
 - RikkaHub uses Material Expressive motion and Material 3 components.
 
-## Translation into Sleepy Hub
+## Corrected translation into Sleepy Hub — confirmed 2026-11-13
 
-Sleepy Hub is a BlackBox-based virtual Android app manager, not an AI chat client. The mapping is:
+The user's intended hierarchy is now explicit:
 
 | RikkaHub concept | Sleepy Hub equivalent |
 |---|---|
-| Assistant | BlackBox virtual Android profile |
-| Assistant picker | Profile picker bottom sheet |
-| Assistant management list | Profile management screen |
-| Assistant detail | Profile settings |
-| Assistant chat background | Profile workspace background |
-| Assistant background opacity | Profile background opacity |
-| Global RikkaHub theme | Sleepy Hub global theme |
-| Conversation list / folders | Not added; Sleepy Hub has no chat history |
-| Chat composer | Not added; Sleepy Hub remains an app manager |
-| Chat actions | App installation and profile actions |
+| Assistant | **Container** |
+| Assistant picker | Container picker |
+| Assistant manager | Container manager |
+| Assistant detail/basic settings | Container settings |
+| Conversation in the selected assistant | **Virtual Android profile** (one BlackBox user) |
+| Assistant-owned folder | Profile folder within that container |
+| Assistant avatar | Container picture |
+| Assistant chat background | Container workspace background |
+| Global RikkaHub theme | **One global Sleepy Hub theme** |
 
-Sleepy Hub profile backgrounds belong to the **profile workspace**, not to oversized profile cards. Profile selection should use compact avatar/name rows like the upstream assistant picker. The user explicitly requires an Add Profile action in the dashboard.
+A container owns zero or more virtual Android profiles. The red/list area in the user's reference represents the selected container's scrollable profiles. The green selector represents the selected assistant/container. The reference image clarifies this relationship; actual RikkaHub source code remains the specification for component hierarchy, proportions, navigation, and interactions.
 
-The main workspace remains the virtual installed-app grid. The top bar should follow the RikkaHub chat top-bar structure, adapted to profile name, installed-app count, install action, and overflow actions. Do not add chat UI.
+- New container: create an empty container only; do not auto-create a BlackBox user.
+- Switching container: show only its profiles, reset folder filtering, and restore that container's last selected profile when returning.
+- Add Profile: create a BlackBox user assigned to the currently selected container.
+- Profile rows: use RikkaHub's inline text-only conversation-list pattern in the drawer; do not use a bottom sheet or avatar cards for profiles.
+- Container picker: use RikkaHub's compact assistant picker bottom sheet with container picture/name and trailing edit action.
+- Container settings: preserve container name, picture/avatar, and optional workspace background with preview, opacity, change, and remove.
+- Global theme only: System/Light/Dark, dynamic color, preset/custom themes, import/export, and AMOLED option are shared across every container. No per-container or per-profile theme/accent.
+- Workspace: plain black by default; optional selected container background appears only behind the app-manager workspace.
 
-## Source links
+The current rebuild branch does not yet implement this model. See [UI_IMPLEMENTATION_PLAN.md](UI_IMPLEMENTATION_PLAN.md) for the implementation and acceptance requirements, and [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md) for the code audit and current build failures.
 
-- [RikkaHub repository](https://github.com/rikkahub/rikkahub)
-- [RikkaHub AGPL-3.0 license](https://github.com/rikkahub/rikkahub/blob/b10c168577482abed696669a58c0eb59f1eed270/LICENSE)
-- [Sleepy Hub Apache-2.0 license](https://github.com/Cutie-Cookie/Sleepy-Hub/blob/sleepyhub/identity-icons-no-vpn/LICENSE)
+## License boundary
+
+- RikkaHub is AGPL-3.0; Sleepy Hub currently declares Apache-2.0.
+- Recreate the UI and flow with original Sleepy Hub code. Do not copy upstream source files/assets into the Apache-2.0 project.
+- Literal source reuse requires an explicit licensing decision and compliance review first.
