@@ -1,17 +1,19 @@
-# UI roadmap — RikkaHub-inspired, Sleepy Hub original
+# UI roadmap — RikkaHub-source-faithful Sleepy Hub port
 
 ## Goal
 
-Give Sleepy Hub a cleaner, more intentional interface inspired by the design quality and interaction patterns we like in RikkaHub, while keeping Sleepy Hub recognizably its own app.
+Recreate RikkaHub's actual UI structure, visual treatment, navigation, component hierarchy, and motion as faithfully as possible, changing only the product-specific content and actions needed for Sleepy Hub's virtual Android app manager.
 
-**Inspiration is not copying.** We can study general ideas such as hierarchy, navigation, spacing, settings organization, reusable surfaces, and interaction feedback. Do not copy RikkaHub source code, assets, branding, or distinctive screens. The kitty identity and Sleepy Hub's own visual language stay ours.
+The source reference is pinned in [RIKKAHUB_SOURCE_AUDIT.md](RIKKAHUB_SOURCE_AUDIT.md). Sleepy Hub code must be implemented independently; RikkaHub's AGPL-3.0 source files/assets are not copied into the Apache-2.0 project. Match the UI behavior and appearance, not the upstream source text.
 
-The UI implementation is being developed on the separate branch `sleepyhub/ui-rikkahub-inspired`; this documentation branch remains a notebook.
+The implementation branch is `sleepyhub/rikkahub-source-rebuild`; this documentation branch remains a notebook.
 
 ## Design guardrails
 
-- Keep the calm, dark, monochrome Sleepy Hub identity unless the user approves a broader palette.
-- Prefer clear hierarchy and readable labels over decoration.
+- Follow the actual RikkaHub source component hierarchy, dimensions, spacing, colors, typography, and animations; do not invent an alternative design system.
+- The app-manager workspace is plain black by default. Do not add a banner, header card, decorative box, illustration, artwork, or other decoration above the app grid.
+- A profile wallpaper is optional and appears only behind that profile's app-manager workspace when the user chooses one; remove it to return to plain black.
+- Do not add features, controls, cards, shortcuts, or decorative elements beyond the user's agreed plan and the RikkaHub structure being adapted.
 - Make frequent actions easy to find and destructive actions hard to trigger accidentally.
 - Use consistent spacing, typography, icon sizes, corner radii, and interaction states.
 - Design loading, empty, error, permission, and disabled states—not just the happy path.
@@ -39,7 +41,7 @@ For each screen, record: purpose, entry point, important actions, current implem
 
 ## Phase 1 — Reference and design brief
 
-Review the specific RikkaHub screens and interactions that the user wants to use as inspiration. Use screenshots or examples supplied/approved for this project.
+Use the pinned RikkaHub source code as the specification. User screenshots are context only and must not override the actual upstream composables, dimensions, layout hierarchy, or motion.
 
 Create a short design brief covering:
 
@@ -52,7 +54,7 @@ Create a short design brief covering:
 - motion and feedback;
 - accessibility and small-screen behavior.
 
-The user reviewed the reference direction and confirmed the product scope on 2026-11-13. Keep the implementation incremental and test each screen/action.
+The user explicitly rejected the first prototype and confirmed source-first fidelity on 2026-11-13. Keep the implementation incremental and test each screen/action.
 
 ## Phase 2 — Design system and wireframes
 
@@ -69,11 +71,11 @@ Suggested token groups:
 - icon sizes;
 - pressed, focused, selected, disabled, loading, and error states.
 
-Produce a simple screen map and wireframes/mockups for the main shell and one representative screen. Confirm the direction before implementation.
+Do not invent wireframes that diverge from RikkaHub. Map each Sleepy Hub screen directly to its upstream counterpart, then implement and compare against the source behavior.
 
 ## Phase 3 — Implementation, one screen at a time
 
-Implementation branch: `sleepyhub/ui-rikkahub-inspired`, created from the documentation baseline and kept separate from `main`.
+Implementation branch: `sleepyhub/rikkahub-source-rebuild`, based on the application baseline and kept separate from `main`. The older `sleepyhub/ui-rikkahub-inspired` prototype was rejected and must not be reused.
 
 Suggested order:
 
@@ -129,9 +131,9 @@ Important findings:
 ## Confirmed implementation direction (2026-11-13)
 
 The app remains a BlackBox virtual app manager. Profiles are virtual Android users, not AI assistants. The approved UI scope includes:
-- A RikkaHub-inspired side dashboard with wide, short, inset glassy profile cards and a visible Add Profile button.
-- A normal installed-app manager workspace for the selected profile.
-- Per-profile wallpaper/background image, removable and opacity-adjustable, plus a per-profile accent.
+- RikkaHub's actual side drawer and compact profile-picker pattern, with Add Profile placed in the corresponding profile actions. Do not invent wide glassy cards or tall profile tiles.
+- A normal installed-app manager workspace for the selected profile, keeping the workspace black by default and without an extra header box or decorative artwork.
+- Optional per-profile workspace wallpaper, removable and opacity-adjustable, plus per-profile theme customization. Wallpaper is behind the app grid only; no wallpaper thumbnails or art in the drawer/profile rows.
 - Global light/dark/system theme, global accent, and app-grid column preference.
 - Profile settings for rename, wallpaper, opacity, accent, and delete.
 - App actions for launch, app info, clear cache, clear data, stop, uninstall, shortcut, and install.
@@ -150,7 +152,7 @@ Next gate: user installs the debug APK and completes the device acceptance check
 
 The user clarified that the upstream RikkaHub source is the design specification and screenshots are context only. The first visual prototype was rejected. A clean branch, `sleepyhub/rikkahub-source-rebuild`, was created from the app baseline. See [RikkaHub source research](RIKKAHUB_RESEARCH.md) and [revised implementation plan](UI_IMPLEMENTATION_PLAN.md).
 
-The new direction is a Compose-based port of RikkaHub's actual modal drawer, top bar, assistant picker sheet, compact management list, grouped detail settings, optional workspace background/opacity, and global theme patterns—adapted to Sleepy Hub profiles and app management. No AI chat or background-running feature is added.
+The direction is a source-faithful Compose implementation of RikkaHub's modal drawer, top bar, profile picker sheet, compact profile-management list, grouped detail settings, optional workspace wallpaper, and global theme—adapted only where required for Sleepy Hub profiles and app management. No AI chat or background-running feature is added. No extra visual elements or unrequested features are to be invented.
 
 
 ## Implementation work started — 2026-11-13
@@ -168,3 +170,14 @@ Files added/rewritten so far:
 - `MainActivity.kt` and `ViewPagerAdapter.kt`: virtual-user profile lifecycle and stable profile IDs.
 
 **Validation state:** implementation is in progress. The ARM64 debug workflow has been triggered, but no successful build or device acceptance is claimed at this checkpoint. Resolve compiler/runtime issues before adding more UI features.
+
+
+## Latest user correction — strict RikkaHub fidelity (2026-11-13)
+
+The user explicitly said: follow RikkaHub 100% as the UI reference, add nothing beyond the agreed Sleepy Hub plan, and do not improvise. The actual upstream code—not screenshots or the rejected prototype—defines navigation, component hierarchy, sizing, spacing, colors, typography, and animation.
+
+- The app-manager workspace is black by default.
+- No extra box/banner/header card above the app grid, no decorative artwork, no large logo, and no invented profile hero.
+- Optional profile wallpaper is allowed only behind that profile's workspace, only when selected, and can be removed to restore plain black.
+- The old wide-glassy profile-card concept is rejected. Use RikkaHub's compact profile selector and management rows.
+- Keep only the requested Sleepy Hub adaptations: virtual profiles, Add Profile, app management, profile/global customization, and the previously agreed profile/folder organization. Do not add AI chat or background-running apps.
