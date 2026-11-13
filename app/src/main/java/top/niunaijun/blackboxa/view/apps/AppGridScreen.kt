@@ -103,12 +103,13 @@ fun AppGridScreen(
                         tint = Color.White.copy(alpha = 0.72f),
                     )
                     Spacer(Modifier.size(12.dp))
-                    Text("No apps in this profile", style = MaterialTheme.typography.titleMedium)
+                    Text("No apps in this profile", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Text(
                         "Install an app to get started.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.72f),
                         textAlign = TextAlign.Center,
+                        color = Color.White.copy(alpha = 0.72f),
                     )
                 }
             }
