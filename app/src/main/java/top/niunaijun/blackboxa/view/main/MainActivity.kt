@@ -131,6 +131,7 @@ class MainActivity : BaseActivity() {
                         onInstallApps = ::openInstallPicker,
                         onOpenFakeLocation = ::openFakeLocation,
                         onOpenGmsManager = ::openGmsManager,
+                        onOpenStorageAccess = ::openAllFilesAccessSettings,
                         onRefreshApps = ::refreshCurrentApps,
                         onRefreshProfiles = ::refreshProfiles,
                     )
