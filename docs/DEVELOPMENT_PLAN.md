@@ -35,13 +35,14 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head at this update: `046e04bb15ab328f531427a6ea64b9d9dba896fb`
-- Latest CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — **successful** for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Current feature-branch head at this update: `dae5f468ad1fdf52dee22d3572de37f7a9af619c`
+- Latest completed CI run: [43417371053](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43417371053) — **successful** for commit `046e04bb15ab328f531427a6ea64b9d9dba896fb`.
+- Current CI run: [43419141589](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43419141589) — running for the list-layout fixes in commit `dae5f468ad1fdf52dee22d3572de37f7a9af619c`.
 - Artifact: `sleepy-hub-arm64-preview-debug` (artifact ID `14032447856`), containing `SleepyHub_4.0.0-preview_arm64-v8a-debug.apk` (26,038,134 bytes).
 - APK SHA-256: `dc2a88d0c76e4c7384aa1744388487b36ed52057d165cb41bd4c95e069d191f6`.
 - CI verified APK signature, package ID `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, and ARM64 native library presence.
 - Preview build uses application ID suffix `.preview`, label `Sleepy Hub Preview`, and the repository's persistent debug signing file. This is not the final release identity or a reduced-feature app.
-- The latest commit adds a stale-ViewPager-callback guard and clearer fake-location instructions. CI is green; physical-device verification is still pending.
+- Recent changes add a stale-ViewPager-callback guard, clearer fake-location instructions, and corrected remaining-height constraints for the profile manager, fake-location list and Google-services empty state. The previous commit's CI is green; the newest layout-fix build is pending.
 - No claim is made that app installation, all profile/container switching cases, fake location, or full RikkaHub visual parity have been proven on a phone.
 
 ## Phase 0 — project safety and repeatable builds
@@ -87,6 +88,26 @@ For every screen compare: hierarchy, top/bottom bars, dimensions, spacing, shape
 
 **Exit criteria:** every relevant screen and interaction has been source-compared and the user has reviewed target-device screenshots.
 
+## Screen-by-screen RikkaHub visual parity matrix
+
+This matrix separates source-code presence from actual visual acceptance. A screen is not considered visually complete just because a Compose implementation exists.
+
+| Sleepy Hub screen / flow | Pinned RikkaHub reference | Current source observation | Parity status / next work |
+|---|---|---|---|
+| Main workspace shell | `ChatPage.kt` | Black workspace, compact transparent top bar, ViewPager2 profile content, Add App action, drawer. | Structural mapping present; compare exact toolbar height, title/icon treatment, insets, and scroll behavior on device. |
+| Dashboard drawer | `ChatDrawer.kt` | 300dp sheet, 50dp profile header, quick actions, folder chips, profile sort, scrollable rows, bottom container selector and settings footer. | Main structure mapped; refine details only against source screenshots and actual phone rendering. |
+| Container picker | `AssistantPicker.kt` | 80%-height bottom sheet, selected row uses primaryContainer, trailing edit action. Current row uses a 34dp avatar and two text lines (name + profile count). | Close structurally; compare against upstream compact 32dp avatar and one-line name row. Remove any secondary metadata only if it does not serve the container mapping. |
+| Profile manager | `AssistantPage.kt` | Large flexible top bar, search, folder chips, reorderable list, 48dp avatar, 20dp rounded row cards and trailing actions. | Major source patterns present; compare row padding, menu placement, elevation, sorting and reorder animation. |
+| Profile detail/basic/background | `AssistantDetailPage.kt`, `AssistantBasicPage.kt`, `BackgroundPicker.kt` | Separate detail, basic and workspace-background pages with grouped settings sections. | Navigation exists; compare section order, top-bar collapse, preview, image selection/removal and transitions. |
+| Global theme | `Theme.kt`, `SettingThemePage.kt` | Global system/light/dark mode, dynamic color, global accent and AMOLED true black. No profile/container theme controls. | Ownership is correct; compare palette controls, presets and theme preview behavior. |
+| Profile workspace background | `Background.kt` | Per-profile image is rendered behind the app grid, not in profile rows or container picker. | Mapping implemented; verify opacity, image crop and black fallback on device. |
+| App grid / app manager | Sleepy Hub-specific adaptation | Reorderable app grid, empty state, launch and app actions. | Source-specific behavior exists; detailed spacing, icon sizing, context actions and animations still need review. |
+| Installed-app / APK picker | Sleepy Hub-specific adaptation | Compose search/list screen and external APK import. | Structural implementation exists; test both install routes and compare row density, toolbar and loading/error states. |
+| Google services manager | Sleepy Hub-specific adaptation | Compose profile rows, per-profile switch and Play badge; GMS packages are filtered from the app grid. | Matches requested behavior in code; verify that no Google service package appears as a normal workspace app. |
+| Fake location | Sleepy Hub-specific adaptation | Compose app list, map flow, explanation and disable action. | Instructions updated; verify layout, actual location override and restore behavior. |
+| Storage permission rationale | Sleepy Hub-specific adaptation | Compose rationale dialog and Android settings handoff. | Needs target-device review for exact wording, system return flow and safe insets. |
+| Motion and system bars | Cross-cutting | AnimatedContent page transition (340ms fade-in / 300ms slide-in), animated list placement/color, transparent navigation bar and safe-drawing insets. | Code is present; compare easing/duration and verify gesture + three-button navigation without obscured controls. |
+
 ## Phase 3 — motion, insets and visual finish
 
 1. Use deliberate, smooth RikkaHub-like transitions; avoid near-instant or missing animations.
@@ -131,6 +152,7 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-007 | P1 | UI feels dry and only about 60–70% like RikkaHub; user is unhappy with logos, frames and overall presentation. | Open; broad source audit required | Rebuild screen by screen from pinned RikkaHub source. Compare hierarchy, component shapes, icons, spacing, typography, frames, states and transitions. Do not add decorative elements the reference does not have. |
 | BUG-008 | P1 | Fake location is confusing; user cannot tell what it does or how to use it. | Explanation updated; behavior unverified | Current instructions explain choosing an app, dropping a map pin, applying it, and disabling it later. Verify location override is limited to the chosen virtual app/profile and disabling restores real location. |
 | BUG-009 | P1 | Further UI and functional bugs are expected; initial report is incomplete. | Open intake | Append every new report as the next BUG ID. Do not close or overwrite earlier issues without evidence. |
+| BUG-010 | P1 | Profile manager and fake-location lists, plus the Google-services empty state, can request the full screen height underneath earlier content in a Column. | Fixing; CI pending | Static audit found `fillMaxSize()` used for vertically stacked children. Commit `dae5f46` changes those children to consume only the remaining height with `weight(1f)`. CI run 43419141589 is pending; verify scrolling and empty states on device. |
 
 ## Bug intake and update rules
 
