@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.databinding.ActivityInstallPickerBinding
 import top.niunaijun.blackboxa.util.InjectionUtil
@@ -48,6 +49,8 @@ class ListActivity : BaseActivity() {
         )[ListViewModel::class.java]
 
         val userId = intent.getIntExtra("userID", 0)
+        val profileIndex = BlackBoxCore.get().users.sortedBy { it.id }.indexOfFirst { it.id == userId }
+            .coerceAtLeast(0)
         viewModel.loadInstallApps(userId)
 
         viewBinding.composeView.setViewCompositionStrategy(
@@ -59,7 +62,7 @@ class ListActivity : BaseActivity() {
                 val loading by viewModel.loadingLiveData.observeAsState(true)
                 InstalledAppPickerScreen(
                     apps = apps,
-                    profileName = ProfileAppearance.profileName(userId, userId),
+                    profileName = ProfileAppearance.profileName(userId, profileIndex),
                     loading = loading || copyingApk,
                     onBack = { finish() },
                     onChooseApk = {
