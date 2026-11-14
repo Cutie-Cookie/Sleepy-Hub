@@ -48,13 +48,27 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
 
     @Override
     public void injectHook() {
+        String packageName = BActivityThread.getAppPackageName();
+        int userId = BActivityThread.getUserId();
         try {
-            Instrumentation mInstrumentation = getCurrInstrumentation();
-            if (mInstrumentation == this || checkInstrumentation(mInstrumentation))
+            Instrumentation current = getCurrInstrumentation();
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.inject.begin",
+                    packageName, userId, "current=" + (current == null ? "null" : current.getClass().getName())
+                            + "; base=" + (mBaseInstrumentation == null ? "null" : mBaseInstrumentation.getClass().getName()));
+            if (current == this || checkInstrumentation(current)) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.inject.already_wrapped",
+                        packageName, userId, "base=" + (mBaseInstrumentation == null ? "null" : mBaseInstrumentation.getClass().getName()));
                 return;
-            mBaseInstrumentation = (Instrumentation) mInstrumentation;
+            }
+            mBaseInstrumentation = current;
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.inject.base_set",
+                    packageName, userId, "base=" + (mBaseInstrumentation == null ? "null" : mBaseInstrumentation.getClass().getName()));
             BRActivityThread.get(BlackBoxCore.mainThread())._set_mInstrumentation(this);
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.inject.complete",
+                    packageName, userId, "AppInstrumentation installed");
         } catch (Exception e) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.inject.error",
+                    packageName, userId, LaunchDiagnostics.describeError(e));
             e.printStackTrace();
         }
     }
@@ -132,8 +146,25 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
     @Override
     public Application newApplication(ClassLoader cl, String className, Context context) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
         ContextCompat.fix(context);
-
-        return super.newApplication(cl, className, context);
+        String packageName = BActivityThread.getAppPackageName();
+        int userId = BActivityThread.getUserId();
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.new_application.begin",
+                packageName, userId, "class=" + className
+                        + "; base=" + (mBaseInstrumentation == null ? "null" : mBaseInstrumentation.getClass().getName()));
+        try {
+            Application application = super.newApplication(cl, className, context);
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.new_application.returned",
+                    packageName, userId, "application=" + (application == null ? "null" : application.getClass().getName()));
+            return application;
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException error) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.new_application.error",
+                    packageName, userId, LaunchDiagnostics.describeError(error));
+            throw error;
+        } catch (RuntimeException | Error error) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.new_application.error",
+                    packageName, userId, LaunchDiagnostics.describeError(error));
+            throw error;
+        }
     }
 
     @Override
