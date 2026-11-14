@@ -25,7 +25,7 @@ public class ProxyActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
-        LaunchDiagnostics.record(this, "proxy_activity.on_create", getPackageName(), BActivityThread.getUserId(),
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.on_create", getPackageName(), BActivityThread.getUserId(),
                 "proxy=" + getClass().getName() + "; intentComponent=" + (getIntent() == null ? "null" : getIntent().getComponent()));
         finish();
 
@@ -35,31 +35,31 @@ public class ProxyActivity extends Activity {
         try {
             record = ProxyActivityRecord.create(getIntent());
         } catch (RuntimeException error) {
-            LaunchDiagnostics.record(this, "proxy_activity.record_error", BActivityThread.getAppPackageName(),
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.record_error", BActivityThread.getAppPackageName(),
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         }
         String packageName = record.mActivityInfo == null
                 ? BActivityThread.getAppPackageName() : record.mActivityInfo.packageName;
-        LaunchDiagnostics.record(this, "proxy_activity.record_read", packageName, record.mUserId,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.record_read", packageName, record.mUserId,
                 "activityInfo=" + (record.mActivityInfo == null ? "missing" : record.mActivityInfo.name)
                         + "; target=" + (record.mTarget == null ? "missing" : record.mTarget.getComponent()));
         if (record.mTarget != null) {
             try {
                 record.mTarget.setExtrasClassLoader(BlackBoxCore.getApplication().getClassLoader());
-                LaunchDiagnostics.record(this, "proxy_activity.target_start.begin", packageName, record.mUserId,
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.target_start.begin", packageName, record.mUserId,
                         "target=" + record.mTarget.getComponent());
                 startActivity(record.mTarget);
-                LaunchDiagnostics.record(this, "proxy_activity.target_start.returned", packageName, record.mUserId,
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.target_start.returned", packageName, record.mUserId,
                         "target startActivity returned");
             } catch (RuntimeException error) {
-                LaunchDiagnostics.record(this, "proxy_activity.target_start.error", packageName, record.mUserId,
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.target_start.error", packageName, record.mUserId,
                         LaunchDiagnostics.describeError(error));
                 throw error;
             }
             return;
         }
-        LaunchDiagnostics.record(this, "proxy_activity.target_missing", packageName, record.mUserId,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "proxy_activity.target_missing", packageName, record.mUserId,
                 "proxy activity finished without a target intent; this can explain a black screen");
     }
 
