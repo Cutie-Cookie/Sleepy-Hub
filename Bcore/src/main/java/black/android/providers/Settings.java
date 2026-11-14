@@ -1,7 +1,6 @@
 package black.android.providers;
 
 import android.os.IInterface;
-import java.util.HashMap;
 
 
 import top.niunaijun.blackreflection.annotation.BClassName;
@@ -33,8 +32,10 @@ public interface Settings {
         @BField
         Object mProviderHolder();
 
+        // The framework cache implementation varies by Android release
+        // (for example, Android 13 uses android.util.ArrayMap).
         @BField
-        HashMap<String, String> mValues();
+        Object mValues();
     }
 
     @BClassName("android.provider.Settings$NameValueCache")
@@ -43,7 +44,7 @@ public interface Settings {
         Object mContentProvider();
 
         @BField
-        HashMap<String, String> mValues();
+        Object mValues();
     }
 
     @BClassName("android.provider.Settings$Global")
