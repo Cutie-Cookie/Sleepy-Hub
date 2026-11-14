@@ -42,7 +42,7 @@ public final class LaunchDiagnostics {
                 + "\t" + userId
                 + "\t" + clean(stage, 72)
                 + "\t" + clean(packageName, 160)
-                + "\t" + clean(detail, 220)
+                + "\t" + clean(detail, 460)
                 + "\n";
 
         synchronized (LOCK) {
@@ -78,11 +78,34 @@ public final class LaunchDiagnostics {
         if (error == null) {
             return "unknown error";
         }
-        String message = error.getMessage();
-        if (message == null || message.trim().isEmpty()) {
-            return error.getClass().getSimpleName();
+        StringBuilder description = new StringBuilder();
+        Throwable current = error;
+        Throwable deepest = error;
+        int depth = 0;
+        while (current != null && depth < 4) {
+            if (depth > 0) {
+                description.append(" <- ");
+            }
+            String message = current.getMessage();
+            description.append(current.getClass().getSimpleName());
+            if (message != null && !message.trim().isEmpty()) {
+                description.append(": ").append(clean(message, 96));
+            }
+            deepest = current;
+            current = current.getCause();
+            depth++;
         }
-        return error.getClass().getSimpleName() + ": " + clean(message, 160);
+        StackTraceElement[] frames = deepest.getStackTrace();
+        int frameCount = Math.min(frames == null ? 0 : frames.length, 3);
+        for (int i = 0; i < frameCount; i++) {
+            StackTraceElement frame = frames[i];
+            String className = frame.getClassName();
+            int packageSeparator = className.lastIndexOf('.');
+            String shortClassName = packageSeparator >= 0
+                    ? className.substring(packageSeparator + 1) : className;
+            description.append(" @ ").append(shortClassName).append("#").append(frame.getMethodName());
+        }
+        return clean(description.toString(), 440);
     }
 
     public static String getReport(Context context) {
