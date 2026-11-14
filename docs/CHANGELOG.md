@@ -296,3 +296,5 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - ICCID and IMSI already have per-profile persistence and TelephonyManager interception through BUserIdentifiers and IPhoneSubInfoProxy. Distinctness and persistence across profiles still need device verification.
 - No MediaDrm unique-ID hook exists. MediaDrm.PROPERTY_DEVICE_UNIQUE_ID is supplied by the DRM plugin and established during provisioning; blindly replacing the value at the Java API boundary would not alter the underlying DRM identity and could disrupt licensing/playback.
 - “Media ID” remains ambiguous and needs the exact checker field/API before implementation.
+
+- Follow-up format audit: current per-profile ICCID values are 20 digits but omit a calculated Luhn check digit; current IMSI values use a fixed 310260 MCC/MNC prefix. Plan a format/carrier-aware improvement while preserving already-persisted values.
