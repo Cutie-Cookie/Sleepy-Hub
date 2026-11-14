@@ -7,15 +7,25 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import top.niunaijun.blackbox.BlackBoxCore;
+import top.niunaijun.blackbox.app.BActivityThread;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 
 public final class BUserIdentifiers {
     private static final Object LOCK = new Object();
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Map<Integer, Properties> CACHE = new ConcurrentHashMap<>();
+    private static final Set<String> STORAGE_DIAGNOSTICS_RECORDED =
+            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private BUserIdentifiers() {}
 
@@ -54,42 +64,141 @@ public final class BUserIdentifiers {
     private interface ValueFactory { String create(); }
 
     private static String getOrCreate(int userId, String key, ValueFactory factory) {
+        String value = null;
+        String source = "fallback-error";
         synchronized (LOCK) {
             Properties cached = CACHE.get(userId);
             if (cached != null) {
-                String value = cached.getProperty(key);
-                if (value != null && !value.isEmpty()) return value;
+                value = cached.getProperty(key);
+                if (value != null && !value.isEmpty()) {
+                    source = "cache";
+                }
             }
 
-            File userDir = BEnvironment.getUserDir(userId);
-            if (!userDir.exists() && !userDir.mkdirs() && !userDir.isDirectory()) {
-                return stableFallback(userId, key);
-            }
-
-            File valuesFile = new File(userDir, ".sleepyhub-identifiers");
-            File lockFile = new File(userDir, ".sleepyhub-identifiers.lock");
-            try (RandomAccessFile lockHandle = new RandomAccessFile(lockFile, "rw");
-                 FileChannel channel = lockHandle.getChannel();
-                 FileLock ignored = channel.lock()) {
-                Properties properties = load(valuesFile);
-                if (cached != null) {
-                    for (String cachedKey : cached.stringPropertyNames()) {
-                        if (!properties.containsKey(cachedKey)) {
-                            properties.setProperty(cachedKey, cached.getProperty(cachedKey));
+            if (value == null || value.isEmpty()) {
+                File userDir = BEnvironment.getUserDir(userId);
+                if (!userDir.exists() && !userDir.mkdirs() && !userDir.isDirectory()) {
+                    value = stableFallback(userId, key);
+                    source = "fallback-mkdir";
+                } else {
+                    File valuesFile = new File(userDir, ".sleepyhub-identifiers");
+                    File lockFile = new File(userDir, ".sleepyhub-identifiers.lock");
+                    try (RandomAccessFile lockHandle = new RandomAccessFile(lockFile, "rw");
+                         FileChannel channel = lockHandle.getChannel();
+                         FileLock ignored = channel.lock()) {
+                        Properties properties = load(valuesFile);
+                        if (cached != null) {
+                            for (String cachedKey : cached.stringPropertyNames()) {
+                                if (!properties.containsKey(cachedKey)) {
+                                    properties.setProperty(cachedKey, cached.getProperty(cachedKey));
+                                }
+                            }
                         }
+                        value = properties.getProperty(key);
+                        if (value == null || value.isEmpty()) {
+                            value = factory.create();
+                            properties.setProperty(key, value);
+                            storeAtomically(valuesFile, properties);
+                            source = "generated";
+                        } else {
+                            source = "disk";
+                        }
+                        CACHE.put(userId, properties);
+                    } catch (Exception error) {
+                        value = stableFallback(userId, key);
+                        source = "fallback-error";
                     }
                 }
-                String value = properties.getProperty(key);
-                if (value == null || value.isEmpty()) {
-                    value = factory.create();
-                    properties.setProperty(key, value);
-                    storeAtomically(valuesFile, properties);
-                }
-                CACHE.put(userId, properties);
-                return value;
-            } catch (Exception error) {
-                return stableFallback(userId, key);
             }
+        }
+
+        // This is diagnostic-only: inspect only Sleepy Hub's own per-profile
+        // identifier stores, once per identifier/profile/process. Never log values.
+        try {
+            recordSimIdentifierStorage(userId, key, value, source);
+        } catch (Throwable ignored) {
+            // Temporary diagnostics must never affect identifier retrieval.
+        }
+        return value;
+    }
+
+    private static void recordSimIdentifierStorage(int userId, String key, String value, String source) {
+        if (!"sim_serial".equals(key) && !"subscriber_id".equals(key)) {
+            return;
+        }
+        String recordKey = userId + ":" + key;
+        if (!STORAGE_DIAGNOSTICS_RECORDED.add(recordKey)) {
+            return;
+        }
+
+        List<Integer> duplicateProfiles = findDuplicateProfiles(userId, key, value);
+        String duplicateSummary;
+        if (duplicateProfiles == null) {
+            duplicateSummary = "unavailable";
+        } else if (duplicateProfiles.isEmpty()) {
+            duplicateSummary = "none";
+        } else {
+            StringBuilder summary = new StringBuilder();
+            for (Integer profileId : duplicateProfiles) {
+                if (summary.length() > 0) summary.append(",");
+                summary.append(profileId);
+            }
+            duplicateSummary = summary.toString();
+        }
+
+        String kind = "sim_serial".equals(key) ? "iccid" : "imsi";
+        LaunchDiagnostics.record(
+                BlackBoxCore.getContext(),
+                "identifier." + kind + ".store",
+                BActivityThread.getAppPackageName(),
+                userId,
+                "source=" + source
+                        + "; duplicateProfiles=" + duplicateSummary
+                        + "; appConfig=" + (BActivityThread.getAppConfig() != null ? "present" : "missing")
+        );
+    }
+
+    /**
+     * Compares a synthetic identifier only against Sleepy Hub's own profile
+     * stores. The value is never returned from this method or written to logs.
+     * A null result means the directory scan could not be completed.
+     */
+    private static List<Integer> findDuplicateProfiles(int userId, String key, String value) {
+        try {
+            File usersRoot = BEnvironment.getUserDir(userId).getParentFile();
+            File[] profileDirs = usersRoot == null ? null : usersRoot.listFiles();
+            if (profileDirs == null) {
+                return null;
+            }
+
+            List<Integer> matches = new ArrayList<>();
+            for (File profileDir : profileDirs) {
+                if (!profileDir.isDirectory()) {
+                    continue;
+                }
+                int otherUserId;
+                try {
+                    otherUserId = Integer.parseInt(profileDir.getName());
+                } catch (NumberFormatException ignored) {
+                    continue;
+                }
+                if (otherUserId == userId) {
+                    continue;
+                }
+
+                File otherValuesFile = new File(profileDir, ".sleepyhub-identifiers");
+                if (!otherValuesFile.isFile()) {
+                    continue;
+                }
+                String otherValue = load(otherValuesFile).getProperty(key);
+                if (value != null && value.equals(otherValue)) {
+                    matches.add(otherUserId);
+                }
+            }
+            Collections.sort(matches);
+            return matches;
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
