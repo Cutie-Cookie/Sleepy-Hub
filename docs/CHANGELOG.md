@@ -298,3 +298,12 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - “Media ID” remains ambiguous and needs the exact checker field/API before implementation.
 
 - Follow-up format audit: current per-profile ICCID values are 20 digits but omit a calculated Luhn check digit; current IMSI values use a fixed 310260 MCC/MNC prefix. Plan a format/carrier-aware improvement while preserving already-persisted values.
+
+### 2026-11-14 — Privacy-safe SIM identity diagnostics
+
+- Added `sleepyhub/diagnose-profile-identifiers` at `9f0c39a9ab508e8441481c354c952d843deec0d9`, with draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2) stacked on the Android 13 launch-diagnostic branch.
+- Instrumented the existing ICCID/IMSI telephony hooks to record only hook name, virtual profile ID passed to `BUserIdentifiers`, and whether `AppConfig` is present. Actual identifiers, subscription IDs, and hook arguments are never recorded.
+- Added per-hook/profile rate limiting and two-profile report collection instructions.
+- Left identifier generation, persistence, profile storage, cache behavior, DRM, permissions, launch behavior and UI unchanged.
+- ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress; device testing is pending.
+- `main` remains untouched.

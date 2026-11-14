@@ -1,6 +1,6 @@
 # Project status
 
-_Last reviewed: 2026-11-13. The original application baseline was `6de07c5`; UI implementation is in progress on a separate feature branch._
+_Last reviewed: 2026-11-14. The original application baseline was `6de07c5`; core fixes and diagnostics remain isolated on separate branches._
 
 ## Current state
 
@@ -23,7 +23,9 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | Branch | Purpose | Baseline |
 |---|---|---|
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
-| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `c7b28cd` — CI run `43452740407` green; preview APK uploaded |
+| `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `2905dac` — CI run `43459349834` green; preview APK available for device testing |
+| `sleepyhub/diagnose-app-black-screen` | Android 13 app-launch diagnosis/fix | `cb3bd72` — user confirmed Mantle Verify launches; draft PR #1 |
+| `sleepyhub/diagnose-profile-identifiers` | Privacy-safe ICCID/IMSI routing diagnosis | `9f0c39a` — draft PR #2; CI run `43601700380` pending |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -274,3 +276,13 @@ The second Android 13 diagnostic report identifies the black-screen failure prec
 - `main` remains unchanged at `89b59836c66f173756a4ae258cf379a957649820`.
 
 The identity contract remains unchanged: Android ID, GSF Android ID, Wi-Fi MAC, IMEI, MEID, subscriber ID, SIM serial and device serial are intended to be stable within each virtual profile and distinct between profiles. SSID and BSSID are intentionally shared network/access-point values. App Set ID is Android/Play-services-managed and remains a separate verification item.
+
+## SIM identity diagnosis — 2026-11-14
+
+- The phone reports its physical SIM ICCID and IMSI as restricted/unavailable. Sleepy Hub displays synthetic values, and the user reports that these synthetic ICCID/IMSI values are shared across profiles.
+- `BUserIdentifiers` is designed to persist ICCID and IMSI by virtual profile ID. `BActivityThread.getUserId()` falls back to `0` when `AppConfig` is missing, so profile-context propagation must be verified before changing the generators.
+- Diagnostic source commit: `9f0c39a9ab508e8441481c354c952d843deec0d9`, branch `sleepyhub/diagnose-profile-identifiers`, draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2). It records hook source, profile ID and `AppConfig` presence only; it does not record the actual identifiers or method arguments.
+- CI run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress. Device reports from both profiles are still required.
+- No identifier generator, persisted value, profile data, cache, DRM, permission, app launch, or UI behavior was changed in the diagnostic commit.
+- DRM Media ID remains a separate investigation. No blind `MediaDrm` spoofing is planned.
+- `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.

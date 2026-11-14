@@ -36,7 +36,8 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
 - Current feature-branch head: `2905dac7b5800d4e374f41863bb03e5c3903d394`.
-- Diagnostic branch: `sleepyhub/diagnose-app-black-screen`, latest source commit `cb3bd72b183e91c0ff82210b0c781c1a540c5dc4`; draft PR [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1) still targets the feature branch and is not merged.
+- App-launch diagnostic branch: `sleepyhub/diagnose-app-black-screen`, source commit `cb3bd72b183e91c0ff82210b0c781c1a540c5dc4`; draft PR [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1) targets the feature branch and remains unmerged.
+- Profile-identity diagnostic branch: `sleepyhub/diagnose-profile-identifiers`, source commit `9f0c39a9ab508e8441481c354c952d843deec0d9`; draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2) is stacked on the app-launch diagnostic branch. ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress.
 - Android 13 black-screen root cause is traced to a `HashMap` reflection return type over the framework's `ArrayMap`; targeted fix is in `cb3bd72`. Diagnostic ARM64 build [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) passed. Artifact `14114723304`; APK SHA-256 `2fbb69dd98746ace5199e7845b7189a3492c50a3fe349ba2e9b8c598289bc5a3`. Device retest pending.
 - Current-head CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) — **success**; ARM64 debug build, preview package identity, APK signature, ABI verification and artifact upload all passed.
 - Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope; corrected build is green.
@@ -355,3 +356,16 @@ Source review found that the launch API reports dispatch success before the targ
 - “Media ID” is not specific enough to map to one Android API. Identify the exact field/test method before proposing a hook.
 - Identity test follow-up: compare ICCID and IMSI across two virtual profiles, restart Sleepy Hub, then confirm each profile retains its own values. Keep SSID/BSSID shared.
 - `main` remains untouched; the diagnostic PR remains unmerged pending the broader test and cleanup of temporary diagnostics.
+
+### 2026-11-14 — Privacy-safe ICCID/IMSI profile-routing diagnosis
+
+- User clarified the comparison: the physical phone reports SIM ICCID and IMSI as restricted/unavailable, while Sleepy Hub shows synthetic values; the same synthetic values are currently observed across Sleepy Hub profiles. No actual SIM identifiers are requested or needed for diagnosis.
+- Source audit found that `BUserIdentifiers` already persists synthetic ICCID/IMSI values by virtual `userId`. `BActivityThread.getUserId()` returns profile `0` when `AppConfig` is absent. This is a plausible shared-ID cause, not yet a confirmed runtime diagnosis.
+- Added a separate source branch `sleepyhub/diagnose-profile-identifiers` at commit `9f0c39a9ab508e8441481c354c952d843deec0d9`, based on the tested Android 13 launch-fix branch. Draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2) targets `sleepyhub/diagnose-app-black-screen`, not `main`.
+- The diagnostic records only the ICCID/IMSI hook name, the virtual profile ID passed to the existing identifier store, and whether `AppConfig` is present. It never records identifier values, subscription IDs, or hook arguments. Repeated events are rate-limited.
+- No generator, persisted identifier, cache, profile storage, migration, DRM, permission, launch-flow, or UI behavior was changed. No identifier values are rotated.
+- ARM64 build run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress. Build verification and device verification are not yet complete.
+- Device test: use the same harmless checker in profile A and profile B; copy the local report after each profile because each launch clears the previous report. Share only the reports, not the displayed ICCID/IMSI values.
+- Next decision depends on the reports: if `AppConfig` is missing or the wrong profile ID reaches the hook, trace and correct profile context propagation; if distinct profile IDs reach the hooks, inspect per-user storage paths and checker/API behavior before touching generation.
+- ICCID Luhn formatting and removal of the fixed IMSI `310260` prefix remain separate follow-up work. Preserve already-persisted values unless a confirmed collision requires a documented migration. Keep DRM Media ID investigation separate; do not blindly spoof `MediaDrm.PROPERTY_DEVICE_UNIQUE_ID`.
+- `main` remains at `89b59836c66f173756a4ae258cf379a957649820` and untouched.
