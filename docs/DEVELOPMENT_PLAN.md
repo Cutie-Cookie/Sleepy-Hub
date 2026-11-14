@@ -1,6 +1,6 @@
 # Sleepy Hub — living development plan
 
-Last updated: 2026-11-13
+Last updated: 2026-11-14
 
 This is the working roadmap and bug register for the RikkaHub-source-led Sleepy Hub rebuild. It is intentionally editable: newly reported bugs are appended, statuses change as evidence arrives, and phases may be reordered when a newly discovered blocker requires it.
 
@@ -259,7 +259,7 @@ Do not call the app complete or claim 100% parity until the acceptance checks ab
 | BUG-024 | P1 | Settings text must not be clipped, and folder controls must have a small visible gap before the profile rows. | Build verified; device retest pending | The latest screenshot shows the Color mode label clipped at the left edge and the folder-chip row touching the first profile row. Commit `2905dac` adds 14dp horizontal padding to the Color mode label/chips and a restrained 6dp gap below the folder row. Recheck the exact screenshot after the new build; keep broad animation polish in Phase 3. |
 | BUG-025 | P2 | Profile/container switching sweeps across the screen, especially noticeable with separate backgrounds. | Sweep removed; visual polish remains | User confirms the sweep issue is now PASS. Keep only the remaining subtle motion/transition feel as Phase 3 polish; do not reintroduce horizontal sweeps. |
 
-| BUG-027 | P0 | Tapping an installed virtual app opens a black screen instead of the app. | Build verified; device retest pending | The latest device test reports that apps do not open. The optional `LauncherActivity` splash wrapper is an extra asynchronous hand-off; commit `2905dac` bypasses it and moves the direct BlackBox launch request to a background thread with package/profile logging. This is a targeted hypothesis, not a confirmed runtime root cause. Test several harmless apps; if the screen remains black, capture the exact app and any visible error so the activity/process path can be traced further. |
+| BUG-027 | P0 | Tapping an installed virtual app opens a black screen instead of the app. | Confirmed on device; launch pipeline diagnostics prepared, build pending | User installed/tested commit `2905dac` and confirmed the black screen remains. Source review shows `launchApk()` returns true after dispatch, not after an activity is created; `ActivityStack` can silently return when resolution misses and catches `realStartActivityLocked` errors before returning. Diagnostic branch `sleepyhub/diagnose-app-black-screen` adds a local trace across package resolution, process startup, proxy transaction rewriting and target Activity lifecycle, plus a copy-report prompt. Draft PR #1 targets only the feature branch and is not merged. Await a successful diagnostic build, then test one harmless app and paste the copied report. |
 
 ## Bug intake and update rules
 
@@ -305,3 +305,19 @@ Follow-up source commit: 2905dac7b5800d4e374f41863bb03e5c3903d394.
 - Adds Android 13 isLocationEnabledForUser and registerLocationListener/unregister handling, makes provider state conditional on fake mode, and fixes the duplicate provider-properties call.
 
 CI run [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) passed. Artifact `14056805069` is the current candidate; the APK SHA-256 is `448ca06eadb1015a78017f85e0e6c2fbedce2be65959289021bbf17104d7a4f9`. No runtime fix is claimed until the user retests on the phone. Phase 2 remains deferred; these are targeted Phase 1 corrections only. Main remains untouched.
+
+
+### 2026-11-14 — Black-screen diagnosis branch
+
+The user confirmed the latest 2905dac preview still opens virtual apps to a black screen. The launch-wrapper bypass was only a hypothesis and is not accepted as a fix.
+
+Source review found that the launch API reports dispatch success before the target activity is confirmed. In addition, the activity stack has a resolution-miss path that returns without a user-facing error and a framework-start catch that prints a throwable but still returns normally. That makes a structured runtime trace necessary.
+
+- Diagnostic branch: `sleepyhub/diagnose-app-black-screen`, based on `2905dac7b5800d4e374f41863bb03e5c3903d394`.
+- Draft PR: [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1), targeting `sleepyhub/bugfix-install-switch-polish` only. It is not merged; `main` remains untouched.
+- Trace coverage: core launch handoff, virtual activity resolution, process/provider initialization, proxy activity dispatch, HCallbackProxy transaction rewrite, target Application/Activity `onCreate` and `onResume`, process death, and launch timeout.
+- Report delivery: after a failed launch or return to the Hub, a temporary dialog offers **Copy report**. If the host stays visible because no activity launched, the prompt appears after about 3.5 seconds.
+- Privacy: report is stored locally in Sleepy Hub's private files and includes only Android version, timestamps, process/thread IDs, profile ID, target package/component, launch stages and sanitized error summaries. It does not read target-app files/content, accounts, passwords, messages or unique device IDs. The user can inspect the report before pasting it.
+- The diagnostic branch does not redesign the loading UI or change the existing launch-path selection. No diagnostic APK is considered ready until CI builds it and package/signature/ABI checks pass.
+
+**Next test once the APK is available:** install the diagnostic Preview over the existing Preview, tap one harmless installed app, wait a few seconds or press Back if it becomes black, then tap **Copy report** and paste the report into the conversation. Test only one app first.
