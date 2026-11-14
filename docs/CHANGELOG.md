@@ -287,3 +287,12 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - The earlier suspected Context-to-Application fallback cast was not reached: the first `makeApplication(false, null)` returned a non-null `VerifyApp`. The provider-initialization exception occurs later in `installProviders()` and is wrapped by `handleBindApplication()` as `Unable to makeApplication`.
 - Corrected diagnostic ARM64 build run [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) passed. Artifact `14114723304`; ZIP SHA-256 `4f437ec95bdf98063db80efdb1fda540fb85816744ee353001199e67a0463398`; extracted APK SHA-256 `2fbb69dd98746ace5199e7845b7189a3492c50a3fe349ba2e9b8c598289bc5a3`. Package `com.cutiecookie.sleepyhub.preview`, label `Sleepy Hub Preview`, version `4.0.0-preview`, ARM64-v8a, certificate SHA-256 `cbd3ce49b15de6f54b8b191f8e99e8dcd6610e6f6895ca7f5d522d855c009f20`. Runtime verification remains pending on Android 13.
 - No UI/loading redesign, no profile-identity rollback, no data clearing, and no changes to `main`.
+
+
+### 2026-11-14 — Successful Android 13 launch retest and additional identifier audit
+
+- User confirmed that the corrected diagnostic Preview launches Mantle Verify normally on Android 13 (API 33). The trace confirms MainActivity.onCreate() and onResume() both returned.
+- The remaining activity.launch_timeout event is a false positive from a fixed 2-second timer; process attachment took about 2.44 seconds, and the Activity was created shortly afterwards.
+- ICCID and IMSI already have per-profile persistence and TelephonyManager interception through BUserIdentifiers and IPhoneSubInfoProxy. Distinctness and persistence across profiles still need device verification.
+- No MediaDrm unique-ID hook exists. MediaDrm.PROPERTY_DEVICE_UNIQUE_ID is supplied by the DRM plugin and established during provisioning; blindly replacing the value at the Java API boundary would not alter the underlying DRM identity and could disrupt licensing/playback.
+- “Media ID” remains ambiguous and needs the exact checker field/API before implementation.
