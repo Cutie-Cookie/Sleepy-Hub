@@ -113,7 +113,11 @@ public final class BUserIdentifiers {
 
         // This is diagnostic-only: inspect only Sleepy Hub's own per-profile
         // identifier stores, once per identifier/profile/process. Never log values.
-        recordSimIdentifierStorage(userId, key, value, source);
+        try {
+            recordSimIdentifierStorage(userId, key, value, source);
+        } catch (Throwable ignored) {
+            // Temporary diagnostics must never affect identifier retrieval.
+        }
         return value;
     }
 
