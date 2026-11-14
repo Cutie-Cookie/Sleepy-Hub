@@ -59,6 +59,7 @@ import top.niunaijun.blackbox.proxy.ProxyManifest;
 import top.niunaijun.blackbox.utils.FileUtils;
 import top.niunaijun.blackbox.utils.ShellUtils;
 import top.niunaijun.blackbox.utils.Slog;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.SimpleCrashFix;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 import top.niunaijun.blackbox.utils.compat.BundleCompat;
@@ -1015,10 +1016,25 @@ public class BlackBoxCore extends ClientConfiguration {
     }
 
     public void startActivity(Intent intent, int userId) {
-        if (mClientConfiguration.isEnableLauncherActivity()) {
-            LauncherActivity.launch(intent, userId);
-        } else {
-            getBActivityManager().startActivity(intent, userId);
+        String packageName = intent == null ? null
+                : (intent.getComponent() != null
+                    ? intent.getComponent().getPackageName()
+                    : intent.getPackage());
+        boolean useLauncherWrapper = mClientConfiguration.isEnableLauncherActivity();
+        LaunchDiagnostics.record(getContext(), "core.start_activity.begin", packageName, userId,
+                "path=" + (useLauncherWrapper ? "launcher-wrapper" : "direct-activity-manager"));
+        try {
+            if (useLauncherWrapper) {
+                LauncherActivity.launch(intent, userId);
+            } else {
+                getBActivityManager().startActivity(intent, userId);
+            }
+            LaunchDiagnostics.record(getContext(), "core.start_activity.returned", packageName, userId,
+                    "dispatch method returned; target activity is not yet confirmed");
+        } catch (RuntimeException error) {
+            LaunchDiagnostics.record(getContext(), "core.start_activity.error", packageName, userId,
+                    LaunchDiagnostics.describeError(error));
+            throw error;
         }
     }
 
@@ -1091,31 +1107,48 @@ public class BlackBoxCore extends ClientConfiguration {
     }
 
     public boolean launchApk(String packageName, int userId) {
+        boolean fullFileAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || hasAllFilesAccess();
+        LaunchDiagnostics.record(getContext(), "core.launch.begin", packageName, userId,
+                "sdk=" + Build.VERSION.SDK_INT + "; allFilesAccess=" + fullFileAccess);
         onBeforeMainLaunchApk(packageName, userId);
-        
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!hasAllFilesAccess()) {
+            if (!fullFileAccess) {
                 Slog.w(TAG, "All files access not granted for launching: " + packageName);
-                
+                LaunchDiagnostics.record(getContext(), "core.launch.storage_access_missing", packageName, userId,
+                        "launch continues unless a lifecycle callback handles the permission request");
                 for (AppLifecycleCallback callback : mAppLifecycleCallbacks) {
                     if (callback.onStoragePermissionNeeded(packageName, userId)) {
-                        
                         Slog.d(TAG, "Launch cancelled - host app handling permission request");
+                        LaunchDiagnostics.record(getContext(), "core.launch.cancelled_for_permission", packageName, userId,
+                                "storage permission callback handled the request");
                         return false;
                     }
                 }
-                
                 Slog.w(TAG, "Launching without all files access - some file operations may fail");
             }
         }
 
         Intent launchIntentForPackage = getBPackageManager().getLaunchIntentForPackage(packageName, userId);
         if (launchIntentForPackage == null) {
+            LaunchDiagnostics.record(getContext(), "core.launch.intent_missing", packageName, userId,
+                    "virtual package manager returned no launcher intent");
             return false;
         }
-        startActivity(launchIntentForPackage, userId);
-        return true;
+        LaunchDiagnostics.record(getContext(), "core.launch.intent_resolved", packageName, userId,
+                "component=" + launchIntentForPackage.getComponent()
+                        + "; action=" + launchIntentForPackage.getAction()
+                        + "; flags=" + launchIntentForPackage.getFlags());
+        try {
+            startActivity(launchIntentForPackage, userId);
+            LaunchDiagnostics.record(getContext(), "core.launch.dispatch_returned", packageName, userId,
+                    "launch request was handed off; actual activity creation is tracked separately");
+            return true;
+        } catch (RuntimeException error) {
+            LaunchDiagnostics.record(getContext(), "core.launch.dispatch_error", packageName, userId,
+                    LaunchDiagnostics.describeError(error));
+            throw error;
+        }
     }
     public boolean isInstalled(String packageName, int userId) {
         return getBPackageManager().isInstalled(packageName, userId);
