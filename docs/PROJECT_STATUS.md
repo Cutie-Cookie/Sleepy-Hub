@@ -25,7 +25,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
 | `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `2905dac` — CI run `43459349834` green; preview APK available for device testing |
 | `sleepyhub/diagnose-app-black-screen` | Android 13 app-launch diagnosis/fix | `cb3bd72` — user confirmed Mantle Verify launches; draft PR #1 |
-| `sleepyhub/diagnose-profile-identifiers` | Privacy-safe ICCID/IMSI routing diagnosis | `9f0c39a` — draft PR #2; CI run `43601700380` pending |
+| `sleepyhub/diagnose-profile-identifiers` | Privacy-safe ICCID/IMSI routing diagnosis | `9f0c39a` — draft PR #2; CI run `43601700380` green; artifact `14117135958` |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -282,7 +282,7 @@ The identity contract remains unchanged: Android ID, GSF Android ID, Wi-Fi MAC, 
 - The phone reports its physical SIM ICCID and IMSI as restricted/unavailable. Sleepy Hub displays synthetic values, and the user reports that these synthetic ICCID/IMSI values are shared across profiles.
 - `BUserIdentifiers` is designed to persist ICCID and IMSI by virtual profile ID. `BActivityThread.getUserId()` falls back to `0` when `AppConfig` is missing, so profile-context propagation must be verified before changing the generators.
 - Diagnostic source commit: `9f0c39a9ab508e8441481c354c952d843deec0d9`, branch `sleepyhub/diagnose-profile-identifiers`, draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2). It records hook source, profile ID and `AppConfig` presence only; it does not record the actual identifiers or method arguments.
-- CI run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress. Device reports from both profiles are still required.
+- CI run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) passed. Artifact `14117135958`; ZIP SHA-256 `d22fddb99f985ea30bfe5ba7c89d579b53b84dbfdc376a451e9ea714a8927719`; APK SHA-256 `aeceab7adaa7c098f1aa3e1bccfa23d79f18a8379b2d6f16ca7752d0db73de2e`. Device reports from both profiles are still required.
 - No identifier generator, persisted value, profile data, cache, DRM, permission, app launch, or UI behavior was changed in the diagnostic commit.
 - DRM Media ID remains a separate investigation. No blind `MediaDrm` spoofing is planned.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.

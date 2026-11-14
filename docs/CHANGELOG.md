@@ -305,5 +305,5 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - Instrumented the existing ICCID/IMSI telephony hooks to record only hook name, virtual profile ID passed to `BUserIdentifiers`, and whether `AppConfig` is present. Actual identifiers, subscription IDs, and hook arguments are never recorded.
 - Added per-hook/profile rate limiting and two-profile report collection instructions.
 - Left identifier generation, persistence, profile storage, cache behavior, DRM, permissions, launch behavior and UI unchanged.
-- ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) is in progress; device testing is pending.
+- ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) passed. Artifact `14117135958`; ZIP SHA-256 `d22fddb99f985ea30bfe5ba7c89d579b53b84dbfdc376a451e9ea714a8927719`; APK SHA-256 `aeceab7adaa7c098f1aa3e1bccfa23d79f18a8379b2d6f16ca7752d0db73de2e`. Device testing is pending.
 - `main` remains untouched.
