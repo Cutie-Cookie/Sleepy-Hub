@@ -1107,10 +1107,12 @@ public class BlackBoxCore extends ClientConfiguration {
     }
 
     public boolean launchApk(String packageName, int userId) {
-        boolean fullFileAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || hasAllFilesAccess();
         LaunchDiagnostics.record(getContext(), "core.launch.begin", packageName, userId,
-                "sdk=" + Build.VERSION.SDK_INT + "; allFilesAccess=" + fullFileAccess);
+                "sdk=" + Build.VERSION.SDK_INT);
         onBeforeMainLaunchApk(packageName, userId);
+        boolean fullFileAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || hasAllFilesAccess();
+        LaunchDiagnostics.record(getContext(), "core.launch.storage_state", packageName, userId,
+                "allFilesAccess=" + fullFileAccess);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!fullFileAccess) {
