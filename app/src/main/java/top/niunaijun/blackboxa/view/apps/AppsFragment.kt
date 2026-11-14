@@ -6,7 +6,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +28,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import top.niunaijun.blackbox.BlackBoxCore
+import top.niunaijun.blackbox.utils.LaunchDiagnostics
 import top.niunaijun.blackboxa.app.ProfileAppearance
 import top.niunaijun.blackboxa.bean.AppInfo
 import top.niunaijun.blackboxa.util.InjectionUtil
@@ -43,6 +49,15 @@ class AppsFragment : Fragment() {
     private var serviceCallbackRegistered = false
     private var pendingInstallSource: String? = null
     private var installErrorMessage by androidx.compose.runtime.mutableStateOf<String?>(null)
+    private var showLaunchDiagnosticDialog by androidx.compose.runtime.mutableStateOf(false)
+    private var pendingLaunchDiagnosticReturn = false
+    private val launchDiagnosticHandler = Handler(Looper.getMainLooper())
+    private val launchDiagnosticPrompt = Runnable {
+        if (pendingLaunchDiagnosticReturn && isAdded && isResumed) {
+            pendingLaunchDiagnosticReturn = false
+            showLaunchDiagnosticDialog = true
+        }
+    }
     private val serviceAvailableCallback = Runnable {
         Log.d(TAG, "BlackBox services are available; refreshing profile $userID")
         if (isAdded && ::viewModel.isInitialized) {
@@ -107,6 +122,44 @@ class AppsFragment : Fragment() {
                                 },
                             )
                         }
+                        if (showLaunchDiagnosticDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showLaunchDiagnosticDialog = false },
+                                title = { Text("Copy app launch report?") },
+                                text = {
+                                    Text(
+                                        "The temporary test recorded how Sleepy Hub tried to open the app. " +
+                                            "It includes technical launch stages and the app package name, " +
+                                            "but does not read app contents, accounts, passwords, or personal files."
+                                    )
+                                },
+                                confirmButton = {
+                                    TextButton(
+                                        onClick = {
+                                            val context = requireContext()
+                                            val report = LaunchDiagnostics.getReport(context)
+                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                            if (clipboard != null) {
+                                                clipboard.setPrimaryClip(
+                                                    ClipData.newPlainText("Sleepy Hub launch report", report)
+                                                )
+                                                Toast.makeText(context, "Report copied — paste it here when you're ready.", Toast.LENGTH_LONG).show()
+                                            } else {
+                                                Toast.makeText(context, "Couldn't access the clipboard.", Toast.LENGTH_SHORT).show()
+                                            }
+                                            showLaunchDiagnosticDialog = false
+                                        }
+                                    ) {
+                                        Text("Copy report")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showLaunchDiagnosticDialog = false }) {
+                                        Text("Not now")
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -137,6 +190,9 @@ class AppsFragment : Fragment() {
                 isLoading = false
                 if (!launched) {
                     Toast.makeText(requireContext(), "Couldn't start this app", Toast.LENGTH_SHORT).show()
+                    launchDiagnosticHandler.removeCallbacks(launchDiagnosticPrompt)
+                    pendingLaunchDiagnosticReturn = false
+                    showLaunchDiagnosticDialog = true
                 }
             }
         }
@@ -144,6 +200,15 @@ class AppsFragment : Fragment() {
         pendingInstallSource?.let { source ->
             pendingInstallSource = null
             installApk(source)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (pendingLaunchDiagnosticReturn) {
+            launchDiagnosticHandler.removeCallbacks(launchDiagnosticPrompt)
+            pendingLaunchDiagnosticReturn = false
+            showLaunchDiagnosticDialog = true
         }
     }
 
@@ -169,6 +234,8 @@ class AppsFragment : Fragment() {
     }
 
     override fun onDestroy() {
+        launchDiagnosticHandler.removeCallbacks(launchDiagnosticPrompt)
+        pendingLaunchDiagnosticReturn = false
         try {
             BlackBoxCore.get().removeServiceAvailableCallback(serviceAvailableCallback)
         } catch (_: Exception) {
@@ -205,11 +272,20 @@ class AppsFragment : Fragment() {
 
     private fun launchApp(info: AppInfo) {
         try {
+            LaunchDiagnostics.beginAttempt(requireContext(), info.packageName, userID)
+            pendingLaunchDiagnosticReturn = true
+            launchDiagnosticHandler.removeCallbacks(launchDiagnosticPrompt)
+            launchDiagnosticHandler.postDelayed(launchDiagnosticPrompt, 3500L)
             isLoading = true
             viewModel.launchApk(info.packageName, userID)
         } catch (e: Exception) {
+            LaunchDiagnostics.record(requireContext(), "ui.launch_request.error", info.packageName, userID,
+                LaunchDiagnostics.describeError(e))
             Log.e(TAG, "Could not launch ${info.packageName}: ${e.message}", e)
             isLoading = false
+            launchDiagnosticHandler.removeCallbacks(launchDiagnosticPrompt)
+            pendingLaunchDiagnosticReturn = false
+            showLaunchDiagnosticDialog = true
         }
     }
 
