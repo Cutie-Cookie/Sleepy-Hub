@@ -313,7 +313,9 @@ The user confirmed the latest 2905dac preview still opens virtual apps to a blac
 
 Source review found that the launch API reports dispatch success before the target activity is confirmed. In addition, the activity stack has a resolution-miss path that returns without a user-facing error and a framework-start catch that prints a throwable but still returns normally. That makes a structured runtime trace necessary.
 
-- Diagnostic branch: `sleepyhub/diagnose-app-black-screen`, based on `2905dac7b5800d4e374f41863bb03e5c3903d394`.
+- Diagnostic branch: `sleepyhub/diagnose-app-black-screen`, current source commit `c4a15358bb079dbe2cccebba977c7fc2567501c6`, based on `2905dac7b5800d4e374f41863bb03e5c3903d394`.
+- Diagnostic CI run: [43594989091](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43594989091) is in progress. A first run on the earlier draft commit is superseded; do not use its artifact if it appears.
+- Temporary workflow: `.github/workflows/diagnostic-preview.yml` is on the feature branch and checks out the diagnostic PR head SHA. It is limited to PRs from the diagnostic branch and is intended to be removed after this diagnosis.
 - Draft PR: [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1), targeting `sleepyhub/bugfix-install-switch-polish` only. It is not merged; `main` remains untouched.
 - Trace coverage: core launch handoff, virtual activity resolution, process/provider initialization, proxy activity dispatch, HCallbackProxy transaction rewrite, target Application/Activity `onCreate` and `onResume`, process death, and launch timeout.
 - Report delivery: after a failed launch or return to the Hub, a temporary dialog offers **Copy report**. If the host stays visible because no activity launched, the prompt appears after about 3.5 seconds.
