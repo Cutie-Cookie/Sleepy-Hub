@@ -24,7 +24,8 @@ public final class BUserIdentifiers {
     private static final Object LOCK = new Object();
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Map<Integer, Properties> CACHE = new ConcurrentHashMap<>();
-    private static final Set<String> STORAGE_DIAGNOSTICS_RECORDED = ConcurrentHashMap.newKeySet();
+    private static final Set<String> STORAGE_DIAGNOSTICS_RECORDED =
+            Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private BUserIdentifiers() {}
 
