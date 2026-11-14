@@ -35,9 +35,9 @@ Priority: **P0** = blocks basic use or risks data; **P1** = major feature/UX mis
 ## Current working snapshot
 
 - Feature branch: `sleepyhub/bugfix-install-switch-polish`
-- Current feature-branch head: `2905dac7b5800d4e374f41863bb03e5c3903d394`.
+- Current feature-branch head: `e6ca6fe7a9dc8d99636a2eca962e65c4828c0a0b`.
 - App-launch diagnostic branch: `sleepyhub/diagnose-app-black-screen`, source commit `cb3bd72b183e91c0ff82210b0c781c1a540c5dc4`; draft PR [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1) targets the feature branch and remains unmerged.
-- Profile-identity diagnostic branch: `sleepyhub/diagnose-profile-identifiers`, source commit `9f0c39a9ab508e8441481c354c952d843deec0d9`; draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2) is stacked on the app-launch diagnostic branch. ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) passed. Artifact `14117135958`; ZIP SHA-256 `d22fddb99f985ea30bfe5ba7c89d579b53b84dbfdc376a451e9ea714a8927719`; APK SHA-256 `aeceab7adaa7c098f1aa3e1bccfa23d79f18a8379b2d6f16ca7752d0db73de2e`.
+- Profile-identity diagnostic branch: `sleepyhub/diagnose-profile-identifiers`, head `8a823d12e287353f77e27f5a2a6ad1512a9fe5cc`; draft PR [#2](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/2) remains stacked on the app-launch diagnostic branch. Earlier routing-only ARM64 run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) passed and produced artifact `14117135958`. The expanded read-only storage-duplicate diagnostic is building in run [43603193820](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43603193820); do not use the earlier APK for this next test.
 - Android 13 black-screen root cause is traced to a `HashMap` reflection return type over the framework's `ArrayMap`; targeted fix is in `cb3bd72`. Diagnostic ARM64 build [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) passed. Artifact `14114723304`; APK SHA-256 `2fbb69dd98746ace5199e7845b7189a3492c50a3fe349ba2e9b8c598289bc5a3`. Device retest pending.
 - Current-head CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) — **success**; ARM64 debug build, preview package identity, APK signature, ABI verification and artifact upload all passed.
 - Previous candidate run [43451229123](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43451229123) failed Kotlin compilation because `selectedFolder` was scoped inside the drawer branch while folder dialogs referenced it outside. Commit `c7b28cd` moves that state to the screen-level scope; corrected build is green.
@@ -369,3 +369,33 @@ Source review found that the launch API reports dispatch success before the targ
 - Next decision depends on the reports: if `AppConfig` is missing or the wrong profile ID reaches the hook, trace and correct profile context propagation; if distinct profile IDs reach the hooks, inspect per-user storage paths and checker/API behavior before touching generation.
 - ICCID Luhn formatting and removal of the fixed IMSI `310260` prefix remain separate follow-up work. Preserve already-persisted values unless a confirmed collision requires a documented migration. Keep DRM Media ID investigation separate; do not blindly spoof `MediaDrm.PROPERTY_DEVICE_UNIQUE_ID`.
 - `main` remains at `89b59836c66f173756a4ae258cf379a957649820` and untouched.
+
+
+## 2026-11-14 — ICCID/IMSI two-profile trace findings
+
+Device: Android 13 (API 33), using Mantle Verify in virtual profiles 4 and 5.
+
+### Confirmed by the reports
+- Both profile launches completed successfully: Mantle Verify reached Activity `onCreate()` and `onResume()`.
+- Both profiles reached `IPhoneSubInfoProxy#getIccSerialNumberForSubscriber` and `IPhoneSubInfoProxy#getSubscriberIdForSubscriber`.
+- The `profile` column on identifier-hook events is the actual `userId` passed to `BUserIdentifiers`: profile A reported 4 and profile B reported 5.
+- `AppConfig` was present in both profiles. The fallback-to-user-0 explanation is therefore not supported for these calls.
+- The two-second `activity.launch_timeout` is a false positive for the cold launch: the target Activity was subsequently created and resumed. `allFilesAccess=false` is informational and did not prevent launch.
+
+### Source audit
+- `BUserIdentifiers` keys its in-memory cache by virtual user ID and stores values in `BEnvironment.getUserDir(userId)/.sleepyhub-identifiers`.
+- `BEnvironment.getUserDir(4)` and `getUserDir(5)` resolve to separate `data/user/4` and `data/user/5` directories.
+- Current profile cloning installs the source profile's APKs into a new user but does not copy its app data; the UI reports that cloned app data starts fresh.
+- The store returns an existing saved value instead of replacing it. That is desirable for stability, but it can preserve a duplicate if old profile data was copied by an earlier implementation. This remains a hypothesis until the new store check reports it.
+
+### Follow-up diagnostic
+- Commit `8a823d1` adds read-only inspection of Sleepy Hub's own ICCID/IMSI store files.
+- The report records the source (`cache`, `disk`, `generated`, or `fallback`) and only the profile numbers whose saved value matches the current profile. It never records the ICCID/IMSI value or a hash.
+- The scan is performed once per identifier/profile/process, not on every API poll.
+- No identifier generator, saved identifier, profile data, DRM behavior, permission, launch flow, or UI has been changed.
+- The diagnostic tracking set uses an API-21-compatible collection implementation.
+
+### Next step
+Install the new diagnostic APK only after run [43603193820](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43603193820) succeeds. Test the same checker in profiles 4 and 5 and share only the sanitized reports. If matching profile numbers are reported, plan a duplicate-only migration that preserves already-unique values and assess app-compatibility impact before rotating anything. If no duplicates are found, investigate whether the checker is caching results or displaying a value from another API path.
+
+ICCID checksum formatting and the current hard-coded IMSI PLMN prefix are separate follow-ups; leave them unchanged until the duplicate-storage question is resolved. DRM Media ID remains a separate, higher-risk investigation. `main` remains untouched.

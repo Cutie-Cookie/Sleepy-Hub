@@ -307,3 +307,13 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - Left identifier generation, persistence, profile storage, cache behavior, DRM, permissions, launch behavior and UI unchanged.
 - ARM64 workflow run [43601700380](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43601700380) passed. Artifact `14117135958`; ZIP SHA-256 `d22fddb99f985ea30bfe5ba7c89d579b53b84dbfdc376a451e9ea714a8927719`; APK SHA-256 `aeceab7adaa7c098f1aa3e1bccfa23d79f18a8379b2d6f16ca7752d0db73de2e`. Device testing is pending.
 - `main` remains untouched.
+
+
+### 2026-11-14 — Trace per-profile ICCID/IMSI routing and saved-value duplicates
+
+- Added privacy-safe ICCID/IMSI hook-routing metadata to the diagnostic branch.
+- Reviewed device reports from virtual profiles 4 and 5. Both launches succeeded; both identifier hooks received their matching user IDs (4 and 5) with AppConfig present.
+- Audited the per-user identifier cache and storage path. Current source stores values under separate virtual-user directories and current profile cloning does not copy app data.
+- Added a read-only diagnostic scan of Sleepy Hub's own `.sleepyhub-identifiers` files. It records only whether a value matches another profile and the matching profile numbers, never the actual identifier or a hash.
+- No identifier generator, persisted identifier, profile data, DRM behavior, permissions, launch flow, or UI was changed.
+- Expanded diagnostic ARM64 build: [43603193820](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43603193820) — in progress at the time of this note. Device retest is pending.

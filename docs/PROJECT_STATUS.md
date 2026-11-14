@@ -25,7 +25,7 @@ The application ID was changed for the Sleepy Hub identity. The internal source 
 | `main` | Upstream/default branch; do not push project work here | `89b5983` — untouched |
 | `sleepyhub/bugfix-install-switch-polish` | Current application feature branch | `2905dac` — CI run `43459349834` green; preview APK available for device testing |
 | `sleepyhub/diagnose-app-black-screen` | Android 13 app-launch diagnosis/fix | `cb3bd72` — user confirmed Mantle Verify launches; draft PR #1 |
-| `sleepyhub/diagnose-profile-identifiers` | Privacy-safe ICCID/IMSI routing diagnosis | `9f0c39a` — draft PR #2; CI run `43601700380` green; artifact `14117135958` |
+| `sleepyhub/diagnose-profile-identifiers` | Privacy-safe ICCID/IMSI routing and store-duplicate diagnosis | `8a823d1` — draft PR #2; expanded diagnostic build run `43603193820` in progress |
 | `sleepyhub/docs-project-notes` | Project notebook and decisions | Documentation-only updates; kept separate from app source |
 | `sleepyhub/identity-icons-no-vpn` | Known-good application baseline | `6de07c5` |
 
@@ -286,3 +286,14 @@ The identity contract remains unchanged: Android ID, GSF Android ID, Wi-Fi MAC, 
 - No identifier generator, persisted value, profile data, cache, DRM, permission, app launch, or UI behavior was changed in the diagnostic commit.
 - DRM Media ID remains a separate investigation. No blind `MediaDrm` spoofing is planned.
 - `main` remains untouched at `89b59836c66f173756a4ae258cf379a957649820`.
+
+
+## SIM identifier isolation — 2026-11-14
+
+The first two-profile device reports are now reviewed. Mantle Verify launched successfully in profiles 4 and 5, and the ICCID/IMSI hooks received user IDs 4 and 5 with AppConfig present. This rules out the missing-AppConfig fallback for the observed calls, but it does not yet prove that the saved values differ.
+
+The identifier store is keyed by user ID and writes to a separate `.sleepyhub-identifiers` file under each virtual user directory. Current profile cloning copies APKs, not profile app data. Existing saved values are intentionally stable, so duplicates left by older profile-data copies remain possible.
+
+The follow-up diagnostic on `sleepyhub/diagnose-profile-identifiers` adds a read-only duplicate check. It records only storage source and matching profile numbers; actual ICCID/IMSI values and hashes are never recorded. It does not modify stored values. Build run [43603193820](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43603193820) is pending/in progress; use only its artifact after CI succeeds.
+
+No generator, identifier value, profile data, DRM behavior, permission, launch flow, or UI change has been made. PR #2 remains draft, PR #1 remains draft, and `main` remains unchanged.
