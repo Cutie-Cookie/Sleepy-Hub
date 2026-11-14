@@ -276,3 +276,13 @@ Source commit 2905dac7b5800d4e374f41863bb03e5c3903d394 addresses those paths: di
 - APK: SleepyHub_4.0.0-preview_arm64-v8a-debug.apk, 26,097,990 bytes, SHA-256 448ca06eadb1015a78017f85e0e6c2fbedce2be65959289021bbf17104d7a4f9.
 - Package com.cutiecookie.sleepyhub.preview, label Sleepy Hub Preview, version 4.0.0-preview, ARM64-v8a. Certificate SHA-256 cbd3ce49b15de6f54b8b191f8e99e8dcd6610e6f6895ca7f5d522d855c009f20.
 - This is a debug preview build only. Device retesting is required before the fixes are marked Done.
+
+
+### 2026-11-14 — Android 13 virtual-app black-screen root cause
+
+- Reviewed the user's second launch report. The target `VerifyApp` Application is created successfully; the crash occurs in the settings-provider cache invalidation path before the target Activity is created.
+- Exact exception: Android 13 returns an `ArrayMap` for `Settings$NameValueCache.mValues`, but commit `f3d12dd` had declared the reflection accessor as `HashMap<String, String>`. The generated reflection proxy then throws while converting the value.
+- Commit `cb3bd72b183e91c0ff82210b0c781c1a540c5dc4` changes both reflection accessors to `Object`. The existing runtime `Map` guard continues to clear only `android_id`, preserving the per-profile ID cache invalidation.
+- The all-files-access diagnostic event is not the cause; do not change storage permission. The two-second launch timeout is secondary to process attach.
+- Corrected diagnostic ARM64 build run [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) is in progress. Runtime verification remains pending on Android 13.
+- No UI/loading redesign, no profile-identity rollback, no data clearing, and no changes to `main`.
