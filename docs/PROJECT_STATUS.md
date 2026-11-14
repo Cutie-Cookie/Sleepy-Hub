@@ -254,3 +254,18 @@ Follow-up source commit 2905dac7b5800d4e374f41863bb03e5c3903d394:
 - Adds Android 13 location-enabled/listener hooks and fixes the provider-properties double call.
 
 Current CI run: [43459349834](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43459349834) passed. Current artifact: `sleepy-hub-arm64-preview-debug`, ID `14056805069`. APK SHA-256: `448ca06eadb1015a78017f85e0e6c2fbedce2be65959289021bbf17104d7a4f9`. Main remains untouched. Phase 2 UI overhaul remains deferred; only targeted Phase 1 corrections are in this batch.
+
+
+## App-launch diagnostic update — 2026-11-14
+
+The second Android 13 diagnostic report identifies the black-screen failure precisely. The target `VerifyApp` Application is successfully instantiated; the failure occurs in `ContentProviderDelegate.clearSettingProvider()` when a reflection accessor declared as `HashMap<String, String>` receives Android 13's actual `android.util.ArrayMap` for `Settings$NameValueCache.mValues`.
+
+- Root-cause introduction: commit `f3d12dd`, part of the profile-specific Android ID cache invalidation work.
+- Targeted source fix: commit `cb3bd72b183e91c0c` changes both Settings reflection accessors to return `Object`. The existing `Map` check still removes only the cached `android_id`; profile isolation is preserved.
+- The `allFilesAccess=false` diagnostic event is not the cause. Launch continues and later fails on the map-type conversion. No storage permission change is needed.
+- The two-second activity timeout is secondary because the virtual process attaches shortly afterwards.
+- Diagnostic branch: `sleepyhub/diagnose-app-black-screen`; draft PR [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1) targets the feature branch only and remains unmerged.
+- CI run [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) is building the corrected diagnostic ARM64 preview. Device verification is still pending; no runtime fix is claimed yet.
+- `main` remains unchanged at `89b59836c66f173756a4ae258cf379a957649820`.
+
+The identity contract remains unchanged: Android ID, GSF Android ID, Wi-Fi MAC, IMEI, MEID, subscriber ID, SIM serial and device serial are intended to be stable within each virtual profile and distinct between profiles. SSID and BSSID are intentionally shared network/access-point values. App Set ID is Android/Play-services-managed and remains a separate verification item.
