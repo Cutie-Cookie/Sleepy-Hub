@@ -265,7 +265,7 @@ The second Android 13 diagnostic report identifies the black-screen failure prec
 - The `allFilesAccess=false` diagnostic event is not the cause. Launch continues and later fails on the map-type conversion. No storage permission change is needed.
 - The two-second activity timeout is secondary because the virtual process attaches shortly afterwards.
 - Diagnostic branch: `sleepyhub/diagnose-app-black-screen`; draft PR [#1](https://github.com/Cutie-Cookie/Sleepy-Hub/pull/1) targets the feature branch only and remains unmerged.
-- CI run [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) is building the corrected diagnostic ARM64 preview. Device verification is still pending; no runtime fix is claimed yet.
+- CI run [43597749282](https://github.com/Cutie-Cookie/Sleepy-Hub/actions/runs/43597749282) passed Gradle build, v1/v2 APK signing, preview package/label, certificate and ARM64 native-library checks. Artifact `14114723304`; ZIP SHA-256 `4f437ec95bdf98063db80efdb1fda540fb85816744ee353001199e67a0463398`; APK SHA-256 `2fbb69dd98746ace5199e7845b7189a3492c50a3fe349ba2e9b8c598289bc5a3`. Device verification is still pending; no runtime fix is claimed yet.
 - `main` remains unchanged at `89b59836c66f173756a4ae258cf379a957649820`.
 
 The identity contract remains unchanged: Android ID, GSF Android ID, Wi-Fi MAC, IMEI, MEID, subscriber ID, SIM serial and device serial are intended to be stable within each virtual profile and distinct between profiles. SSID and BSSID are intentionally shared network/access-point values. App Set ID is Android/Play-services-managed and remains a separate verification item.
