@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import black.android.os.BRServiceManager;
+import top.niunaijun.blackbox.BlackBoxCore;
 import black.com.android.internal.telephony.BRITelephonyStub;
 import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.core.env.BUserIdentifiers;
@@ -18,6 +19,7 @@ import top.niunaijun.blackbox.fake.frameworks.BLocationManager;
 import top.niunaijun.blackbox.fake.hook.BinderInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.Md5Utils;
 
 
@@ -93,7 +95,11 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
     public static class GetSubscriberId extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) throws Throwable {
-            return BUserIdentifiers.getSubscriberId(BActivityThread.getUserId());
+            int userId = BActivityThread.getUserId();
+            LaunchDiagnostics.recordIdentifierAccess(BlackBoxCore.getContext(), "imsi",
+                    "ITelephonyManagerProxy#getSubscriberId", BActivityThread.getAppPackageName(),
+                    userId, BActivityThread.getAppConfig() != null);
+            return BUserIdentifiers.getSubscriberId(userId);
         }
     }
 
@@ -109,7 +115,11 @@ public class ITelephonyManagerProxy extends BinderInvocationStub {
     public static class GetSimSerialNumber extends MethodHook {
         @Override
         protected Object hook(Object who, Method method, Object[] args) {
-            return BUserIdentifiers.getSimSerial(BActivityThread.getUserId());
+            int userId = BActivityThread.getUserId();
+            LaunchDiagnostics.recordIdentifierAccess(BlackBoxCore.getContext(), "iccid",
+                    "ITelephonyManagerProxy#getSimSerialNumber", BActivityThread.getAppPackageName(),
+                    userId, BActivityThread.getAppConfig() != null);
+            return BUserIdentifiers.getSimSerial(userId);
         }
     }
 

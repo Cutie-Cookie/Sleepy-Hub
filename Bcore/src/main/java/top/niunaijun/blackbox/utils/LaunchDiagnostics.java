@@ -11,18 +11,22 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A small, local-only trace for diagnosing virtual app launch failures.
  *
- * The trace deliberately records only launch stages, package/component names,
- * profile IDs, process IDs, and sanitized exception summaries. It never reads
- * target-app files, accounts, messages, or other app data.
+ * The trace records launch stages and limited ICCID/IMSI hook-routing metadata:
+ * hook names, virtual profile IDs, and whether app configuration was present.
+ * It never records identifier values or reads target-app data.
  */
 public final class LaunchDiagnostics {
     private static final String FILE_NAME = "sleepyhub-launch-diagnostics.txt";
     private static final int MAX_FILE_BYTES = 64 * 1024;
     private static final Object LOCK = new Object();
+    private static final Map<String, Long> LAST_IDENTIFIER_EVENTS = new HashMap<>();
+    private static final long IDENTIFIER_EVENT_MIN_INTERVAL_MS = 1000L;
 
     private LaunchDiagnostics() {
     }
@@ -74,6 +78,34 @@ public final class LaunchDiagnostics {
         }
     }
 
+    /**
+     * Records only which synthetic SIM-identifier hook was reached and the
+     * profile ID supplied to the identifier store. Actual ICCID/IMSI values,
+     * subscription IDs, and method arguments are never inspected or recorded.
+     * Repeated polling is rate-limited to one event per hook/profile per second.
+     */
+    public static void recordIdentifierAccess(Context context, String identifierKind,
+                                              String source, String packageName, int userId,
+                                              boolean appConfigPresent) {
+        if (context == null) {
+            return;
+        }
+        String kind = "imsi".equalsIgnoreCase(identifierKind) ? "imsi" : "iccid";
+        String safeSource = clean(source, 100);
+        String key = kind + "|" + safeSource + "|" + clean(packageName, 160)
+                + "|" + userId + "|" + appConfigPresent;
+        long now = System.currentTimeMillis();
+        synchronized (LAST_IDENTIFIER_EVENTS) {
+            Long previous = LAST_IDENTIFIER_EVENTS.get(key);
+            if (previous != null && now - previous < IDENTIFIER_EVENT_MIN_INTERVAL_MS) {
+                return;
+            }
+            LAST_IDENTIFIER_EVENTS.put(key, now);
+        }
+        record(context, "identifier." + kind + ".hook", packageName, userId,
+                "source=" + safeSource + "; appConfig=" + (appConfigPresent ? "present" : "missing"));
+    }
+
     public static String describeError(Throwable error) {
         if (error == null) {
             return "unknown error";
@@ -113,8 +145,8 @@ public final class LaunchDiagnostics {
         report.append("Sleepy Hub — app launch diagnostic\n");
         report.append("Android: ").append(clean(Build.VERSION.RELEASE, 32))
                 .append(" (API ").append(Build.VERSION.SDK_INT).append(")\n");
-        report.append("This report contains launch-stage events only. It does not read app contents,")
-                .append(" accounts, passwords, messages, device IDs, or personal files.\n\n");
+        report.append("This report contains launch-stage events and sanitized ICCID/IMSI hook-routing metadata only. ")
+                .append("It never records actual SIM/device identifiers, app contents, accounts, passwords, messages, or personal files.\n\n");
 
         if (context == null) {
             return report.append("No context available.").toString();

@@ -2,12 +2,14 @@ package top.niunaijun.blackbox.fake.service;
 
 import java.lang.reflect.Method;
 
+import top.niunaijun.blackbox.BlackBoxCore;
 import black.android.telephony.BRTelephonyManager;
 import top.niunaijun.blackbox.app.BActivityThread;
 import top.niunaijun.blackbox.core.env.BUserIdentifiers;
 import top.niunaijun.blackbox.fake.hook.ClassInvocationStub;
 import top.niunaijun.blackbox.fake.hook.MethodHook;
 import top.niunaijun.blackbox.fake.hook.ProxyMethod;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.MethodParameterUtils;
 
 public class IPhoneSubInfoProxy extends ClassInvocationStub {
@@ -59,19 +61,31 @@ public class IPhoneSubInfoProxy extends ClassInvocationStub {
     @ProxyMethod("getSubscriberIdForSubscriber")
     public static class GetSubscriberIdForSubscriber extends MethodHook {
         @Override protected Object hook(Object who, Method method, Object[] args) {
-            return BUserIdentifiers.getSubscriberId(BActivityThread.getUserId());
+            int userId = BActivityThread.getUserId();
+            LaunchDiagnostics.recordIdentifierAccess(BlackBoxCore.getContext(), "imsi",
+                    "IPhoneSubInfoProxy#getSubscriberIdForSubscriber", BActivityThread.getAppPackageName(),
+                    userId, BActivityThread.getAppConfig() != null);
+            return BUserIdentifiers.getSubscriberId(userId);
         }
     }
     @ProxyMethod("getIccSerialNumberForSubscriber")
     public static class GetIccSerialNumberForSubscriber extends MethodHook {
         @Override protected Object hook(Object who, Method method, Object[] args) {
-            return BUserIdentifiers.getSimSerial(BActivityThread.getUserId());
+            int userId = BActivityThread.getUserId();
+            LaunchDiagnostics.recordIdentifierAccess(BlackBoxCore.getContext(), "iccid",
+                    "IPhoneSubInfoProxy#getIccSerialNumberForSubscriber", BActivityThread.getAppPackageName(),
+                    userId, BActivityThread.getAppConfig() != null);
+            return BUserIdentifiers.getSimSerial(userId);
         }
     }
     @ProxyMethod("getSimSerialNumberForSubscriber")
     public static class GetSimSerialNumberForSubscriber extends MethodHook {
         @Override protected Object hook(Object who, Method method, Object[] args) {
-            return BUserIdentifiers.getSimSerial(BActivityThread.getUserId());
+            int userId = BActivityThread.getUserId();
+            LaunchDiagnostics.recordIdentifierAccess(BlackBoxCore.getContext(), "iccid",
+                    "IPhoneSubInfoProxy#getSimSerialNumberForSubscriber", BActivityThread.getAppPackageName(),
+                    userId, BActivityThread.getAppConfig() != null);
+            return BUserIdentifiers.getSimSerial(userId);
         }
     }
     @ProxyMethod("getLine1NumberForSubscriber")
