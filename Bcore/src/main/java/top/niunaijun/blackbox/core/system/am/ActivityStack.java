@@ -39,6 +39,7 @@ import top.niunaijun.blackbox.proxy.ProxyManifest;
 import top.niunaijun.blackbox.proxy.record.ProxyActivityRecord;
 import top.niunaijun.blackbox.utils.ComponentUtils;
 import top.niunaijun.blackbox.utils.Slog;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.compat.ActivityManagerCompat;
 
 import static android.content.pm.PackageManager.GET_ACTIVITIES;
@@ -61,6 +62,10 @@ public class ActivityStack {
                     ActivityRecord record = (ActivityRecord) msg.obj;
                     if (record != null) {
                         mLaunchingActivities.remove(record);
+                        LaunchDiagnostics.record(BlackBoxCore.getContext(), "activity.launch_timeout",
+                                record.component == null ? null : record.component.getPackageName(),
+                                record.userId,
+                                "activity=" + record.component + "; activity was not acknowledged as created within 2 seconds");
                     }
                     break;
                 default:
@@ -98,12 +103,21 @@ public class ActivityStack {
             synchronizeTasks();
         }
 
+        String requestedPackage = intent.getComponent() != null
+                ? intent.getComponent().getPackageName() : intent.getPackage();
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.resolve.begin", requestedPackage, userId,
+                "component=" + intent.getComponent() + "; action=" + intent.getAction());
         ResolveInfo resolveInfo = BPackageManagerService.get().resolveActivity(intent, GET_ACTIVITIES, resolvedType, userId);
         if (resolveInfo == null || resolveInfo.activityInfo == null) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.resolve.miss", requestedPackage, userId,
+                    "virtual package manager could not resolve the requested activity");
             return 0;
         }
         Log.d(TAG, "startActivityLocked : " + resolveInfo.activityInfo);
         ActivityInfo activityInfo = resolveInfo.activityInfo;
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.resolve.ok", activityInfo.packageName, userId,
+                "activity=" + activityInfo.name + "; process=" + activityInfo.processName
+                        + "; launchMode=" + activityInfo.launchMode);
 
         ActivityRecord sourceRecord = findActivityRecordByToken(userId, resultTo);
         if (sourceRecord == null) {
@@ -139,6 +153,8 @@ public class ActivityStack {
 
         
         if (taskRecord == null || taskRecord.needNewTask()) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.route.new_task", activityInfo.packageName, userId,
+                    "no reusable virtual task was found");
             return startActivityInNewTaskLocked(userId, intent, activityInfo, resultTo, launchModeFlags);
         }
         
@@ -153,8 +169,11 @@ public class ActivityStack {
                 && ComponentUtils.intentFilterEquals(taskRecord.rootIntent, intent)
                 && taskRecord.rootIntent.getFlags() == intent.getFlags();
 
-        if (startTaskToFront)
+        if (startTaskToFront) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.route.existing_task_front", activityInfo.packageName, userId,
+                    "existing task matched the launch intent; no new activity was requested");
             return 0;
+        }
 
         ActivityRecord topActivityRecord = taskRecord.getTopActivityRecord();
         ActivityRecord targetActivityRecord = findActivityRecordByComponentName(userId, ComponentUtils.toComponentName(activityInfo));
@@ -254,6 +273,8 @@ public class ActivityStack {
                 resultTo = top.token;
             }
         }
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.route.source_task", activityInfo.packageName, userId,
+                "reusing task; topActivity=" + (topActivityRecord == null ? "null" : topActivityRecord.component));
         return startActivityInSourceTask(intent,
                 resolvedType, resultTo, resultWho, requestCode, flags, options, userId, topActivityRecord, activityInfo, launchModeFlags);
     }
@@ -268,12 +289,28 @@ public class ActivityStack {
 
     private Intent startActivityProcess(int userId, Intent intent, ActivityInfo
             info, ActivityRecord record) {
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.process_start.begin", info.packageName, userId,
+                "process=" + info.processName + "; activity=" + info.name);
         ProxyActivityRecord stubRecord = new ProxyActivityRecord(userId, info, intent, record);
-        ProcessRecord targetApp = BProcessManagerService.get().startProcessLocked(info.packageName, info.processName, userId, -1, Binder.getCallingPid());
+        ProcessRecord targetApp;
+        try {
+            targetApp = BProcessManagerService.get().startProcessLocked(info.packageName, info.processName, userId, -1, Binder.getCallingPid());
+        } catch (RuntimeException error) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.process_start.error", info.packageName, userId,
+                    LaunchDiagnostics.describeError(error));
+            throw error;
+        }
         if (targetApp == null) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.process_start.empty", info.packageName, userId,
+                    "process manager returned no process record");
             throw new RuntimeException("Unable to create process, name:" + info.name);
         }
-        return getStartStubActivityIntentInner(intent, targetApp.bpid, userId, stubRecord, info);
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.process_start.ready", info.packageName, userId,
+                "process=" + targetApp.processName + "; bpid=" + targetApp.bpid + "; pid=" + targetApp.pid);
+        Intent proxyIntent = getStartStubActivityIntentInner(intent, targetApp.bpid, userId, stubRecord, info);
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.proxy_intent.ready", info.packageName, userId,
+                "proxy=" + proxyIntent.getComponent() + "; target=" + info.name);
+        return proxyIntent;
     }
 
     private int startActivityInNewTaskLocked(int userId, Intent intent, ActivityInfo
@@ -286,7 +323,17 @@ public class ActivityStack {
         shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         shadow.addFlags(launchMode);
 
-        BlackBoxCore.getContext().startActivity(shadow);
+        try {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.host_start.begin", activityInfo.packageName, userId,
+                    "proxy=" + shadow.getComponent());
+            BlackBoxCore.getContext().startActivity(shadow);
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.host_start.returned", activityInfo.packageName, userId,
+                    "host proxy activity startActivity returned");
+        } catch (RuntimeException error) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.host_start.error", activityInfo.packageName, userId,
+                    LaunchDiagnostics.describeError(error));
+            throw error;
+        }
         return 0;
     }
 
@@ -301,6 +348,8 @@ public class ActivityStack {
         if (resultTo == null) {
             shadow.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.real_start.request", activityInfo.packageName, userId,
+                "target=" + activityInfo.name + "; proxy=" + shadow.getComponent());
         return realStartActivityLocked(sourceRecord.processRecord.appThread, shadow, resolvedType, resultTo, resultWho, requestCode, flags, options);
     }
 
@@ -312,9 +361,18 @@ public class ActivityStack {
             flags &= ~ActivityManagerCompat.START_FLAG_NATIVE_DEBUGGING;
             flags &= ~ActivityManagerCompat.START_FLAG_TRACK_ALLOCATION;
 
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.real_start.begin",
+                    intent.getComponent() == null ? null : intent.getComponent().getPackageName(), -1,
+                    "proxy=" + intent.getComponent());
             BRIActivityManager.get(BRActivityManagerNative.get().getDefault()).startActivity(appThread, BlackBoxCore.getHostPkg(), intent,
                     resolvedType, resultTo, resultWho, requestCode, flags, null, options);
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.real_start.returned",
+                    intent.getComponent() == null ? null : intent.getComponent().getPackageName(), -1,
+                    "framework startActivity transaction returned");
         } catch (Throwable e) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.real_start.error",
+                    intent.getComponent() == null ? null : intent.getComponent().getPackageName(), -1,
+                    LaunchDiagnostics.describeError(e));
             e.printStackTrace();
         }
         return 0;
@@ -353,6 +411,8 @@ public class ActivityStack {
             }
             Slog.d(TAG, activityInfo + ", windowIsTranslucent: " + windowIsTranslucent);
         } catch (Throwable e) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.proxy_theme_fallback", activityInfo.packageName, userId,
+                    LaunchDiagnostics.describeError(e));
             e.printStackTrace();
             shadow.setComponent(new ComponentName(BlackBoxCore.getHostPkg(), ProxyManifest.getProxyActivity(vpid)));
         } finally {
@@ -382,6 +442,8 @@ public class ActivityStack {
     ActivityRecord newActivityRecord(Intent intent, ActivityInfo info, IBinder resultTo,
                                      int userId) {
         ActivityRecord targetRecord = ActivityRecord.create(intent, info, resultTo, userId);
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.activity_record.created", info.packageName, userId,
+                "target=" + info.name);
         synchronized (mLaunchingActivities) {
             mLaunchingActivities.add(targetRecord);
             Message obtain = Message.obtain(mHandler, LAUNCH_TIME_OUT, targetRecord);
@@ -467,6 +529,8 @@ public class ActivityStack {
             record.task = taskRecord;
             taskRecord.addTopActivity(record);
             Log.d(TAG, "onActivityCreated : " + record.component.toString());
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.activity_created", record.component.getPackageName(),
+                    record.userId, "component=" + record.component + "; taskId=" + taskId);
         }
     }
 
@@ -478,6 +542,8 @@ public class ActivityStack {
                 return;
             }
             Log.d(TAG, "onActivityResumed : " + activityRecord.component.toString());
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.activity_resumed",
+                    activityRecord.component.getPackageName(), userId, "component=" + activityRecord.component);
             activityRecord.task.removeActivity(activityRecord);
             activityRecord.task.addTopActivity(activityRecord);
         }
@@ -492,6 +558,8 @@ public class ActivityStack {
             }
             activityRecord.finished = true;
             Log.d(TAG, "onActivityDestroyed : " + activityRecord.component.toString());
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "stack.activity_destroyed",
+                    activityRecord.component.getPackageName(), userId, "component=" + activityRecord.component);
             activityRecord.task.removeActivity(activityRecord);
         }
     }

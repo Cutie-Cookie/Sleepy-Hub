@@ -34,6 +34,7 @@ import top.niunaijun.blackbox.fake.hook.IInjectHook;
 import top.niunaijun.blackbox.proxy.ProxyManifest;
 import top.niunaijun.blackbox.proxy.record.ProxyActivityRecord;
 import top.niunaijun.blackbox.utils.Slog;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 
 
@@ -117,16 +118,23 @@ public class HCallbackProxy implements IInjectHook, Handler.Callback {
     }
 
     private boolean handleLaunchActivity(Object client) {
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.launch.enter",
+                BActivityThread.getAppPackageName(), BActivityThread.getUserId(),
+                "sdk=" + android.os.Build.VERSION.SDK_INT
+                        + "; tiramisuPath=" + BuildCompat.isTiramisu()
+                        + "; sPath=" + BuildCompat.isS());
         Object r;
         if (BuildCompat.isPie()) {
-            
             r = getLaunchActivityItem(client);
         } else {
-            
             r = client;
         }
-        if (r == null)
+        if (r == null) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.launch_item_missing",
+                    BActivityThread.getAppPackageName(), BActivityThread.getUserId(),
+                    "no LaunchActivityItem was found in the framework transaction");
             return false;
+        }
 
         Intent intent;
         IBinder token;
@@ -139,16 +147,45 @@ public class HCallbackProxy implements IInjectHook, Handler.Callback {
             token = clientRecordContext.token();
         }
 
-        if (intent == null)
+        if (intent == null) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.launch_intent_missing",
+                    BActivityThread.getAppPackageName(), BActivityThread.getUserId(),
+                    "framework launch transaction contained a null intent");
             return false;
+        }
 
-        ProxyActivityRecord stubRecord = ProxyActivityRecord.create(intent);
+        ProxyActivityRecord stubRecord;
+        try {
+            stubRecord = ProxyActivityRecord.create(intent);
+        } catch (RuntimeException error) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.stub_read_error",
+                    BActivityThread.getAppPackageName(), BActivityThread.getUserId(),
+                    LaunchDiagnostics.describeError(error));
+            throw error;
+        }
         ActivityInfo activityInfo = stubRecord.mActivityInfo;
+        String packageName = activityInfo != null ? activityInfo.packageName : BActivityThread.getAppPackageName();
+        int userId = stubRecord.mUserId;
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.stub_read", packageName, userId,
+                "activityInfo=" + (activityInfo == null ? "missing" : activityInfo.name)
+                        + "; target=" + (stubRecord.mTarget == null ? "missing" : stubRecord.mTarget.getComponent())
+                        + "; activityRecord=" + (stubRecord.mActivityRecord == null ? "missing" : "present"));
+
         if (activityInfo != null) {
+            if (stubRecord.mTarget == null) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.target_intent_missing",
+                        packageName, userId, "proxy record did not contain the original app intent");
+            }
             if (BActivityThread.getAppConfig() == null) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.process_config_missing",
+                        packageName, userId, "requesting virtual process restart before activity creation");
                 BlackBoxCore.getBActivityManager().restartProcess(activityInfo.packageName, activityInfo.processName, stubRecord.mUserId);
 
                 Intent launchIntentForPackage = BlackBoxCore.getBPackageManager().getLaunchIntentForPackage(activityInfo.packageName, stubRecord.mUserId);
+                if (launchIntentForPackage == null) {
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.restart_launch_intent_missing",
+                            packageName, userId, "package manager returned no launcher intent during process restart");
+                }
                 intent.setExtrasClassLoader(this.getClass().getClassLoader());
                 ProxyActivityRecord.saveStub(intent, launchIntentForPackage, stubRecord.mActivityInfo, stubRecord.mActivityRecord, stubRecord.mUserId);
                 if (BuildCompat.isPie()) {
@@ -160,23 +197,43 @@ public class HCallbackProxy implements IInjectHook, Handler.Callback {
                     clientRecordContext._set_intent(intent);
                     clientRecordContext._set_activityInfo(activityInfo);
                 }
-                return true;
-            }
-            
-            if (!BActivityThread.currentActivityThread().isInit()) {
-                BActivityThread.currentActivityThread().bindApplication(activityInfo.packageName,
-                        activityInfo.processName);
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.process_restart_requested",
+                        packageName, userId, "launch transaction queued again after process restart request");
                 return true;
             }
 
+            if (!BActivityThread.currentActivityThread().isInit()) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.bind_application.begin",
+                        packageName, userId, "virtual process exists but application is not initialized");
+                try {
+                    BActivityThread.currentActivityThread().bindApplication(activityInfo.packageName,
+                            activityInfo.processName);
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.bind_application.returned",
+                            packageName, userId, "bindApplication returned; launch transaction will be retried");
+                } catch (RuntimeException error) {
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.bind_application.error",
+                            packageName, userId, LaunchDiagnostics.describeError(error));
+                    throw error;
+                }
+                return true;
+            }
+
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.activity_record.begin",
+                    packageName, userId, "resolving framework task for " + activityInfo.name);
             int taskId = BRIActivityManager.get(BRActivityManagerNative.get().getDefault()).getTaskForActivity(token, false);
             BlackBoxCore.getBActivityManager().onActivityCreated(taskId, token, stubRecord.mActivityRecord);
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.activity_record.created",
+                    packageName, userId, "taskId=" + taskId + "; target=" + activityInfo.name);
 
-            if(BuildCompat.isTiramisu()){
+            if (BuildCompat.isTiramisu()) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.rewrite.tiramisu",
+                        packageName, userId, "replacing LaunchActivityItem intent and ActivityInfo");
                 LaunchActivityItemContext launchActivityItemContext = BRLaunchActivityItem.get(r);
                 launchActivityItemContext._set_mIntent(stubRecord.mTarget);
                 launchActivityItemContext._set_mInfo(activityInfo);
             } else if (BuildCompat.isS()) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.rewrite.s",
+                        packageName, userId, "replacing ActivityClientRecord intent and package info");
                 Object record = BRActivityThread.get(BlackBoxCore.mainThread()).getLaunchingActivity(token);
                 ActivityThreadActivityClientRecordContext clientRecordContext = BRActivityThreadActivityClientRecord.get(record);
                 clientRecordContext._set_intent(stubRecord.mTarget);
@@ -185,14 +242,23 @@ public class HCallbackProxy implements IInjectHook, Handler.Callback {
 
                 checkActivityClient();
             } else if (BuildCompat.isPie()) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.rewrite.pie",
+                        packageName, userId, "replacing LaunchActivityItem intent and ActivityInfo");
                 LaunchActivityItemContext launchActivityItemContext = BRLaunchActivityItem.get(r);
                 launchActivityItemContext._set_mIntent(stubRecord.mTarget);
                 launchActivityItemContext._set_mInfo(activityInfo);
             } else {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.rewrite.legacy",
+                        packageName, userId, "replacing ActivityClientRecord intent and ActivityInfo");
                 ActivityThreadActivityClientRecordContext clientRecordContext = BRActivityThreadActivityClientRecord.get(r);
                 clientRecordContext._set_intent(stubRecord.mTarget);
                 clientRecordContext._set_activityInfo(activityInfo);
             }
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.target_rewritten",
+                    packageName, userId, "framework launch now targets " + activityInfo.name);
+        } else {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "hook.activity_info_missing",
+                    packageName, userId, "proxy intent did not contain virtual ActivityInfo");
         }
         return false;
     }

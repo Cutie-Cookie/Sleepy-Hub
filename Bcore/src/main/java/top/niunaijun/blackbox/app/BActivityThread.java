@@ -80,6 +80,7 @@ import top.niunaijun.blackbox.utils.Reflector;
 import top.niunaijun.blackbox.utils.SafeContextWrapper;
 import top.niunaijun.blackbox.utils.GlobalContextWrapper;
 import top.niunaijun.blackbox.utils.Slog;
+import top.niunaijun.blackbox.utils.LaunchDiagnostics;
 import top.niunaijun.blackbox.utils.compat.ActivityManagerCompat;
 import top.niunaijun.blackbox.utils.compat.BuildCompat;
 import top.niunaijun.blackbox.utils.compat.ContextCompat;
@@ -377,6 +378,12 @@ public class BActivityThread extends IBActivityThread.Stub {
         BRLoadedApk.get(loadedApk)._set_mSecurityViolation(false);
         
         BRLoadedApk.get(loadedApk)._set_mApplicationInfo(applicationInfo);
+        Instrumentation currentInstrumentation = BRActivityThread.get(BlackBoxCore.mainThread()).mInstrumentation();
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.application_context", packageName, getUserId(),
+                "context=" + packageContext.getClass().getName()
+                        + "; loadedApk=" + loadedApk.getClass().getName()
+                        + "; appClass=" + applicationInfo.className
+                        + "; instrumentation=" + (currentInstrumentation == null ? "null" : currentInstrumentation.getClass().getName()));
 
         int targetSdkVersion = applicationInfo.targetSdkVersion;
         if (targetSdkVersion < Build.VERSION_CODES.GINGERBREAD) {
@@ -429,8 +436,14 @@ public class BActivityThread extends IBActivityThread.Stub {
             
             
             try {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.first.begin",
+                        packageName, getUserId(), "forceDefault=false; appClass=" + applicationInfo.className);
                 application = BRLoadedApk.get(loadedApk).makeApplication(false, null);
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.first.returned",
+                        packageName, getUserId(), "application=" + (application == null ? "null" : application.getClass().getName()));
             } catch (Exception makeAppException) {
+                LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.first.error",
+                        packageName, getUserId(), LaunchDiagnostics.describeError(makeAppException));
                 Slog.e(TAG, "Failed to makeApplication, trying fallback approach", makeAppException);
                 application = null;
             }
@@ -441,8 +454,14 @@ public class BActivityThread extends IBActivityThread.Stub {
                 
                 
                 try {
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.fallback.begin",
+                            packageName, getUserId(), "forceDefault=true");
                     application = BRLoadedApk.get(loadedApk).makeApplication(true, null);
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.fallback.returned",
+                            packageName, getUserId(), "application=" + (application == null ? "null" : application.getClass().getName()));
                 } catch (Exception e) {
+                    LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.make_application.fallback.error",
+                            packageName, getUserId(), LaunchDiagnostics.describeError(e));
                     Slog.e(TAG, "Fallback makeApplication also failed", e);
                 }
                 
@@ -450,7 +469,9 @@ public class BActivityThread extends IBActivityThread.Stub {
                 if (application == null) {
                     Slog.w(TAG, "Creating minimal application context as fallback");
                     try {
-                        
+                        LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.application.fallback_context",
+                                packageName, getUserId(), "packageContextType=" + packageContext.getClass().getName()
+                                        + "; attempting Application cast");
                         application = (Application) packageContext;
                         if (application == null) {
                             Slog.e(TAG, "Even package context is null, this is critical");
@@ -480,6 +501,8 @@ public class BActivityThread extends IBActivityThread.Stub {
 
             HookManager.get().checkEnv(HCallbackProxy.class);
         } catch (Exception e) {
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "bind.application.error",
+                    packageName, getUserId(), LaunchDiagnostics.describeError(e));
             Slog.e(TAG, "Critical error in handleBindApplication", e);
             throw new RuntimeException("Unable to makeApplication", e);
         }
