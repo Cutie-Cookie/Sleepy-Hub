@@ -104,7 +104,7 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
 
     private void checkActivity(Activity activity) {
         String packageName = activity.getPackageName();
-        LaunchDiagnostics.record(activity, "instrumentation.check_activity.begin", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.check_activity.begin", packageName,
                 BActivityThread.getUserId(), "class=" + activity.getClass().getName());
         Log.d(TAG, "callActivityOnCreate: " + activity.getClass().getName());
         HackAppUtils.enableQQLogOutput(packageName, activity.getClassLoader());
@@ -112,10 +112,10 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
         HookManager.get().checkEnv(IActivityClientProxy.class);
         ActivityInfo info = BRActivity.get(activity).mActivityInfo();
         if (info == null) {
-            LaunchDiagnostics.record(activity, "instrumentation.activity_info_missing", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.activity_info_missing", packageName,
                     BActivityThread.getUserId(), "ActivityThread returned null ActivityInfo");
         } else {
-            LaunchDiagnostics.record(activity, "instrumentation.activity_info_ready", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.activity_info_ready", packageName,
                     BActivityThread.getUserId(), "activity=" + info.name + "; theme=" + info.theme
                             + "; orientation=" + info.screenOrientation);
         }
@@ -125,7 +125,7 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
             activity.getTheme().applyStyle(info.theme, true);
         }
         ActivityManagerCompat.setActivityOrientation(activity, info.screenOrientation);
-        LaunchDiagnostics.record(activity, "instrumentation.check_activity.complete", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "instrumentation.check_activity.complete", packageName,
                 BActivityThread.getUserId(), "activity preparation completed");
     }
 
@@ -139,19 +139,19 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle, PersistableBundle persistentState) {
         String packageName = activity.getPackageName();
-        LaunchDiagnostics.record(activity, "app.activity.on_create.begin", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.begin", packageName,
                 BActivityThread.getUserId(), "class=" + activity.getClass().getName() + "; persistable=true");
         try {
             checkActivity(activity);
             super.callActivityOnCreate(activity, icicle, persistentState);
-            LaunchDiagnostics.record(activity, "app.activity.on_create.returned", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.returned", packageName,
                     BActivityThread.getUserId(), "target Activity onCreate returned");
         } catch (RuntimeException error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         } catch (Error error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         }
@@ -160,19 +160,19 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
     @Override
     public void callActivityOnCreate(Activity activity, Bundle icicle) {
         String packageName = activity.getPackageName();
-        LaunchDiagnostics.record(activity, "app.activity.on_create.begin", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.begin", packageName,
                 BActivityThread.getUserId(), "class=" + activity.getClass().getName() + "; persistable=false");
         try {
             checkActivity(activity);
             super.callActivityOnCreate(activity, icicle);
-            LaunchDiagnostics.record(activity, "app.activity.on_create.returned", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.returned", packageName,
                     BActivityThread.getUserId(), "target Activity onCreate returned");
         } catch (RuntimeException error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         } catch (Error error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         }
@@ -181,19 +181,19 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
     @Override
     public void callApplicationOnCreate(Application app) {
         String packageName = app.getPackageName();
-        LaunchDiagnostics.record(app, "app.application.on_create.begin", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.application.on_create.begin", packageName,
                 BActivityThread.getUserId(), "application=" + app.getClass().getName());
         try {
             checkHCallback();
             super.callApplicationOnCreate(app);
-            LaunchDiagnostics.record(app, "app.application.on_create.returned", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.application.on_create.returned", packageName,
                     BActivityThread.getUserId(), "target Application onCreate returned");
         } catch (RuntimeException error) {
-            LaunchDiagnostics.record(app, "app.application.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.application.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         } catch (Error error) {
-            LaunchDiagnostics.record(app, "app.application.on_create.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.application.on_create.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         }
@@ -202,18 +202,18 @@ public final class AppInstrumentation extends BaseInstrumentationDelegate implem
     @Override
     public void callActivityOnResume(Activity activity) {
         String packageName = activity.getPackageName();
-        LaunchDiagnostics.record(activity, "app.activity.on_resume.begin", packageName,
+        LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_resume.begin", packageName,
                 BActivityThread.getUserId(), "class=" + activity.getClass().getName());
         try {
             super.callActivityOnResume(activity);
-            LaunchDiagnostics.record(activity, "app.activity.on_resume.returned", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_resume.returned", packageName,
                     BActivityThread.getUserId(), "target Activity onResume returned");
         } catch (RuntimeException error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_resume.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_resume.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         } catch (Error error) {
-            LaunchDiagnostics.record(activity, "app.activity.on_resume.error", packageName,
+            LaunchDiagnostics.record(BlackBoxCore.getContext(), "app.activity.on_resume.error", packageName,
                     BActivityThread.getUserId(), LaunchDiagnostics.describeError(error));
             throw error;
         }
